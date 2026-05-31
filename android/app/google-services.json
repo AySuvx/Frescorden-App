@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1512037775",
+    "project_id": "frescorden",
+    "storage_bucket": "frescorden.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1512037775:android:e4bc348293ae2ef8ebfffa",
+        "android_client_info": {
+          "package_name": "com.example.frescorden"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1512037775-91cm1h9vmatupfoajeu24baaqj2a5mk0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.frescorden",
+            "certificate_hash": "16b3da75c64f6aeb6d1d0862f0f4a2da8de66c7a"
+          }
+        },
+        {
+          "client_id": "1512037775-dbgp6ar5sau70irm39ph9g8kmodlsnjf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtxLbjfqy9egYX6O8jp9REm2uFmqaRiKw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1512037775-dbgp6ar5sau70irm39ph9g8kmodlsnjf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
