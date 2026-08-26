@@ -1,14 +1,14 @@
 // lib/domain/entities/product.dart
 //
-// Entidad central de dominio. Clase Dart pura: sin dependencias de Flutter,
-// Firebase ni ningún framework externo. Es el único "Product" verdadero
-// del sistema; todos los demás (ProductModel, Maps en pantallas) derivan de él.
+// FASE 3 — Trazabilidad de perecederos a granel:
+// Se añade el campo `storedAt` (DateTime nullable).
+// Representa la fecha en que el producto fue almacenado en la nevera/despensa.
+// Se usa principalmente para productos de plaza/mercado (tomate, papa, frutas)
+// donde no existe una fecha de caducidad impresa, pero el usuario quiere saber
+// cuántos días lleva en casa.
 //
-// Decisiones de diseño:
-//  - `quantity` es int internamente; `toMap()` lo convierte a String para
-//    retrocompatibilidad con las pantallas y documentos Firestore existentes.
-//  - `id` es String vacía ('') cuando el producto aún no ha sido persistido.
-//  - Todos los campos opcionales (barcode, imagePath, etc.) son nullable.
+// Computed getter `daysStored`: retorna los días transcurridos desde storedAt,
+// o null si el campo no fue registrado.
 
 class Product {
   final String id;
@@ -20,6 +20,10 @@ class Product {
   final DateTime? expirationDate;
   final DateTime? createdAt;
 
+  /// FASE 3 — Fecha de almacenamiento en nevera/despensa.
+  /// Opcional: solo se registra cuando el usuario lo indica explícitamente.
+  final DateTime? storedAt;
+
   const Product({
     required this.id,
     required this.name,
@@ -29,7 +33,27 @@ class Product {
     this.imagePath,
     this.expirationDate,
     this.createdAt,
+    this.storedAt,
   });
+
+  /// FASE 3 — Días transcurridos desde que el producto fue almacenado.
+  /// Retorna `null` si `storedAt` no fue registrado.
+  int? get daysStored {
+    if (storedAt == null) return null;
+    return DateTime.now().difference(storedAt!).inDays;
+  }
+
+  /// FASE 3 — Indica si el tiempo almacenado merece una alerta visual.
+  /// Cada categoría tiene un umbral diferente (en días).
+  bool get isStorageCritical {
+    final days = daysStored;
+    if (days == null) return false;
+    return days >= storageCriticalDays;
+  }
+
+  /// Umbral de días para considerar el almacenamiento "crítico".
+  /// Valor por defecto: 5 días. Se puede personalizar por producto en futuras fases.
+  int get storageCriticalDays => 5;
 
   /// Crea una copia con los campos indicados modificados.
   Product copyWith({
@@ -41,6 +65,7 @@ class Product {
     String? imagePath,
     DateTime? expirationDate,
     DateTime? createdAt,
+    DateTime? storedAt,
   }) {
     return Product(
       id: id ?? this.id,
@@ -51,10 +76,11 @@ class Product {
       imagePath: imagePath ?? this.imagePath,
       expirationDate: expirationDate ?? this.expirationDate,
       createdAt: createdAt ?? this.createdAt,
+      storedAt: storedAt ?? this.storedAt,
     );
   }
 
-  /// Convierte la entidad a Map<String, dynamic> compatible con el formato
+  /// Convierte la entidad a `Map<String, dynamic>` compatible con el formato
   /// que las pantallas existentes ya esperan (quantity como String).
   Map<String, dynamic> toMap() {
     return {
@@ -64,9 +90,10 @@ class Product {
       'quantity': quantity.toString(),
       'unit': unit,
       'imagePath': imagePath,
-      'image': imagePath,            // alias retrocompatibilidad (Bug #11)
+      'image': imagePath,               // alias retrocompatibilidad (Bug #11)
       'expirationDate': expirationDate?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
+      'storedAt': storedAt?.toIso8601String(),     // FASE 3
     };
   }
 
@@ -80,5 +107,6 @@ class Product {
 
   @override
   String toString() =>
-      'Product(id: $id, name: $name, qty: $quantity $unit, exp: $expirationDate)';
+      'Product(id: $id, name: $name, qty: $quantity $unit, '
+      'exp: $expirationDate, storedAt: $storedAt)';
 }

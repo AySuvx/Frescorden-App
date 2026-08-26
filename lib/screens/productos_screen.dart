@@ -15,12 +15,13 @@
 //
 // MEJORA: Se reemplaza print() por debugPrint() (el linter lo exige).
 
+// LINT FIX: eliminados 'package:firebase_auth/firebase_auth.dart' (unused_import)
+// y el campo 'user' (unused_element). La eliminación de productos ahora
+// pasa por ProductProvider que gestiona la autenticación internamente.
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../presentation/providers/product_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ProductosScreen extends StatefulWidget {
   final List<Map<String, dynamic>> productos;
@@ -39,7 +40,6 @@ class ProductosScreen extends StatefulWidget {
 }
 
 class _ProductosScreenState extends State<ProductosScreen> {
-  final user = FirebaseAuth.instance.currentUser;
 
   // BUG #9 FIX: copia local — nunca mutamos widget.productos
   late List<Map<String, dynamic>> _productos;
@@ -51,15 +51,6 @@ class _ProductosScreenState extends State<ProductosScreen> {
     super.initState();
     _productos = List<Map<String, dynamic>>.from(widget.productos);
     _productosFiltrados = List<Map<String, dynamic>>.from(_productos);
-  }
-
-  void _actualizarFiltro() {
-    setState(() {
-      _productosFiltrados = _productos.where((producto) {
-        final nombre = producto['name']?.toString().toLowerCase() ?? '';
-        return nombre.contains(_busqueda.toLowerCase());
-      }).toList();
-    });
   }
 
   void _mostrarDialogoFiltros() {
@@ -133,12 +124,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   // FASE 2: delega la recarga al ProductProvider en lugar de Firestore directo
+  // FIX #H3: provider capturado ANTES del await para evitar uso de context
+  // en gap asíncrono (use_build_context_synchronously).
   Future<void> _actualizarProductos() async {
+    final provider = context.read<ProductProvider>();
     try {
-      await context.read<ProductProvider>().loadProducts();
+      await provider.loadProducts();
       if (!mounted) return;
       setState(() {
-        _productos = context.read<ProductProvider>().productosMap;
+        _productos = provider.productosMap;
         _actualizarFiltroSinSetState();
       });
     } catch (e) {
@@ -254,9 +248,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
               daysRemaining < 0
                   ? 'Estado: Vencido'
                   : 'Expira en: $daysRemaining días',
-              style:
-                  TextStyle(color: _getExpirationColor(daysRemaining)),
+              style: TextStyle(color: _getExpirationColor(daysRemaining)),
             ),
+            // FASE 3: trazabilidad de perecederos a granel
+            _buildStorageLabel(producto),
           ],
         ),
         trailing: Row(
@@ -277,6 +272,47 @@ class _ProductosScreenState extends State<ProductosScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// FASE 3: Etiqueta de trazabilidad de perecederos a granel.
+  /// Muestra cuántos días lleva almacenado el producto.
+  /// Solo visible cuando el usuario registró una fecha de almacenamiento.
+  Widget _buildStorageLabel(Map<String, dynamic> producto) {
+    final storedAtStr = producto['storedAt'] as String?;
+    if (storedAtStr == null || storedAtStr.isEmpty) return const SizedBox.shrink();
+    final storedAt = DateTime.tryParse(storedAtStr);
+    if (storedAt == null) return const SizedBox.shrink();
+
+    final daysStored = DateTime.now().difference(storedAt).inDays;
+    final isCritical = daysStored >= 5;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        children: [
+          Icon(
+            Icons.kitchen,
+            size: 12,
+            color: isCritical ? Colors.deepOrange : Colors.blueGrey,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Almacenado hace $daysStored día${daysStored == 1 ? '' : 's'}',
+            style: TextStyle(
+              fontSize: 12,
+              color: isCritical ? Colors.deepOrange : Colors.blueGrey,
+              fontWeight:
+                  isCritical ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          if (isCritical) ...[
+            const SizedBox(width: 4),
+            const Icon(Icons.warning_amber,
+                size: 12, color: Colors.deepOrange),
+          ],
+        ],
       ),
     );
   }

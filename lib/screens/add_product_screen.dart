@@ -54,6 +54,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _selectedUnit = 'unidad';
   File? _imageFile;
   DateTime? _expiryDate;
+  DateTime? _storedAt;      // FASE 3: fecha de almacenamiento en nevera
   final picker = ImagePicker();
   final FlutterLocalNotificationsPlugin _notifPlugin =
       FlutterLocalNotificationsPlugin();
@@ -85,11 +86,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
         _expiryDate =
             DateTime.tryParse(widget.initialProduct!['expirationDate']);
       }
+      // FASE 3: cargar storedAt al editar
+      if (widget.initialProduct!['storedAt'] != null) {
+        _storedAt = DateTime.tryParse(widget.initialProduct!['storedAt']);
+      }
     } else if (widget.scannedCode != null) {
       _barcodeController.text = widget.scannedCode!;
     } else {
       _isManualAdd = widget.isManualAdd;
     }
+  }
+
+  // FIX #H1: liberar los TextEditingControllers para evitar memory leak
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _barcodeController.dispose();
+    _quantityController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeNotificationPlugin() async {
@@ -194,18 +208,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile == null) return;
+    // FIX #H2: mounted check después de awaits para evitar setState en widget descartado
     try {
       final permanentFile =
           await _copyImageToPermanentStorage(File(pickedFile.path));
+      if (!mounted) return;
       setState(() => _imageFile = permanentFile);
     } catch (e) {
       debugPrint('Error al guardar imagen: $e');
+      if (!mounted) return;
       setState(() => _imageFile = File(pickedFile.path));
     }
   }
 
   // ─── FASE 2: _guardarProducto ya no toca Firestore directamente ──────────
-  void _guardarProducto() async {
+  Future<void> _guardarProducto() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
@@ -241,6 +258,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'unit': _selectedUnit,
         'imagePath': _imageFile?.path,
         'expirationDate': _expiryDate?.toIso8601String(),
+        if (_storedAt != null)                                    // FASE 3
+          'storedAt': _storedAt!.toIso8601String(),
       };
 
       // Delegar al provider (Fase 2) — sin Firestore directo
@@ -406,6 +425,91 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             const SizedBox(height: 8),
             _buildExpiryDatePicker(),
+            const SizedBox(height: 16),
+
+            // ── FASE 3: Fecha de almacenamiento ──────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.kitchen, color: Colors.blueGrey, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Fecha de almacenamiento (opcional)',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Para saber cuántos días lleva guardado',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 6),
+                      InkWell(
+                        onTap: () async {
+                          final now = DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _storedAt ?? now,
+                            firstDate: now.subtract(
+                                const Duration(days: 365)),
+                            lastDate: now,
+                          );
+                          if (picked != null) {
+                            setState(() => _storedAt = picked);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 4),
+                          decoration: BoxDecoration(
+                            border: Border(
+                                bottom: BorderSide(
+                                    color: Colors.grey.shade400)),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                _storedAt == null
+                                    ? 'Seleccionar fecha de entrada al hogar'
+                                    : 'Guardado el: ${_storedAt!.day}/${_storedAt!.month}/${_storedAt!.year}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: _storedAt == null
+                                      ? Colors.grey
+                                      : Colors.black87,
+                                ),
+                              ),
+                              if (_storedAt != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '(${DateTime.now().difference(_storedAt!).inDays} días)',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blueGrey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _storedAt = null),
+                                  child: const Icon(Icons.clear,
+                                      size: 16, color: Colors.grey),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             const Text(
               'Foto del producto (opcional)',

@@ -1,3 +1,13 @@
+// lib/Widgets/button_plus.dart
+//
+// FIX #C2: después de `await Navigator.push` (escaneo de QR) se llamaba a
+//   widget.onScanComplete() y toggleMenu() sin verificar que el widget
+//   seguía montado. Si el usuario navegaba atrás durante el escaneo, la
+//   llamada a setState() dentro de toggleMenu() lanzaba
+//   "setState called on disposed widget".
+//   FIX: añadido `if (!mounted) return;` antes de cualquier uso de estado
+//   post-await.
+
 import 'package:flutter/material.dart';
 import '../screens/qr_scanner_page.dart';
 
@@ -19,9 +29,8 @@ class _ButtonPlusState extends State<ButtonPlus> {
   bool _isExpanded = false;
 
   void toggleMenu() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-    });
+    if (!mounted) return;
+    setState(() => _isExpanded = !_isExpanded);
   }
 
   @override
@@ -41,20 +50,22 @@ class _ButtonPlusState extends State<ButtonPlus> {
             child: FloatingActionButton.extended(
               heroTag: 'scanQR',
               onPressed: () async {
-                String? scannedCode = await Navigator.push(
+                final String? scannedCode = await Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => const QRScannerPage()),
                 );
+                // FIX #C2: guardia mounted antes de usar estado o callbacks
+                if (!mounted) return;
                 if (scannedCode != null && scannedCode.isNotEmpty) {
                   widget.onScanComplete(scannedCode);
                 }
-                toggleMenu(); // Cerrar menú al volver
+                toggleMenu();
               },
               backgroundColor: const Color(0xFF42A5F5),
               icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
               label: const Text(
-                "Agregar con código",
+                'Agregar con código',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -74,12 +85,12 @@ class _ButtonPlusState extends State<ButtonPlus> {
               heroTag: 'manualAdd',
               onPressed: () {
                 widget.onManualAdd();
-                toggleMenu(); // Cerrar menú
+                toggleMenu();
               },
               backgroundColor: const Color(0xFF66BB6A),
               icon: const Icon(Icons.eco, color: Colors.white),
               label: const Text(
-                "Agregar sin código",
+                'Agregar sin código',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -89,8 +100,7 @@ class _ButtonPlusState extends State<ButtonPlus> {
 
         // Botón principal (Manzanita)
         Tooltip(
-          message:
-              _isExpanded ? "Cerrar opciones" : "Agregar nuevo producto",
+          message: _isExpanded ? 'Cerrar opciones' : 'Agregar nuevo producto',
           child: FloatingActionButton(
             heroTag: 'toggleMenu',
             onPressed: toggleMenu,
@@ -106,5 +116,3 @@ class _ButtonPlusState extends State<ButtonPlus> {
     );
   }
 }
-
-

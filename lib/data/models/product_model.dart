@@ -18,6 +18,7 @@ class ProductModel extends Product {
     super.imagePath,
     super.expirationDate,
     super.createdAt,
+    super.storedAt,      // FASE 3
   });
 
   // ─── Desde Firestore ───────────────────────────────────────────────────────
@@ -66,6 +67,7 @@ class ProductModel extends Product {
       imagePath: imagePath,
       expirationDate: parseDate(data['expirationDate']),
       createdAt: parseDate(data['createdAt']),
+      storedAt: parseDate(data['storedAt']),      // FASE 3
     );
   }
 
@@ -82,6 +84,8 @@ class ProductModel extends Product {
       if (imagePath != null && imagePath!.isNotEmpty) 'imagePath': imagePath,
       if (expirationDate != null)
         'expirationDate': expirationDate!.toIso8601String(),
+      if (storedAt != null)                        // FASE 3
+        'storedAt': storedAt!.toIso8601String(),
     };
   }
 
@@ -99,6 +103,7 @@ class ProductModel extends Product {
       imagePath: entity.imagePath,
       expirationDate: entity.expirationDate,
       createdAt: entity.createdAt,
+      storedAt: entity.storedAt,      // FASE 3
     );
   }
 }

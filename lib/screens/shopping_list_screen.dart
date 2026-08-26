@@ -24,7 +24,7 @@ class ShoppingListScreen extends StatelessWidget {
             backgroundColor: Colors.green,
           ),
           // BUG #6 FIX: se usa _ShoppingWebView en lugar de WebViewScreen
-          // para evitar colisión de nombres con lib/screens/WebViewScreen.dart
+          // para evitar colisión de nombres con lib/screens/web_view_screen.dart
           body: _ShoppingWebView(url: url, title: title),
         ),
       ),

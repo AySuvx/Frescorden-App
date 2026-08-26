@@ -118,16 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     }
-    void evaluatePassword(String password) {
-      setState(() {
-        _passwordCriteria = {
-          'Al menos 8 caracteres': password.length >= 8,
-          'Una letra mayúscula': password.contains(RegExp(r'[A-Z]')),
-          'Un número': password.contains(RegExp(r'[0-9]')),
-          'Un carácter especial': password.contains(RegExp(r'[!@#\$&*~]')),
-        };
-      });
-    }
+    // FIX M2: evaluatePassword() eliminado (código muerto — la lógica vive en el onChanged del campo contraseña)
 
  Future<void> resetPassword() async {
   try {

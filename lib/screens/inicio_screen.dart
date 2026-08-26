@@ -179,6 +179,9 @@ class _InicioScreenState extends State<InicioScreen> {
               leading: const Icon(Icons.shopping_basket),
               title: Text('Productos (${productos.length})'),
               onTap: () async {
+                // Capturar el provider ANTES de los awaits
+                // (fix use_build_context_synchronously)
+                final provider = context.read<ProductProvider>();
                 Navigator.pop(context);
                 await Navigator.push(
                   context,
@@ -197,7 +200,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 );
                 // Refresca por si la sub-pantalla cambió algo directamente
                 if (mounted) {
-                  await context.read<ProductProvider>().loadProducts();
+                  await provider.loadProducts();
                 }
               },
             ),

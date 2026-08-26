@@ -15,6 +15,7 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme_provider.dart';
+import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -186,7 +187,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/');
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
       }
     } catch (e) {
       debugPrint('Error al eliminar la cuenta: $e');

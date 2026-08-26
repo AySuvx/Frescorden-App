@@ -38,7 +38,7 @@ class ProductProvider extends ChangeNotifier {
   String? get error => _error;
   int get count => _products.length;
 
-  /// Retorna los productos como List<Map<String,dynamic>> para retrocompatibilidad
+  /// Retorna los productos como `List<Map<String,dynamic>>` para retrocompatibilidad
   /// con todas las pantallas existentes (ProductosScreen, RecetasScreen, etc.).
   List<Map<String, dynamic>> get productosMap =>
       _products.map((p) => p.toMap()).toList();
@@ -171,6 +171,7 @@ class ProductProvider extends ChangeNotifier {
       unit: map['unit'] as String? ?? 'unidad',
       imagePath: (imagePath != null && imagePath.isNotEmpty) ? imagePath : null,
       expirationDate: parseDate(map['expirationDate']),
+      storedAt: parseDate(map['storedAt']),            // FASE 3
     );
   }
 }
