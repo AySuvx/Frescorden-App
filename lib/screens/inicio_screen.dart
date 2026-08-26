@@ -15,10 +15,9 @@
 // La UI y el comportamiento visible son IDÉNTICOS al de Fase 1.
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
+import '../presentation/providers/auth_provider.dart';
 import '../presentation/providers/product_provider.dart';
 import 'recetas_screen.dart';
 import 'productos_screen.dart';
@@ -38,8 +37,6 @@ class InicioScreen extends StatefulWidget {
 }
 
 class _InicioScreenState extends State<InicioScreen> {
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-
   @override
   void initState() {
     super.initState();
@@ -50,8 +47,7 @@ class _InicioScreenState extends State<InicioScreen> {
   }
 
   Future<void> cerrarSesion() async {
-    await FirebaseAuth.instance.signOut();
-    await _googleSignIn.signOut();
+    await context.read<AuthProvider>().signOut();
 
     if (mounted) {
       Navigator.pushAndRemoveUntil(

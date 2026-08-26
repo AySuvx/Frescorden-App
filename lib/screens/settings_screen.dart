@@ -9,11 +9,10 @@
 //   'notifications_enabled'. El valor se lee en initState de forma asíncrona.
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../presentation/providers/auth_provider.dart';
 import '../theme_provider.dart';
 import 'login_screen.dart';
 
@@ -177,14 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _deleteAccount() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(user.uid)
-            .delete();
-        await user.delete();
-      }
+      await context.read<AuthProvider>().deleteAccount();
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(

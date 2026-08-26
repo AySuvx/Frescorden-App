@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// hide AuthProvider: colisiona con presentation/providers/auth_provider.dart;
+// solo se usa FirebaseAuthException de este paquete.
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../domain/repositories/i_auth_repository.dart';
+import '../presentation/providers/auth_provider.dart';
 import 'inicio_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -12,9 +16,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLogin = true;
@@ -29,18 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Google Sign-In
     Future<void> signInWithGoogle() async {
+      final auth = context.read<AuthProvider>();
       try {
-        await _googleSignIn.signOut(); // Asegura elegir cuenta nueva
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-        if (googleUser == null) return;
-
-        final googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        await _auth.signInWithCredential(credential);
+        await auth.signInWithGoogle();
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -58,6 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Registro / Login con correo y contraseña
     Future<void> submitEmailPassword() async {
+      final auth = context.read<AuthProvider>();
       try {
         if (!_isLogin) {
           // Validar los requisitos de la contraseña
@@ -71,37 +64,18 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
 
+        final email = _emailController.text.trim();
+        final password = _passwordController.text;
+
         if (_isLogin) {
-          final userCredential = await _auth.signInWithEmailAndPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
-
-          // Verificar si el correo está verificado
-          if (!userCredential.user!.emailVerified) {
-            await _auth.signOut();
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Por favor, verifica tu correo electrónico para iniciar sesión.')),
-              );
-            }
-            return;
-          }
+          await auth.signInWithEmail(email, password);
         } else {
-          final userCredential = await _auth.createUserWithEmailAndPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
-
-          // Enviar correo de verificación
-          await userCredential.user!.sendEmailVerification();
+          await auth.registerWithEmail(email, password);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Se ha enviado un correo de verificación. Por favor, revisa tu bandeja de entrada.')),
             );
           }
-
-          await _auth.signOut(); // Cerrar sesión después del registro
         }
 
         if (mounted && _isLogin) {
@@ -114,6 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(e.message ?? 'Error desconocido')),
+          );
+        }
+      } on AuthException catch (e) {
+        // Correo no verificado (mismo mensaje que antes)
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message)),
           );
         }
       }
@@ -131,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
+    await context.read<AuthProvider>().sendPasswordReset(_emailController.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Se ha enviado un correo para restablecer tu contraseña.')),

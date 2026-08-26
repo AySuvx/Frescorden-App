@@ -2,19 +2,23 @@
 //
 // FASE 2 — Clean Architecture:
 // Se reemplaza el ChangeNotifierProvider único por MultiProvider y se
-// registra ProductProvider con su cadena de dependencias inyectadas:
+// registran ProductProvider y AuthProvider con su cadena de dependencias
+// inyectadas:
 //
 //   ProductProvider
 //     └─ ProductRepositoryImpl
 //          └─ FirestoreProductDataSource
 //               └─ FirebaseFirestore.instance (externo)
 //
+//   AuthProvider
+//     └─ AuthRepositoryImpl
+//          └─ FirebaseAuth.instance / GoogleSignIn() / FirebaseFirestore.instance (externos)
+//
 // Ninguna pantalla instancia estas clases directamente; las obtienen a
-// través de context.read<ProductProvider>() / context.watch<ProductProvider>().
+// través de context.read<...>() / context.watch<...>().
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -25,9 +29,14 @@ import 'screens/inicio_screen.dart';
 // Capa de datos (instanciada aquí, no en las pantallas)
 import 'data/datasources/firestore_product_datasource.dart';
 import 'data/repositories/product_repository_impl.dart';
+import 'data/repositories/auth_repository_impl.dart';
+
+// Capa de dominio
+import 'domain/entities/app_user.dart';
 
 // Capa de presentación
 import 'presentation/providers/product_provider.dart';
+import 'presentation/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +58,11 @@ void main() async {
               FirestoreProductDataSource(),
             ),
           ),
+        ),
+
+        // AuthProvider con inyección de dependencias
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(AuthRepositoryImpl()),
         ),
       ],
       child: const MyApp(),
@@ -76,8 +90,8 @@ class MyApp extends StatelessWidget {
       ),
       themeMode:
           themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+      home: StreamBuilder<AppUser?>(
+        stream: context.read<AuthProvider>().authStateChanges,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
