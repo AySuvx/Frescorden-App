@@ -41,6 +41,43 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1512037775:android:ae9af9d311eb821cebfffa",
+        "android_client_info": {
+          "package_name": "com.frescorden.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1512037775-otbsnkr8mp6op4jmom2sku146u5t6j3t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.frescorden.app",
+            "certificate_hash": "16b3da75c64f6aeb6d1d0862f0f4a2da8de66c7a"
+          }
+        },
+        {
+          "client_id": "1512037775-dbgp6ar5sau70irm39ph9g8kmodlsnjf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtxLbjfqy9egYX6O8jp9REm2uFmqaRiKw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1512037775-dbgp6ar5sau70irm39ph9g8kmodlsnjf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

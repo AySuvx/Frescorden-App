@@ -46,3 +46,17 @@ app.*.map.json
 
 # Firebase local options
 lib/firebase_options.dart
+
+# Secrets / local config (defense in depth: android/.gitignore, ios/.gitignore,
+# etc. already cover their module-local copies of some of these; estas reglas
+# a nivel de raíz cubren cualquier otra ubicación, presente o futura).
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+key.properties
+**/local.properties
+secrets.yaml
+secrets.json

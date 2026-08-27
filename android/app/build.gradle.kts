@@ -9,14 +9,16 @@ plugins {
 }
 
 android {
-    namespace = "com.example.frescorden"
-    compileSdk = 35
-    // ndkVersion = flutter.ndkVersion
-
+    namespace = "com.frescorden.app"
+    compileSdk = flutter.compileSdkVersion
+    // Todos los plugins (Firebase, mobile_scanner, image_picker, etc.)
+    // requieren NDK 28.2.13676358. AGP la descarga automáticamente durante
+    // el build si no está presente localmente.
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
 
@@ -24,16 +26,12 @@ android {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
-
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.frescorden"
+        applicationId = "com.frescorden.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -45,6 +43,12 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

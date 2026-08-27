@@ -1,4 +1,4 @@
-package com.example.frescorden
+package com.frescorden.app
 
 import io.flutter.embedding.android.FlutterActivity
 
