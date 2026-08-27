@@ -4,8 +4,7 @@
 // El método _guardarProducto ya no accede a FirebaseFirestore.instance.
 // Delega el upsert a ProductProvider.saveProduct(), que centraliza
 // la lógica de "crear o acumular" en un solo lugar.
-//
-// TODO lo demás (notificaciones, imagen, cámara, permisos) permanece
+// Todo lo demás (notificaciones, imagen, cámara, permisos) permanece.
 // exactamente igual que en Fase 1. Los bugs #1 #2 #4 siguen corregidos.
 
 import 'dart:io';
@@ -21,7 +20,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/entities/food_category.dart';
 import '../presentation/providers/product_provider.dart';
+import '../presentation/utils/food_category_ui.dart';
 
 class AddProductScreen extends StatefulWidget {
   final String? scannedCode;
@@ -48,13 +49,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _barcodeController = TextEditingController();
   bool _isManualAdd = false;
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _quantityController =
-      TextEditingController(text: '1');
+  final TextEditingController _quantityController = TextEditingController(
+    text: '1',
+  );
 
   String _selectedUnit = 'unidad';
   File? _imageFile;
   DateTime? _expiryDate;
-  DateTime? _storedAt;      // FASE 3: fecha de almacenamiento en nevera
+  DateTime? _storedAt; // FASE 3: fecha de almacenamiento en nevera
+  FoodCategory _selectedCategory = FoodCategory.otros; // PASO 2
+  final TextEditingController _minStockController =
+      TextEditingController(); // PASO 2: stock mínimo (opcional)
   final picker = ImagePicker();
   final FlutterLocalNotificationsPlugin _notifPlugin =
       FlutterLocalNotificationsPlugin();
@@ -75,7 +80,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _quantityController.text = widget.initialProduct!['quantity'] ?? '1';
       _selectedUnit = widget.initialProduct!['unit'] ?? 'unidad';
 
-      final imagePath = widget.initialProduct!['imagePath'] as String? ??
+      final imagePath =
+          widget.initialProduct!['imagePath'] as String? ??
           widget.initialProduct!['image'] as String?;
       if (imagePath != null && imagePath.isNotEmpty) {
         final f = File(imagePath);
@@ -83,12 +89,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
 
       if (widget.initialProduct!['expirationDate'] != null) {
-        _expiryDate =
-            DateTime.tryParse(widget.initialProduct!['expirationDate']);
+        _expiryDate = DateTime.tryParse(
+          widget.initialProduct!['expirationDate'],
+        );
       }
       // FASE 3: cargar storedAt al editar
       if (widget.initialProduct!['storedAt'] != null) {
         _storedAt = DateTime.tryParse(widget.initialProduct!['storedAt']);
+      }
+      // PASO 2: cargar categoría y stock mínimo al editar
+      _selectedCategory = FoodCategory.fromName(
+        widget.initialProduct!['category'] as String?,
+      );
+      final minStock = widget.initialProduct!['minStock'];
+      if (minStock != null) {
+        _minStockController.text = minStock.toString();
       }
     } else if (widget.scannedCode != null) {
       _barcodeController.text = widget.scannedCode!;
@@ -103,14 +118,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _nameController.dispose();
     _barcodeController.dispose();
     _quantityController.dispose();
+    _minStockController.dispose();
     super.dispose();
   }
 
   Future<void> _initializeNotificationPlugin() async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const InitializationSettings settings =
-        InitializationSettings(android: androidSettings);
+    const InitializationSettings settings = InitializationSettings(
+      android: androidSettings,
+    );
     await _notifPlugin.initialize(settings);
   }
 
@@ -132,24 +149,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     final goToSettings = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Permisos de notificación'),
-        content: const Text(
-          'Para avisarte cuando un producto está por vencer, '
-          'Fresc(o)rden necesita permiso para programar alarmas exactas. '
-          '¿Ir a configuración para activarlo?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ahora no'),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Permisos de notificación'),
+            content: const Text(
+              'Para avisarte cuando un producto está por vencer, '
+              'Fresc(o)rden necesita permiso para programar alarmas exactas. '
+              '¿Ir a configuración para activarlo?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Ahora no'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Ir a configuración'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ir a configuración'),
-          ),
-        ],
-      ),
     );
 
     if (goToSettings == true) {
@@ -210,8 +228,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (pickedFile == null) return;
     // FIX #H2: mounted check después de awaits para evitar setState en widget descartado
     try {
-      final permanentFile =
-          await _copyImageToPermanentStorage(File(pickedFile.path));
+      final permanentFile = await _copyImageToPermanentStorage(
+        File(pickedFile.path),
+      );
       if (!mounted) return;
       setState(() => _imageFile = permanentFile);
     } catch (e) {
@@ -248,6 +267,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
       return;
     }
 
+    // PASO 2: el stock mínimo es opcional, pero si se escribe algo debe ser
+    // un entero válido y no negativo.
+    final minStockText = _minStockController.text.trim();
+    int? minStock;
+    if (minStockText.isNotEmpty) {
+      minStock = int.tryParse(minStockText);
+      if (minStock == null || minStock < 0) {
+        _showSnack('El stock mínimo debe ser un número entero válido');
+        setState(() => _isSaving = false);
+        return;
+      }
+    }
+
     try {
       final productoMap = {
         if (widget.initialProduct?['id'] != null)
@@ -258,8 +290,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'unit': _selectedUnit,
         'imagePath': _imageFile?.path,
         'expirationDate': _expiryDate?.toIso8601String(),
-        if (_storedAt != null)                                    // FASE 3
+        if (_storedAt != null) // FASE 3
           'storedAt': _storedAt!.toIso8601String(),
+        'category': _selectedCategory.name, // PASO 2
+        if (minStock != null) 'minStock': minStock, // PASO 2
       };
 
       // Delegar al provider (Fase 2) — sin Firestore directo
@@ -289,8 +323,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildExpiryDatePicker() {
@@ -315,8 +350,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 15),
               decoration: BoxDecoration(
-                border:
-                    Border(bottom: BorderSide(color: Colors.grey.shade400)),
+                border: Border(bottom: BorderSide(color: Colors.grey.shade400)),
               ),
               child: Text(
                 _expiryDate == null
@@ -356,7 +390,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
               decoration: InputDecoration(
                 hintText: 'Ej: Leche deslactosada',
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 filled: true,
                 fillColor: Colors.grey.shade100,
               ),
@@ -368,8 +403,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 children: [
                   const Text(
                     'Código de barras',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -377,7 +411,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     decoration: InputDecoration(
                       hintText: 'Ej: 7701234567890',
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade100,
                     ),
@@ -399,7 +434,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     decoration: InputDecoration(
                       hintText: 'Ej: 3',
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade100,
                     ),
@@ -408,10 +444,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 const SizedBox(width: 10),
                 DropdownButton<String>(
                   value: _selectedUnit,
-                  items: _units
-                      .map((unit) => DropdownMenuItem(
-                          value: unit, child: Text(unit)))
-                      .toList(),
+                  items:
+                      _units
+                          .map(
+                            (unit) => DropdownMenuItem(
+                              value: unit,
+                              child: Text(unit),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (value) {
                     if (value != null) setState(() => _selectedUnit = value);
                   },
@@ -419,6 +460,75 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ],
             ),
             const SizedBox(height: 16),
+
+            // ── PASO 2: Categoría del alimento ────────────────────────────────
+            const Text(
+              'Categoría',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.grey.shade100,
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<FoodCategory>(
+                  isExpanded: true,
+                  value: _selectedCategory,
+                  items:
+                      FoodCategory.values
+                          .map(
+                            (cat) => DropdownMenuItem(
+                              value: cat,
+                              child: Row(
+                                children: [
+                                  Icon(cat.icon, size: 18, color: Colors.green),
+                                  const SizedBox(width: 10),
+                                  Text(cat.label),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedCategory = value);
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── PASO 2: Alerta de Stock mínimo (opcional) ─────────────────────
+            const Text(
+              'Stock mínimo (opcional)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Te avisaremos en la lista cuando la cantidad llegue a este valor',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _minStockController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: 'Ej: 2',
+                prefixIcon: const Icon(Icons.warning_amber_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+              ),
+            ),
+            const SizedBox(height: 16),
+
             const Text(
               'Fecha de vencimiento',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -440,7 +550,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       const Text(
                         'Fecha de almacenamiento (opcional)',
                         style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       const Text(
@@ -454,8 +566,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           final picked = await showDatePicker(
                             context: context,
                             initialDate: _storedAt ?? now,
-                            firstDate: now.subtract(
-                                const Duration(days: 365)),
+                            firstDate: now.subtract(const Duration(days: 365)),
                             lastDate: now,
                           );
                           if (picked != null) {
@@ -464,11 +575,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 4),
+                            vertical: 10,
+                            horizontal: 4,
+                          ),
                           decoration: BoxDecoration(
                             border: Border(
-                                bottom: BorderSide(
-                                    color: Colors.grey.shade400)),
+                              bottom: BorderSide(color: Colors.grey.shade400),
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -478,9 +591,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     : 'Guardado el: ${_storedAt!.day}/${_storedAt!.month}/${_storedAt!.year}',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: _storedAt == null
-                                      ? Colors.grey
-                                      : Colors.black87,
+                                  color:
+                                      _storedAt == null
+                                          ? Colors.grey
+                                          : Colors.black87,
                                 ),
                               ),
                               if (_storedAt != null) ...[
@@ -495,10 +609,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                 ),
                                 const Spacer(),
                                 GestureDetector(
-                                  onTap: () =>
-                                      setState(() => _storedAt = null),
-                                  child: const Icon(Icons.clear,
-                                      size: 16, color: Colors.grey),
+                                  onTap: () => setState(() => _storedAt = null),
+                                  child: const Icon(
+                                    Icons.clear,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ],
                             ],
@@ -525,7 +641,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -537,11 +654,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       width: 100,
                       height: 100,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.broken_image,
-                        size: 50,
-                        color: Colors.grey,
-                      ),
+                      errorBuilder:
+                          (_, __, ___) => const Icon(
+                            Icons.broken_image,
+                            size: 50,
+                            color: Colors.grey,
+                          ),
                     ),
                   ),
               ],
@@ -553,17 +671,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 40, vertical: 15),
+                    horizontal: 40,
+                    vertical: 15,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-                child: _isSaving
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Guardar',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
+                child:
+                    _isSaving
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          'Guardar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
               ),
             ),
           ],

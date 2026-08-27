@@ -17,6 +17,7 @@
 // Las pantallas ya NO llaman a FirebaseFirestore.instance directamente.
 
 import 'package:flutter/foundation.dart';
+import '../../domain/entities/food_category.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/i_product_repository.dart';
 
@@ -37,6 +38,27 @@ class ProductProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   int get count => _products.length;
+
+  // ─── PASO 2: Alertas de Stock mínimo (#2) ──────────────────────────────────
+
+  /// Productos cuya cantidad actual llegó o bajó del umbral que el usuario
+  /// definió (`minStock`). Los productos sin `minStock` nunca aparecen aquí.
+  List<Product> get lowStockProducts =>
+      List.unmodifiable(_products.where((p) => p.isLowStock));
+
+  int get lowStockCount => lowStockProducts.length;
+
+  // ─── PASO 2: Categorización de Alimentos (#1) ──────────────────────────────
+
+  /// Agrupa los productos actuales por categoría, en el orden declarado en
+  /// [FoodCategory]. Las categorías sin productos no aparecen en el mapa.
+  Map<FoodCategory, List<Product>> get productsByCategory {
+    final Map<FoodCategory, List<Product>> grouped = {};
+    for (final product in _products) {
+      grouped.putIfAbsent(product.category, () => []).add(product);
+    }
+    return grouped;
+  }
 
   /// Retorna los productos como `List<Map<String,dynamic>>` para retrocompatibilidad
   /// con todas las pantallas existentes (ProductosScreen, RecetasScreen, etc.).
@@ -79,7 +101,8 @@ class ProductProvider extends ChangeNotifier {
   /// directamente.
   Future<void> saveProduct(Map<String, dynamic> map) async {
     try {
-      final isEdit = map['id'] != null &&
+      final isEdit =
+          map['id'] != null &&
           map['id'].toString().isNotEmpty &&
           map['id'].toString() != '';
 
@@ -160,8 +183,14 @@ class ProductProvider extends ChangeNotifier {
       return null;
     }
 
-    final imagePath =
-        map['imagePath'] as String? ?? map['image'] as String?;
+    int? parseMinStock(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      final parsed = int.tryParse(v.toString());
+      return parsed;
+    }
+
+    final imagePath = map['imagePath'] as String? ?? map['image'] as String?;
 
     return Product(
       id: map['id'] as String? ?? '',
@@ -171,7 +200,9 @@ class ProductProvider extends ChangeNotifier {
       unit: map['unit'] as String? ?? 'unidad',
       imagePath: (imagePath != null && imagePath.isNotEmpty) ? imagePath : null,
       expirationDate: parseDate(map['expirationDate']),
-      storedAt: parseDate(map['storedAt']),            // FASE 3
+      storedAt: parseDate(map['storedAt']), // FASE 3
+      category: FoodCategory.fromName(map['category'] as String?), // PASO 2
+      minStock: parseMinStock(map['minStock']), // PASO 2
     );
   }
 }

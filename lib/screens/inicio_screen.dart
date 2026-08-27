@@ -66,14 +66,15 @@ class _InicioScreenState extends State<InicioScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AddProductScreen(
-          scannedCode: scannedCode,
-          existingProducts: provider.productosMap,
-          onSave: (producto) async {
-            await provider.saveProduct(producto);
-          },
-          isManualAdd: scannedCode == null,
-        ),
+        builder:
+            (_) => AddProductScreen(
+              scannedCode: scannedCode,
+              existingProducts: provider.productosMap,
+              onSave: (producto) async {
+                await provider.saveProduct(producto);
+              },
+              isManualAdd: scannedCode == null,
+            ),
       ),
     );
   }
@@ -84,13 +85,14 @@ class _InicioScreenState extends State<InicioScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AddProductScreen(
-          initialProduct: productoActual,
-          existingProducts: provider.productosMap,
-          onSave: (productoEditado) async {
-            await provider.saveProduct(productoEditado);
-          },
-        ),
+        builder:
+            (_) => AddProductScreen(
+              initialProduct: productoActual,
+              existingProducts: provider.productosMap,
+              onSave: (productoEditado) async {
+                await provider.saveProduct(productoEditado);
+              },
+            ),
       ),
     );
   }
@@ -99,37 +101,41 @@ class _InicioScreenState extends State<InicioScreen> {
   void _confirmarEliminar(String productoId) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirmar Eliminación'),
-        content: const Text(
-          '¿Estás seguro de que quieres eliminar este producto?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Confirmar Eliminación'),
+            content: const Text(
+              '¿Estás seguro de que quieres eliminar este producto?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await context.read<ProductProvider>().deleteProduct(
+                      productoId,
+                    );
+                  } catch (_) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Error al eliminar el producto'),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text(
+                  'Eliminar',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              try {
-                await context
-                    .read<ProductProvider>()
-                    .deleteProduct(productoId);
-              } catch (_) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Error al eliminar el producto')),
-                  );
-                }
-              }
-            },
-            child: const Text('Eliminar',
-                style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 
@@ -140,9 +146,7 @@ class _InicioScreenState extends State<InicioScreen> {
     final productos = provider.productosMap;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fresc(o)rden'),
-      ),
+      appBar: AppBar(title: const Text('Fresc(o)rden')),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -174,6 +178,22 @@ class _InicioScreenState extends State<InicioScreen> {
             ListTile(
               leading: const Icon(Icons.shopping_basket),
               title: Text('Productos (${productos.length})'),
+              // PASO 2 — Alertas de Stock mínimo (#2): aviso visible en el
+              // drawer cuando hay productos que llegaron a su cantidad mínima.
+              subtitle:
+                  provider.lowStockCount > 0
+                      ? Text(
+                        '${provider.lowStockCount} con stock bajo',
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                      : null,
+              trailing:
+                  provider.lowStockCount > 0
+                      ? const Icon(Icons.error_outline, color: Colors.red)
+                      : null,
               onTap: () async {
                 // Capturar el provider ANTES de los awaits
                 // (fix use_build_context_synchronously)
@@ -182,16 +202,17 @@ class _InicioScreenState extends State<InicioScreen> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ProductosScreen(
-                      productos: productos,
-                      onEdit: (index) {
-                        _navegarEditarProducto(productos[index]);
-                      },
-                      onDelete: (index) {
-                        final id = productos[index]['id'] as String? ?? '';
-                        if (id.isNotEmpty) _confirmarEliminar(id);
-                      },
-                    ),
+                    builder:
+                        (_) => ProductosScreen(
+                          productos: productos,
+                          onEdit: (index) {
+                            _navegarEditarProducto(productos[index]);
+                          },
+                          onDelete: (index) {
+                            final id = productos[index]['id'] as String? ?? '';
+                            if (id.isNotEmpty) _confirmarEliminar(id);
+                          },
+                        ),
                   ),
                 );
                 // Refresca por si la sub-pantalla cambió algo directamente
@@ -208,8 +229,8 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        RecetasScreen(productosInventario: productos),
+                    builder:
+                        (_) => RecetasScreen(productosInventario: productos),
                   ),
                 );
               },
@@ -221,9 +242,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ShoppingListScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ShoppingListScreen()),
                 );
               },
             ),
@@ -234,9 +253,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const SettingsScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
             ),
@@ -247,9 +264,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ContactScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ContactScreen()),
                 );
               },
             ),
@@ -260,9 +275,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const AboutScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const AboutScreen()),
                 );
               },
             ),
@@ -275,34 +288,35 @@ class _InicioScreenState extends State<InicioScreen> {
           ],
         ),
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(150.0),
-                    child: Opacity(
-                      opacity: 0.5,
-                      child: Image.asset('assets/verduras.png'),
+      body:
+          provider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                children: [
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(150.0),
+                      child: Opacity(
+                        opacity: 0.5,
+                        child: Image.asset('assets/verduras.png'),
+                      ),
                     ),
                   ),
-                ),
-                const Center(
-                  child: Text(
-                    '¡Bienvenido a Fresc(o)rden!',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w700,
+                  const Center(
+                    child: Text(
+                      '¡Bienvenido a Fresc(o)rden!',
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                const Textos(),
-              ],
-            ),
+                  const Textos(),
+                ],
+              ),
       floatingActionButton: ButtonPlus(
-        onScanComplete: (scannedCode) =>
-            _navegarAgregarProducto(scannedCode: scannedCode),
+        onScanComplete:
+            (scannedCode) => _navegarAgregarProducto(scannedCode: scannedCode),
         onManualAdd: () => _navegarAgregarProducto(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

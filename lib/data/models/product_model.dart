@@ -6,6 +6,7 @@
 // solo la capa de datos lo usa.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../domain/entities/food_category.dart';
 import '../../domain/entities/product.dart';
 
 class ProductModel extends Product {
@@ -18,7 +19,9 @@ class ProductModel extends Product {
     super.imagePath,
     super.expirationDate,
     super.createdAt,
-    super.storedAt,      // FASE 3
+    super.storedAt, // FASE 3
+    super.category, // PASO 2
+    super.minStock, // PASO 2
   });
 
   // ─── Desde Firestore ───────────────────────────────────────────────────────
@@ -48,14 +51,20 @@ class ProductModel extends Product {
     }
 
     // imagePath con fallback a campo 'image' legacy (Bug #11)
-    final imagePath =
-        data['imagePath'] as String? ?? data['image'] as String?;
+    final imagePath = data['imagePath'] as String? ?? data['image'] as String?;
 
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       if (v is Timestamp) return v.toDate();
       if (v is String && v.isNotEmpty) return DateTime.tryParse(v);
       return null;
+    }
+
+    // minStock puede llegar como int, String o no venir (docs legacy).
+    int? parseMinStock(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      return int.tryParse(v.toString());
     }
 
     return ProductModel(
@@ -67,7 +76,11 @@ class ProductModel extends Product {
       imagePath: imagePath,
       expirationDate: parseDate(data['expirationDate']),
       createdAt: parseDate(data['createdAt']),
-      storedAt: parseDate(data['storedAt']),      // FASE 3
+      storedAt: parseDate(data['storedAt']), // FASE 3
+      // PASO 2 — docs creados antes de esta fase no traen 'category':
+      // fromName() los resuelve como FoodCategory.otros.
+      category: FoodCategory.fromName(data['category'] as String?),
+      minStock: parseMinStock(data['minStock']), // PASO 2
     );
   }
 
@@ -84,8 +97,10 @@ class ProductModel extends Product {
       if (imagePath != null && imagePath!.isNotEmpty) 'imagePath': imagePath,
       if (expirationDate != null)
         'expirationDate': expirationDate!.toIso8601String(),
-      if (storedAt != null)                        // FASE 3
+      if (storedAt != null) // FASE 3
         'storedAt': storedAt!.toIso8601String(),
+      'category': category.name, // PASO 2
+      if (minStock != null) 'minStock': minStock, // PASO 2
     };
   }
 
@@ -103,7 +118,9 @@ class ProductModel extends Product {
       imagePath: entity.imagePath,
       expirationDate: entity.expirationDate,
       createdAt: entity.createdAt,
-      storedAt: entity.storedAt,      // FASE 3
+      storedAt: entity.storedAt, // FASE 3
+      category: entity.category, // PASO 2
+      minStock: entity.minStock, // PASO 2
     );
   }
 }

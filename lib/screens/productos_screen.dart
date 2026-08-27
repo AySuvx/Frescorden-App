@@ -21,7 +21,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../domain/entities/food_category.dart';
 import '../presentation/providers/product_provider.dart';
+import '../presentation/utils/food_category_ui.dart';
 
 class ProductosScreen extends StatefulWidget {
   final List<Map<String, dynamic>> productos;
@@ -40,11 +42,14 @@ class ProductosScreen extends StatefulWidget {
 }
 
 class _ProductosScreenState extends State<ProductosScreen> {
-
   // BUG #9 FIX: copia local — nunca mutamos widget.productos
   late List<Map<String, dynamic>> _productos;
   List<Map<String, dynamic>> _productosFiltrados = [];
   String _busqueda = '';
+
+  // ─── PASO 2 ─────────────────────────────────────────────────────────────
+  FoodCategory? _filtroCategoria; // null = todas las categorías
+  bool _soloStockBajo = false;
 
   @override
   void initState() {
@@ -56,68 +61,130 @@ class _ProductosScreenState extends State<ProductosScreen> {
   void _mostrarDialogoFiltros() {
     showModalBottomSheet(
       context: context,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Ordenar por:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              ListTile(
-                title: const Text('Fecha de expiración (más cercana)'),
-                onTap: () {
-                  setState(() {
-                    _productosFiltrados.sort((a, b) {
-                      final da = DateTime.tryParse(
-                              a['expirationDate'] ?? '') ??
-                          DateTime(9999);
-                      final db = DateTime.tryParse(
-                              b['expirationDate'] ?? '') ??
-                          DateTime(9999);
-                      return da.compareTo(db);
-                    });
-                  });
-                  Navigator.pop(context);
-                },
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        // PASO 2: StatefulBuilder para que los chips de categoría y el
+        // switch de "solo stock bajo" respondan al toque dentro de la
+        // misma hoja, sin cerrarla (a diferencia de las opciones de orden).
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: 16 + MediaQuery.of(sheetCtx).viewInsets.bottom,
               ),
-              ListTile(
-                title: const Text('Cantidad (mayor a menor)'),
-                onTap: () {
-                  setState(() {
-                    _productosFiltrados.sort((a, b) {
-                      final qa = int.tryParse(
-                              a['quantity']?.toString() ?? '0') ??
-                          0;
-                      final qb = int.tryParse(
-                              b['quantity']?.toString() ?? '0') ??
-                          0;
-                      return qb.compareTo(qa);
-                    });
-                  });
-                  Navigator.pop(context);
-                },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── PASO 2: filtro por categoría ──────────────────────────────
+                  const Text(
+                    'Categoría:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Todas'),
+                        selected: _filtroCategoria == null,
+                        onSelected: (_) {
+                          setSheetState(() => _filtroCategoria = null);
+                          setState(_actualizarFiltroSinSetState);
+                        },
+                      ),
+                      for (final cat in FoodCategory.values)
+                        ChoiceChip(
+                          avatar: Icon(cat.icon, size: 16),
+                          label: Text(cat.label),
+                          selected: _filtroCategoria == cat,
+                          onSelected: (_) {
+                            setSheetState(() => _filtroCategoria = cat);
+                            setState(_actualizarFiltroSinSetState);
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── PASO 2: filtro de stock bajo ──────────────────────────────
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Solo stock bajo'),
+                    subtitle: const Text(
+                      'Productos que llegaron a su cantidad mínima',
+                    ),
+                    value: _soloStockBajo,
+                    onChanged: (value) {
+                      setSheetState(() => _soloStockBajo = value);
+                      setState(_actualizarFiltroSinSetState);
+                    },
+                  ),
+                  const Divider(),
+
+                  const Text(
+                    'Ordenar por:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  ListTile(
+                    title: const Text('Fecha de expiración (más cercana)'),
+                    onTap: () {
+                      setState(() {
+                        _productosFiltrados.sort((a, b) {
+                          final da =
+                              DateTime.tryParse(a['expirationDate'] ?? '') ??
+                              DateTime(9999);
+                          final db =
+                              DateTime.tryParse(b['expirationDate'] ?? '') ??
+                              DateTime(9999);
+                          return da.compareTo(db);
+                        });
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Cantidad (mayor a menor)'),
+                    onTap: () {
+                      setState(() {
+                        _productosFiltrados.sort((a, b) {
+                          final qa =
+                              int.tryParse(a['quantity']?.toString() ?? '0') ??
+                              0;
+                          final qb =
+                              int.tryParse(b['quantity']?.toString() ?? '0') ??
+                              0;
+                          return qb.compareTo(qa);
+                        });
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Cantidad (menor a mayor)'),
+                    onTap: () {
+                      setState(() {
+                        _productosFiltrados.sort((a, b) {
+                          final qa =
+                              int.tryParse(a['quantity']?.toString() ?? '0') ??
+                              0;
+                          final qb =
+                              int.tryParse(b['quantity']?.toString() ?? '0') ??
+                              0;
+                          return qa.compareTo(qb);
+                        });
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
               ),
-              ListTile(
-                title: const Text('Cantidad (menor a mayor)'),
-                onTap: () {
-                  setState(() {
-                    _productosFiltrados.sort((a, b) {
-                      final qa = int.tryParse(
-                              a['quantity']?.toString() ?? '0') ??
-                          0;
-                      final qb = int.tryParse(
-                              b['quantity']?.toString() ?? '0') ??
-                          0;
-                      return qa.compareTo(qb);
-                    });
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -147,10 +214,33 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
   // Versión sin setState para llamar desde dentro de otro setState
   void _actualizarFiltroSinSetState() {
-    _productosFiltrados = _productos.where((producto) {
-      final nombre = producto['name']?.toString().toLowerCase() ?? '';
-      return nombre.contains(_busqueda.toLowerCase());
-    }).toList();
+    _productosFiltrados =
+        _productos.where((producto) {
+          final nombre = producto['name']?.toString().toLowerCase() ?? '';
+          final coincideBusqueda = nombre.contains(_busqueda.toLowerCase());
+
+          // PASO 2: filtro por categoría
+          final coincideCategoria =
+              _filtroCategoria == null ||
+              FoodCategory.fromName(producto['category'] as String?) ==
+                  _filtroCategoria;
+
+          // PASO 2: filtro "solo stock bajo"
+          final coincideStock = !_soloStockBajo || _esStockBajo(producto);
+
+          return coincideBusqueda && coincideCategoria && coincideStock;
+        }).toList();
+  }
+
+  /// PASO 2 — Alertas de Stock mínimo (#2): replica `Product.isLowStock`
+  /// sobre el formato Map que usan las pantallas.
+  bool _esStockBajo(Map<String, dynamic> producto) {
+    final minStock = producto['minStock'];
+    if (minStock == null) return false;
+    final min = minStock is int ? minStock : int.tryParse(minStock.toString());
+    if (min == null) return false;
+    final qty = int.tryParse(producto['quantity']?.toString() ?? '') ?? 0;
+    return qty <= min;
   }
 
   @override
@@ -184,16 +274,17 @@ class _ProductosScreenState extends State<ProductosScreen> {
             ),
           ),
           Expanded(
-            child: _productosFiltrados.isEmpty
-                ? const Center(child: Text('No hay productos agregados'))
-                : RefreshIndicator(
-                    onRefresh: _actualizarProductos,
-                    child: ListView.builder(
-                      itemCount: _productosFiltrados.length,
-                      itemBuilder: (context, index) =>
-                          _buildProductoCard(index),
+            child:
+                _productosFiltrados.isEmpty
+                    ? const Center(child: Text('No hay productos agregados'))
+                    : RefreshIndicator(
+                      onRefresh: _actualizarProductos,
+                      child: ListView.builder(
+                        itemCount: _productosFiltrados.length,
+                        itemBuilder:
+                            (context, index) => _buildProductoCard(index),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -223,27 +314,65 @@ class _ProductosScreenState extends State<ProductosScreen> {
       child: ListTile(
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8.0),
-          child: (imagePath != null &&
-                  imagePath.isNotEmpty &&
-                  File(imagePath).existsSync())
-              ? Image.file(
-                  File(imagePath),
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholderIcon(),
-                )
-              : _placeholderIcon(),
+          child:
+              (imagePath != null &&
+                      imagePath.isNotEmpty &&
+                      File(imagePath).existsSync())
+                  ? Image.file(
+                    File(imagePath),
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _placeholderIcon(),
+                  )
+                  : _placeholderIcon(),
         ),
-        title: Text(
-          producto['name']?.toString() ?? 'Sin nombre',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                producto['name']?.toString() ?? 'Sin nombre',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // PASO 2: ícono de la categoría del producto
+            Icon(
+              FoodCategory.fromName(producto['category'] as String?).icon,
+              size: 18,
+              color: Colors.blueGrey,
+            ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cantidad: ${producto['quantity'] ?? '-'} '
-                '${producto['unit'] ?? ''}'),
+            Text(
+              FoodCategory.fromName(producto['category'] as String?).label,
+              style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+            ),
+            Row(
+              children: [
+                Text(
+                  'Cantidad: ${producto['quantity'] ?? '-'} '
+                  '${producto['unit'] ?? ''}',
+                ),
+                // PASO 2: badge de stock bajo
+                if (_esStockBajo(producto)) ...[
+                  const SizedBox(width: 6),
+                  const Icon(Icons.error_outline, size: 14, color: Colors.red),
+                  const SizedBox(width: 2),
+                  const Text(
+                    'Stock bajo',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
             Text(
               daysRemaining < 0
                   ? 'Estado: Vencido'
@@ -262,7 +391,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
               onPressed: () {
                 // Buscamos el índice en la lista original del padre
                 final idxOriginal = widget.productos.indexWhere(
-                    (p) => p['id'] == producto['id']);
+                  (p) => p['id'] == producto['id'],
+                );
                 widget.onEdit(idxOriginal != -1 ? idxOriginal : index);
               },
             ),
@@ -281,7 +411,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
   /// Solo visible cuando el usuario registró una fecha de almacenamiento.
   Widget _buildStorageLabel(Map<String, dynamic> producto) {
     final storedAtStr = producto['storedAt'] as String?;
-    if (storedAtStr == null || storedAtStr.isEmpty) return const SizedBox.shrink();
+    if (storedAtStr == null || storedAtStr.isEmpty)
+      return const SizedBox.shrink();
     final storedAt = DateTime.tryParse(storedAtStr);
     if (storedAt == null) return const SizedBox.shrink();
 
@@ -303,14 +434,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
             style: TextStyle(
               fontSize: 12,
               color: isCritical ? Colors.deepOrange : Colors.blueGrey,
-              fontWeight:
-                  isCritical ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: isCritical ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
           if (isCritical) ...[
             const SizedBox(width: 4),
-            const Icon(Icons.warning_amber,
-                size: 12, color: Colors.deepOrange),
+            const Icon(Icons.warning_amber, size: 12, color: Colors.deepOrange),
           ],
         ],
       ),
@@ -343,7 +472,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
         return AlertDialog(
           title: const Text('Confirmar Eliminación'),
           content: const Text(
-              '¿Estás seguro de que quieres eliminar este producto?'),
+            '¿Estás seguro de que quieres eliminar este producto?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
@@ -354,9 +484,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 Navigator.of(ctx).pop();
                 // FASE 2: delega eliminación al ProductProvider
                 try {
-                  await context
-                      .read<ProductProvider>()
-                      .deleteProduct(productoId);
+                  await context.read<ProductProvider>().deleteProduct(
+                    productoId,
+                  );
                   if (!mounted) return;
                   setState(() {
                     _productos.removeWhere((p) => p['id'] == productoId);
@@ -364,18 +494,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Producto eliminado correctamente')),
+                      content: Text('Producto eliminado correctamente'),
+                    ),
                   );
                 } catch (e) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Error al eliminar el producto')),
+                      content: Text('Error al eliminar el producto'),
+                    ),
                   );
                 }
               },
-              child: const Text('Eliminar',
-                  style: TextStyle(color: Colors.red)),
+              child: const Text(
+                'Eliminar',
+                style: TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
