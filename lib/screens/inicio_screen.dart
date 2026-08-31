@@ -60,23 +60,29 @@ class _InicioScreenState extends State<InicioScreen> {
   }
 
   /// Navega a AddProductScreen para AGREGAR un producto.
-  /// El callback onSave delega al provider, que actualiza el estado en memoria
-  /// y notifica a todos los listeners (incluido este widget vía watch).
+  ///
+  /// BUG CRÍTICO CORREGIDO (hallado probando la app en dispositivo físico):
+  /// AddProductScreen._guardarProducto() ya llama a
+  /// `context.read<ProductProvider>().saveProduct()` directamente — este
+  /// callback `onSave` volvía a llamarlo, guardando CADA producto DOS VECES
+  /// por cada tap en "Guardar" (la lógica de acumular-por-nombre duplicaba
+  /// la cantidad cada vez). Preexistente desde Fase 2; quedó oculto detrás
+  /// del bug de casteo ProductModel corregido antes en esta misma sesión,
+  /// que siempre lanzaba excepción antes de que la duplicación fuera
+  /// visible. `onSave` se mantiene como hook opcional (no persiste nada)
+  /// por si una futura pantalla necesita reaccionar al guardado sin
+  /// duplicar la escritura.
   ///
   /// Fase 2 — Limpieza de escáner: ya no existe el flujo de escaneo, así que
   /// toda alta nueva es manual (`isManualAdd: true`). [isBulkEntry] distingue
   /// el "Registro a Granel" del alta estándar por categoría.
   void _navegarAgregarProducto({bool isBulkEntry = false}) {
-    final provider = context.read<ProductProvider>();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder:
             (_) => AddProductScreen(
-              existingProducts: provider.productosMap,
-              onSave: (producto) async {
-                await provider.saveProduct(producto);
-              },
+              onSave: (_) {},
               isManualAdd: true,
               isBulkEntry: isBulkEntry,
             ),
@@ -85,18 +91,15 @@ class _InicioScreenState extends State<InicioScreen> {
   }
 
   /// Navega a AddProductScreen para EDITAR un producto existente.
+  /// Ver nota de BUG CRÍTICO en _navegarAgregarProducto — mismo fix aquí.
   void _navegarEditarProducto(Map<String, dynamic> productoActual) {
-    final provider = context.read<ProductProvider>();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder:
             (_) => AddProductScreen(
               initialProduct: productoActual,
-              existingProducts: provider.productosMap,
-              onSave: (productoEditado) async {
-                await provider.saveProduct(productoEditado);
-              },
+              onSave: (_) {},
             ),
       ),
     );

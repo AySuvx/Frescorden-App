@@ -25,7 +25,6 @@ import '../presentation/providers/product_provider.dart';
 import '../presentation/utils/food_category_ui.dart';
 
 class AddProductScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> existingProducts;
   final Function(Map<String, dynamic>) onSave;
   final Map<String, dynamic>? initialProduct;
   final bool isManualAdd;
@@ -39,7 +38,6 @@ class AddProductScreen extends StatefulWidget {
 
   const AddProductScreen({
     super.key,
-    required this.existingProducts,
     required this.onSave,
     this.initialProduct,
     this.isManualAdd = false,
