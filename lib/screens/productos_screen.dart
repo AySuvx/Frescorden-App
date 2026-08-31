@@ -47,7 +47,6 @@ class _ProductosScreenState extends State<ProductosScreen> {
   List<Map<String, dynamic>> _productosFiltrados = [];
   String _busqueda = '';
 
-  // ─── PASO 2 ─────────────────────────────────────────────────────────────
   FoodCategory? _filtroCategoria; // null = todas las categorías
   bool _soloStockBajo = false;
 
@@ -63,7 +62,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
       context: context,
       isScrollControlled: true,
       builder: (sheetCtx) {
-        // PASO 2: StatefulBuilder para que los chips de categoría y el
+        // StatefulBuilder para que los chips de categoría y el
         // switch de "solo stock bajo" respondan al toque dentro de la
         // misma hoja, sin cerrarla (a diferencia de las opciones de orden).
         return StatefulBuilder(
@@ -79,7 +78,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── PASO 2: filtro por categoría ──────────────────────────────
+                  // ── filtro por categoría ──────────────────────────────
                   const Text(
                     'Categoría:',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -111,7 +110,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // ── PASO 2: filtro de stock bajo ──────────────────────────────
+                  // ── filtro de stock bajo ──────────────────────────────
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Solo stock bajo'),
@@ -190,7 +189,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  // FASE 2: delega la recarga al ProductProvider en lugar de Firestore directo
+  // delega la recarga al ProductProvider en lugar de Firestore directo
   // FIX #H3: provider capturado ANTES del await para evitar uso de context
   // en gap asíncrono (use_build_context_synchronously).
   Future<void> _actualizarProductos() async {
@@ -219,20 +218,20 @@ class _ProductosScreenState extends State<ProductosScreen> {
           final nombre = producto['name']?.toString().toLowerCase() ?? '';
           final coincideBusqueda = nombre.contains(_busqueda.toLowerCase());
 
-          // PASO 2: filtro por categoría
+          // filtro por categoría
           final coincideCategoria =
               _filtroCategoria == null ||
               FoodCategory.fromName(producto['category'] as String?) ==
                   _filtroCategoria;
 
-          // PASO 2: filtro "solo stock bajo"
+          // filtro "solo stock bajo"
           final coincideStock = !_soloStockBajo || _esStockBajo(producto);
 
           return coincideBusqueda && coincideCategoria && coincideStock;
         }).toList();
   }
 
-  /// PASO 2 — Alertas de Stock mínimo (#2): replica `Product.isLowStock`
+  /// Alertas de Stock mínimo (#2): replica `Product.isLowStock`
   /// sobre el formato Map que usan las pantallas.
   bool _esStockBajo(Map<String, dynamic> producto) {
     final minStock = producto['minStock'];
@@ -294,7 +293,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
   Widget _buildProductoCard(int index) {
     final producto = _productosFiltrados[index];
     final String dateStr = producto['expirationDate'] ?? '';
-    int daysRemaining = 0;
+    // null = sin fecha de vencimiento registrada (frecuente en productos a
+    // granel) — distinto de "vence hoy" (0), que antes se mostraba por error
+    // cuando el campo simplemente no existía.
+    int? daysRemaining;
 
     try {
       if (dateStr.isNotEmpty) {
@@ -302,7 +304,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
         daysRemaining = expDate.difference(DateTime.now()).inDays;
       }
     } catch (_) {
-      daysRemaining = 0;
+      daysRemaining = null;
     }
 
     // BUG #11 FIX: leer 'imagePath'; fallback a 'image' para docs existentes
@@ -343,7 +345,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // PASO 2: ícono de la categoría del producto
+            // ícono de la categoría del producto
             Icon(
               FoodCategory.fromName(producto['category'] as String?).icon,
               size: 18,
@@ -370,7 +372,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // PASO 2: badge de stock bajo
+                // badge de stock bajo
                 if (_esStockBajo(producto)) ...[
                   const SizedBox(width: 6),
                   const Icon(Icons.error_outline, size: 14, color: Colors.red),
@@ -387,12 +389,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
               ],
             ),
             Text(
-              daysRemaining < 0
-                  ? 'Estado: Vencido'
-                  : 'Expira en: $daysRemaining días',
+              daysRemaining == null
+                  ? 'Sin fecha de vencimiento'
+                  : daysRemaining < 0
+                      ? 'Estado: Vencido'
+                      : 'Expira en: $daysRemaining días',
               style: TextStyle(color: _getExpirationColor(daysRemaining)),
             ),
-            // FASE 3: trazabilidad de perecederos a granel
+            // trazabilidad de perecederos a granel
             _buildStorageLabel(producto),
           ],
         ),
@@ -419,7 +423,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  /// FASE 3: Etiqueta de trazabilidad de perecederos a granel.
+  /// Etiqueta de trazabilidad de perecederos a granel.
   /// Muestra cuántos días lleva almacenado el producto. Solo visible para
   /// productos registrados como "a granel" (isBulk) — entryDate ahora es
   /// obligatoria para TODOS los productos, así que gatear por isBulk evita
@@ -449,8 +453,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
             color: isCritical ? Colors.deepOrange : Colors.blueGrey,
           ),
           const SizedBox(width: 4),
-          // FIX overflow (hallado en prueba manual de Fase 3, "RenderFlex
-          // overflowed by 14 pixels"): mismo patrón que la fila de
+          // FIX overflow (hallado en prueba manual en dispositivo,
+          // "RenderFlex overflowed by 14 pixels"): mismo patrón que la fila de
           // Cantidad — sin Flexible, el ancho acotado por leading+trailing
           // del ListTile no alcanzaba para el texto completo.
           Flexible(
@@ -509,7 +513,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.of(ctx).pop();
-                // FASE 2: delega eliminación al ProductProvider
+                // delega eliminación al ProductProvider
                 try {
                   await context.read<ProductProvider>().deleteProduct(
                     productoId,
@@ -544,7 +548,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  Color _getExpirationColor(int daysRemaining) {
+  Color _getExpirationColor(int? daysRemaining) {
+    if (daysRemaining == null) return Colors.blueGrey;
     if (daysRemaining < 0) return Colors.red;
     if (daysRemaining <= 3) return Colors.orange;
     return Colors.green;

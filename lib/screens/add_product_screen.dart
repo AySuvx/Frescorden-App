@@ -1,11 +1,11 @@
 // lib/screens/add_product_screen.dart
 //
-// FASE 2 — Clean Architecture:
+// Clean Architecture:
 // El método _guardarProducto ya no accede a FirebaseFirestore.instance.
 // Delega el upsert a ProductProvider.saveProduct(), que centraliza
 // la lógica de "crear o acumular" en un solo lugar.
-// Todo lo demás (notificaciones, imagen, cámara, permisos) permanece.
-// exactamente igual que en Fase 1. Los bugs #1 #2 #4 siguen corregidos.
+// Todo lo demás (notificaciones, imagen, cámara, permisos) no cambia.
+// Los bugs #1 #2 #4 siguen corregidos.
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -29,7 +29,7 @@ class AddProductScreen extends StatefulWidget {
   final Map<String, dynamic>? initialProduct;
   final bool isManualAdd;
 
-  /// Fase 2 — Limpieza de escáner: al eliminarse el flujo de escaneo, todo
+  /// Limpieza de escáner: al eliminarse el flujo de escaneo, todo
   /// alta de producto nuevo es manual. Este flag distingue el registro a
   /// granel (perecederos de plaza/mercado, ej. tomate, papa) del alta
   /// estándar por categoría: preselecciona "Frutas y verduras", unidad "kg"
@@ -60,11 +60,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _selectedUnit = 'unidad';
   File? _imageFile;
   DateTime? _expiryDate;
-  DateTime? _entryDate; // FASE 3: fecha de entrada al inventario (opcional en UI, obligatoria en el dominio)
-  bool _isBulk = false; // FASE 3: registro a granel (perecederos de plaza/mercado)
-  FoodCategory _selectedCategory = FoodCategory.otros; // PASO 2
+  DateTime? _entryDate; // fecha de entrada al inventario (opcional en UI, obligatoria en el dominio)
+  bool _isBulk = false; // registro a granel (perecederos de plaza/mercado)
+  FoodCategory _selectedCategory = FoodCategory.otros;
   final TextEditingController _minStockController =
-      TextEditingController(); // PASO 2: stock mínimo (opcional)
+      TextEditingController(); // stock mínimo (opcional)
   final picker = ImagePicker();
   final FlutterLocalNotificationsPlugin _notifPlugin =
       FlutterLocalNotificationsPlugin();
@@ -98,7 +98,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           widget.initialProduct!['expirationDate'],
         );
       }
-      // FASE 3: cargar entryDate al editar (con fallback al nombre legacy
+      // cargar entryDate al editar (con fallback al nombre legacy
       // 'storedAt', igual criterio que ProductModel._fromMap).
       final entryDateStr = widget.initialProduct!['entryDate'] as String? ??
           widget.initialProduct!['storedAt'] as String?;
@@ -106,7 +106,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         _entryDate = DateTime.tryParse(entryDateStr);
       }
       _isBulk = widget.initialProduct!['isBulk'] as bool? ?? false;
-      // PASO 2: cargar categoría y stock mínimo al editar
+      // cargar categoría y stock mínimo al editar
       _selectedCategory = FoodCategory.fromName(
         widget.initialProduct!['category'] as String?,
       );
@@ -254,7 +254,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  // ─── FASE 2: _guardarProducto ya no toca Firestore directamente ──────────
+  // ─── _guardarProducto ya no toca Firestore directamente ──────────
   Future<void> _guardarProducto() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
@@ -275,13 +275,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
       return;
     }
 
-    if (_expiryDate == null) {
-      _showSnack('Por favor, selecciona una fecha de vencimiento');
-      setState(() => _isSaving = false);
-      return;
-    }
+    // La fecha de vencimiento es opcional: muchos productos a granel
+    // (frutas/verduras de plaza) no traen una fecha impresa. Cuando no se
+    // especifica, el producto simplemente no dispara alertas de vencimiento
+    // ni notificación (ver más abajo) — se sigue trazando por entryDate.
 
-    // PASO 2: el stock mínimo es opcional, pero si se escribe algo debe ser
+    // el stock mínimo es opcional, pero si se escribe algo debe ser
     // un entero válido y no negativo.
     final minStockText = _minStockController.text.trim();
     int? minStock;
@@ -304,20 +303,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'unit': _selectedUnit,
         'imagePath': _imageFile?.path,
         'expirationDate': _expiryDate?.toIso8601String(),
-        // FASE 3 — entryDate es obligatoria en el dominio: si el usuario no
+        // entryDate es obligatoria en el dominio: si el usuario no
         // eligió una fecha de entrada explícita, se usa el momento de
         // guardado (mismo criterio de fallback que ProductModel._fromMap).
         'entryDate': (_entryDate ?? DateTime.now()).toIso8601String(),
-        'isBulk': _isBulk, // FASE 3
-        'category': _selectedCategory.name, // PASO 2
-        if (minStock != null) 'minStock': minStock, // PASO 2
+        'isBulk': _isBulk,
+        'category': _selectedCategory.name,
+        if (minStock != null) 'minStock': minStock,
       };
 
-      // Delegar al provider (Fase 2) — sin Firestore directo
+      // Delegar al provider — sin Firestore directo
       await context.read<ProductProvider>().saveProduct(productoMap);
 
-      // Notificación: lógica de presentación, se mantiene aquí
-      await _scheduleNotification(name, _expiryDate!);
+      // Notificación: lógica de presentación, se mantiene aquí. Sin fecha
+      // de vencimiento no hay nada que programar (era _expiryDate! antes,
+      // lo que crasheaba en cuanto la fecha dejó de ser obligatoria).
+      if (_expiryDate != null) {
+        await _scheduleNotification(name, _expiryDate!);
+      }
 
       // Callback opcional (inicio_screen ya no lo usa para Firestore,
       // pero se mantiene por si otras pantallas dependen de él)
@@ -369,14 +372,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: Colors.grey.shade400)),
               ),
-              child: Text(
-                _expiryDate == null
-                    ? 'Seleccionar fecha de vencimiento'
-                    : 'Vence el: ${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _expiryDate == null ? Colors.grey : Colors.black,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _expiryDate == null
+                          ? 'Sin fecha de vencimiento'
+                          : 'Vence el: ${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _expiryDate == null ? Colors.grey : Colors.black,
+                      ),
+                    ),
+                  ),
+                  if (_expiryDate != null)
+                    GestureDetector(
+                      onTap: () => setState(() => _expiryDate = null),
+                      child: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                    ),
+                ],
               ),
             ),
           ),
@@ -480,7 +494,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ── PASO 2: Categoría del alimento ────────────────────────────────
+            // ── Categoría del alimento ────────────────────────────────
             const Text(
               'Categoría',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -522,7 +536,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ── PASO 2: Alerta de Stock mínimo (opcional) ─────────────────────
+            // ── Alerta de Stock mínimo (opcional) ─────────────────────
             const Text(
               'Stock mínimo (opcional)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -549,14 +563,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
             const SizedBox(height: 16),
 
             const Text(
-              'Fecha de vencimiento',
+              'Fecha de vencimiento (opcional)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const Text(
+              'Déjala vacía para productos a granel sin fecha impresa',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 8),
             _buildExpiryDatePicker(),
             const SizedBox(height: 16),
 
-            // ── FASE 3: Fecha de almacenamiento ──────────────────────────────
+            // ── Fecha de almacenamiento ──────────────────────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
