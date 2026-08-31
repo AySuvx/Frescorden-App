@@ -1,6 +1,6 @@
 // lib/screens/analytics_screen.dart
 //
-// FASE 3 — Capa de Presentación: KPIs numéricos + gráficos (fl_chart).
+// Capa de Presentación: KPIs numéricos + gráficos (fl_chart).
 // Consume AnalyticsProvider, que a su vez llama a GetAnalyticsUseCase.
 //
 // Estado vacío: un usuario nuevo (o que nunca eliminó un producto) no
@@ -17,6 +17,7 @@ import '../domain/entities/analytics_summary.dart';
 import '../presentation/providers/analytics_provider.dart';
 import '../presentation/widgets/analytics/waste_vs_consumed_bar_chart.dart';
 import '../presentation/widgets/analytics/waste_category_pie_chart.dart';
+import '../presentation/utils/currency_format.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -75,7 +76,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         icon: Icons.savings,
                         color: Colors.teal,
                         label: 'Dinero ahorrado (estimado)',
-                        value: '\$${summary.moneySavedCop} COP',
+                        value: summary.moneySavedCop.asCop,
                         subtitle: 'Al no desperdiciar lo consumido a tiempo',
                       ),
                       _buildKpiCard(

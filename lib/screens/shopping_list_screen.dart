@@ -1,6 +1,6 @@
 // lib/screens/shopping_list_screen.dart
 //
-// FASE 2 (Fresc-O-rden) — Módulo de Compras Inteligentes:
+// Módulo de Compras Inteligentes:
 // Se elimina el mock (3 canastas fijas con ítems hardcodeados) y se
 // conecta a ShoppingProvider + ProductProvider. La lista ahora:
 //  - Permite elegir el nivel de presupuesto (BudgetTier).
@@ -20,6 +20,7 @@ import '../domain/entities/product.dart';
 import '../domain/entities/shopping_item.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/providers/shopping_provider.dart';
+import '../presentation/utils/currency_format.dart';
 
 /// Enlaces a supermercados colombianos, ofrecidos junto a la lista para que
 /// el usuario compare precios. No es contenido de dominio (no afecta la
@@ -39,12 +40,20 @@ class ShoppingListScreen extends StatefulWidget {
 }
 
 class _ShoppingListScreenState extends State<ShoppingListScreen> {
+  final _budgetController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ShoppingProvider>().loadBasket();
     });
+  }
+
+  @override
+  void dispose() {
+    _budgetController.dispose();
+    super.dispose();
   }
 
   void _launchURL(BuildContext context, String url, String title) {
@@ -68,21 +77,87 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: BudgetTier.values.map((tier) {
-          final selected = tier == shoppingProvider.selectedTier;
+          final selected = tier == shoppingProvider.selectedTier &&
+              shoppingProvider.customBudget == null;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              label: Text('${tier.label} (\$${tier.budgetCap})'),
+              label: Text('${tier.label} (${tier.budgetCap.asCop})'),
               selected: selected,
               selectedColor: Colors.green,
               labelStyle: TextStyle(
                 color: selected ? Colors.white : Colors.black87,
                 fontWeight: FontWeight.w600,
               ),
-              onSelected: (_) => shoppingProvider.selectTier(tier),
+              onSelected: (_) {
+                shoppingProvider.selectTier(tier);
+                // Un chip es un preset completo (canasta + techo): si había
+                // un presupuesto manual escrito, se limpia para no dejar un
+                // techo "fantasma" que no coincide con lo mostrado.
+                shoppingProvider.setCustomBudget(null);
+                _budgetController.clear();
+              },
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  /// Campo de texto para un presupuesto personalizado — complementa los
+  /// chips fijos de BudgetTier sin reemplazarlos.
+  Widget _buildCustomBudgetField(ShoppingProvider shoppingProvider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: TextField(
+        controller: _budgetController,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: 'Tu Presupuesto (\$)',
+          hintText: 'Ej: 75000',
+          isDense: true,
+          prefixIcon: const Icon(Icons.edit_outlined),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        onChanged: (value) {
+          // Acepta números escritos con puntos/comas de miles (75.000).
+          final digitsOnly = value.replaceAll(RegExp(r'[^\d]'), '');
+          shoppingProvider.setCustomBudget(int.tryParse(digitsOnly));
+        },
+      ),
+    );
+  }
+
+  /// Contador de personas/comensales: escala cantidades y precios de la
+  /// canasta (ver ShoppingProvider._scaled).
+  Widget _buildPersonCounter(ShoppingProvider shoppingProvider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.people_outline, size: 20, color: Colors.blueGrey),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'N° de personas / comensales',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: () => shoppingProvider
+                .setPersonCount(shoppingProvider.personCount - 1),
+          ),
+          Text(
+            '${shoppingProvider.personCount}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () => shoppingProvider
+                .setPersonCount(shoppingProvider.personCount + 1),
+          ),
+        ],
       ),
     );
   }
@@ -112,14 +187,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Estimado de lo que falta: \$$total COP',
+                    'Estimado de lo que falta: ${total.asCop}',
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     over
-                        ? 'Superas el presupuesto de \$$cap COP por \$${total - cap}'
-                        : 'Dentro del presupuesto de \$$cap COP (quedan \$${cap - total})',
+                        ? 'Superas el presupuesto de ${cap.asCop} por ${(total - cap).asCop}'
+                        : 'Dentro del presupuesto de ${cap.asCop} (quedan ${(cap - total).asCop})',
                     style: TextStyle(
                       fontSize: 13,
                       color: over ? Colors.red[700] : Colors.green[700],
@@ -148,6 +223,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       body: Column(
         children: [
           _buildTierSelector(shoppingProvider),
+          _buildCustomBudgetField(shoppingProvider),
+          _buildPersonCounter(shoppingProvider),
           _buildBudgetSummary(shoppingProvider, inventory),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -178,10 +255,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               title: Text(
-                                '${item.name} — ${item.quantity} ${item.unit}',
+                                '${item.name} — ${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} ${item.unit}',
                               ),
                               trailing: item.estimatedPrice != null
-                                  ? Text('\$${item.estimatedPrice}')
+                                  ? Text(item.estimatedPrice!.asCop)
                                   : null,
                             ),
                           );

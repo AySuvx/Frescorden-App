@@ -37,10 +37,38 @@ class ShoppingProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  /// Presupuesto escrito a mano por el usuario, si lo hay. Cuando está
+  /// definido, gana sobre `BudgetTier.budgetCap` (ver `budgetCap`) — los
+  /// chips de nivel siguen eligiendo QUÉ hay en la canasta, este campo solo
+  /// cambia el techo contra el que se compara.
+  int? _customBudget;
+
+  /// Personas para las que se calcula la canasta. El catálogo local
+  /// (canastas.json) está calibrado para una familia de 4 — este valor
+  /// escala linealmente cantidades y precios estimados (ver `_scaled`).
+  int _personCount = _defaultPersonCount;
+
+  static const _defaultPersonCount = 4;
+
   BudgetTier get selectedTier => _selectedTier;
   List<ShoppingItem> get basket => List.unmodifiable(_basket);
   bool get isLoading => _isLoading;
   String? get error => _error;
+  int? get customBudget => _customBudget;
+  int get personCount => _personCount;
+
+  /// Define un presupuesto personalizado. `null` (o un valor <= 0) vuelve a
+  /// usar el techo del nivel seleccionado.
+  void setCustomBudget(int? amount) {
+    _customBudget = (amount != null && amount > 0) ? amount : null;
+    notifyListeners();
+  }
+
+  /// Ajusta la cantidad de personas/comensales; nunca baja de 1.
+  void setPersonCount(int count) {
+    _personCount = count < 1 ? 1 : count;
+    notifyListeners();
+  }
 
   /// Cambia de nivel de presupuesto y recarga su canasta.
   Future<void> selectTier(BudgetTier tier) async {
@@ -67,22 +95,44 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   /// Ítems de la canasta que el usuario todavía no tiene registrados en su
-  /// inventario. Esto es lo que realmente falta comprar.
+  /// inventario, con cantidad y precio escalados según `personCount`. Esto
+  /// es lo que realmente falta comprar.
   List<ShoppingItem> missingItems(List<Product> inventory) {
     final inventoryNames = inventory.map((p) => p.name.toLowerCase()).toSet();
     return _basket
         .where((item) => !inventoryNames.contains(item.name.toLowerCase()))
+        .map(_scaled)
         .toList();
   }
 
-  /// Suma de `estimatedPrice` de los ítems que faltan por comprar. Los
-  /// ítems sin precio cargado no aportan al total (no rompen el cálculo).
+  /// Escala cantidad y precio estimado de [item] según `personCount`,
+  /// relativo a la línea base del catálogo (`_defaultPersonCount`). Sin
+  /// cambios cuando personCount es la línea base, para no introducir ruido
+  /// de redondeo en el caso más común.
+  ShoppingItem _scaled(ShoppingItem item) {
+    if (_personCount == _defaultPersonCount) return item;
+    final ratio = _personCount / _defaultPersonCount;
+    return ShoppingItem(
+      name: item.name,
+      quantity: item.quantity * ratio,
+      unit: item.unit,
+      category: item.category,
+      estimatedPrice:
+          item.estimatedPrice == null ? null : (item.estimatedPrice! * ratio).round(),
+    );
+  }
+
+  /// Suma de `estimatedPrice` de los ítems que faltan por comprar (ya
+  /// escalados por personCount). Los ítems sin precio cargado no aportan al
+  /// total (no rompen el cálculo).
   int estimatedTotal(List<Product> inventory) {
     return missingItems(inventory)
         .fold(0, (sum, item) => sum + (item.estimatedPrice ?? 0));
   }
 
-  int get budgetCap => _selectedTier.budgetCap;
+  /// Techo de presupuesto activo: el personalizado si el usuario definió
+  /// uno, si no el del nivel seleccionado.
+  int get budgetCap => _customBudget ?? _selectedTier.budgetCap;
 
   /// `true` cuando el costo estimado de lo que falta comprar supera el
   /// techo del presupuesto seleccionado.

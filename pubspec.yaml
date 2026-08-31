@@ -32,6 +32,7 @@ dependencies:
   # BUG #4 FIX: almacenamiento permanente de imágenes
   path_provider: ^2.1.5
   fl_chart: ^1.2.0
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:
