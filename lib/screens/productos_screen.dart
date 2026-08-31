@@ -449,12 +449,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
             color: isCritical ? Colors.deepOrange : Colors.blueGrey,
           ),
           const SizedBox(width: 4),
-          Text(
-            'Almacenado hace $daysInStorage día${daysInStorage == 1 ? '' : 's'}',
-            style: TextStyle(
-              fontSize: 12,
-              color: isCritical ? Colors.deepOrange : Colors.blueGrey,
-              fontWeight: isCritical ? FontWeight.w600 : FontWeight.normal,
+          // FIX overflow (hallado en prueba manual de Fase 3, "RenderFlex
+          // overflowed by 14 pixels"): mismo patrón que la fila de
+          // Cantidad — sin Flexible, el ancho acotado por leading+trailing
+          // del ListTile no alcanzaba para el texto completo.
+          Flexible(
+            child: Text(
+              'Almacenado hace $daysInStorage día${daysInStorage == 1 ? '' : 's'}',
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: isCritical ? Colors.deepOrange : Colors.blueGrey,
+                fontWeight: isCritical ? FontWeight.w600 : FontWeight.normal,
+              ),
             ),
           ),
           if (isCritical) ...[

@@ -41,3 +41,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    # FIX: assets/ no incluye subcarpetas automáticamente — recetas.json y
+    # canastas.json (assets/data/) nunca se empaquetaban en el APK, causando
+    # "Unable to load asset: assets/data/canastas.json" en tiempo de
+    # ejecución (detectado en prueba manual de Fase 3, historial/precio
+    # estimado). Se declara explícitamente.
+    - assets/data/

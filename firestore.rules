@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permitir acceso a los documentos de la colección "usuarios"
+    match /usuarios/{userId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Permitir acceso a los productos dentro de cada usuario
+    match /usuarios/{userId}/productos/{productId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Permitir acceso al historial dentro de cada usuario
+    // FASE 3 — Historial de Productos: registro de consumo a tiempo vs.
+    // vencido, usado por AnalyticsRepositoryImpl para calcular los KPIs.
+    match /usuarios/{userId}/historial/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

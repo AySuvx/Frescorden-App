@@ -83,7 +83,21 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _products = await _repository.getProducts();
+      // BUG CRÍTICO CORREGIDO (hallado en prueba manual de Fase 3): el
+      // objeto que retorna _repository.getProducts() está reificado en
+      // tiempo de ejecución como List<ProductModel> (así lo construye
+      // FirestoreProductDataSource.getAll()), aunque la interfaz declare
+      // List<Product>. Dart no "amplía" el tipo de un List ya construido —
+      // asignarlo tal cual a _products dejaba _products apuntando a esa
+      // misma List<ProductModel> reificada. Cualquier escritura posterior
+      // (_products.add(...), _products[idx] = ...) con un Product base
+      // (copyWith()/_productFromMap() siempre construyen la clase base, no
+      // el subtipo) lanzaba en runtime:
+      // "type 'Product' is not a subtype of type 'ProductModel' of 'value'".
+      // FIX: List<Product>.of(...) crea una lista NUEVA reificada
+      // exactamente como List<Product> — acepta cualquier Product desde
+      // ese punto en adelante, sin importar qué subtipo devolvió el repo.
+      _products = List<Product>.of(await _repository.getProducts());
       _error = null;
     } catch (e) {
       _error = e.toString();
