@@ -60,3 +60,7 @@ key.properties
 **/local.properties
 secrets.yaml
 secrets.json
+
+# graphify: salida generada localmente por el skill de knowledge-graph,
+# no es código fuente del proyecto.
+graphify-out/

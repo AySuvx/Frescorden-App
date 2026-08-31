@@ -1,24 +1,32 @@
 // lib/Widgets/button_plus.dart
 //
-// FIX #C2: después de `await Navigator.push` (escaneo de QR) se llamaba a
-//   widget.onScanComplete() y toggleMenu() sin verificar que el widget
-//   seguía montado. Si el usuario navegaba atrás durante el escaneo, la
-//   llamada a setState() dentro de toggleMenu() lanzaba
-//   "setState called on disposed widget".
-//   FIX: añadido `if (!mounted) return;` antes de cualquier uso de estado
-//   post-await.
+// FASE 2 (Fresc-O-rden) — Limpieza de escáner:
+// Se elimina por completo la opción "Agregar con código" (mobile_scanner).
+// El proyecto ya no depende de ningún paquete de escaneo (regla #4: sin
+// lógica de escaneo manual ni por cámara).
+//
+// El Speed Dial se mantiene con dos acciones, ambas conectadas a la misma
+// lógica de ProductProvider vía los callbacks del widget padre:
+//   - "Agregar por Categoría": flujo estándar (AddProductScreen con
+//     selección de categoría, tal como ya existía).
+//   - "Registro a Granel": mismo formulario, pre-configurado para
+//     perecederos comprados a granel (plaza/mercado) — ver
+//     AddProductScreen(isBulkEntry: true).
+//
+// FIX #C2 (se conserva): guard `if (!mounted) return;` antes de tocar
+// estado tras un await, aunque ya no queda ningún await de por medio en
+// los botones (dejó de haber navegación a una pantalla de escaneo).
 
 import 'package:flutter/material.dart';
-import '../screens/qr_scanner_page.dart';
 
 class ButtonPlus extends StatefulWidget {
-  final Function(String) onScanComplete;
   final VoidCallback onManualAdd;
+  final VoidCallback onBulkAdd;
 
   const ButtonPlus({
     super.key,
-    required this.onScanComplete,
     required this.onManualAdd,
+    required this.onBulkAdd,
   });
 
   @override
@@ -39,7 +47,7 @@ class _ButtonPlusState extends State<ButtonPlus> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Botón Escanear con código
+        // Botón Registro a Granel (perecederos de plaza/mercado)
         AnimatedSlide(
           offset: _isExpanded ? Offset.zero : const Offset(0, 0.5),
           duration: const Duration(milliseconds: 300),
@@ -48,24 +56,15 @@ class _ButtonPlusState extends State<ButtonPlus> {
             opacity: _isExpanded ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 300),
             child: FloatingActionButton.extended(
-              heroTag: 'scanQR',
-              onPressed: () async {
-                final String? scannedCode = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const QRScannerPage()),
-                );
-                // FIX #C2: guardia mounted antes de usar estado o callbacks
-                if (!mounted) return;
-                if (scannedCode != null && scannedCode.isNotEmpty) {
-                  widget.onScanComplete(scannedCode);
-                }
+              heroTag: 'bulkAdd',
+              onPressed: () {
+                widget.onBulkAdd();
                 toggleMenu();
               },
               backgroundColor: const Color(0xFF42A5F5),
-              icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+              icon: const Icon(Icons.shopping_basket, color: Colors.white),
               label: const Text(
-                'Agregar con código',
+                'Registro a Granel',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -73,7 +72,7 @@ class _ButtonPlusState extends State<ButtonPlus> {
         ),
         const SizedBox(height: 10),
 
-        // Botón Agregar sin código
+        // Botón Agregar por Categoría (flujo estándar)
         AnimatedSlide(
           offset: _isExpanded ? Offset.zero : const Offset(0, 0.5),
           duration: const Duration(milliseconds: 300),
@@ -90,7 +89,7 @@ class _ButtonPlusState extends State<ButtonPlus> {
               backgroundColor: const Color(0xFF66BB6A),
               icon: const Icon(Icons.eco, color: Colors.white),
               label: const Text(
-                'Agregar sin código',
+                'Agregar por Categoría',
                 style: TextStyle(color: Colors.white),
               ),
             ),

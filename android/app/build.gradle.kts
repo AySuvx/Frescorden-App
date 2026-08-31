@@ -11,7 +11,7 @@ plugins {
 android {
     namespace = "com.frescorden.app"
     compileSdk = flutter.compileSdkVersion
-    // Todos los plugins (Firebase, mobile_scanner, image_picker, etc.)
+    // Todos los plugins (Firebase, image_picker, etc.)
     // requieren NDK 28.2.13676358. AGP la descarga automáticamente durante
     // el build si no está presente localmente.
     ndkVersion = flutter.ndkVersion

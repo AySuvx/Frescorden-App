@@ -61,19 +61,23 @@ class _InicioScreenState extends State<InicioScreen> {
   /// Navega a AddProductScreen para AGREGAR un producto.
   /// El callback onSave delega al provider, que actualiza el estado en memoria
   /// y notifica a todos los listeners (incluido este widget vía watch).
-  void _navegarAgregarProducto({String? scannedCode}) {
+  ///
+  /// Fase 2 — Limpieza de escáner: ya no existe el flujo de escaneo, así que
+  /// toda alta nueva es manual (`isManualAdd: true`). [isBulkEntry] distingue
+  /// el "Registro a Granel" del alta estándar por categoría.
+  void _navegarAgregarProducto({bool isBulkEntry = false}) {
     final provider = context.read<ProductProvider>();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder:
             (_) => AddProductScreen(
-              scannedCode: scannedCode,
               existingProducts: provider.productosMap,
               onSave: (producto) async {
                 await provider.saveProduct(producto);
               },
-              isManualAdd: scannedCode == null,
+              isManualAdd: true,
+              isBulkEntry: isBulkEntry,
             ),
       ),
     );
@@ -315,9 +319,8 @@ class _InicioScreenState extends State<InicioScreen> {
                 ],
               ),
       floatingActionButton: ButtonPlus(
-        onScanComplete:
-            (scannedCode) => _navegarAgregarProducto(scannedCode: scannedCode),
         onManualAdd: () => _navegarAgregarProducto(),
+        onBulkAdd: () => _navegarAgregarProducto(isBulkEntry: true),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );

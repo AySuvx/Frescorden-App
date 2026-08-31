@@ -25,19 +25,25 @@ import '../presentation/providers/product_provider.dart';
 import '../presentation/utils/food_category_ui.dart';
 
 class AddProductScreen extends StatefulWidget {
-  final String? scannedCode;
   final List<Map<String, dynamic>> existingProducts;
   final Function(Map<String, dynamic>) onSave;
   final Map<String, dynamic>? initialProduct;
   final bool isManualAdd;
 
+  /// Fase 2 — Limpieza de escáner: al eliminarse el flujo de escaneo, todo
+  /// alta de producto nuevo es manual. Este flag distingue el registro a
+  /// granel (perecederos de plaza/mercado, ej. tomate, papa) del alta
+  /// estándar por categoría: preselecciona "Frutas y verduras", unidad "kg"
+  /// y deja el formulario listo para registrar la fecha de almacenamiento.
+  final bool isBulkEntry;
+
   const AddProductScreen({
     super.key,
-    this.scannedCode,
     required this.existingProducts,
     required this.onSave,
     this.initialProduct,
     this.isManualAdd = false,
+    this.isBulkEntry = false,
   });
 
   @override
@@ -105,10 +111,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (minStock != null) {
         _minStockController.text = minStock.toString();
       }
-    } else if (widget.scannedCode != null) {
-      _barcodeController.text = widget.scannedCode!;
     } else {
       _isManualAdd = widget.isManualAdd;
+      // Registro a granel: valores por defecto típicos de perecederos de
+      // plaza/mercado. El usuario puede cambiarlos libremente.
+      if (widget.isBulkEntry) {
+        _selectedCategory = FoodCategory.frutasYVerduras;
+        _selectedUnit = 'kg';
+      }
     }
   }
 
@@ -372,7 +382,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Agregar Producto'),
+        title: Text(
+          widget.isBulkEntry ? 'Registro a Granel' : 'Agregar Producto',
+        ),
         backgroundColor: Colors.green,
       ),
       body: SingleChildScrollView(
