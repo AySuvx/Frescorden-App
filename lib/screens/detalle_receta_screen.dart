@@ -1,6 +1,6 @@
 // lib/screens/detalle_receta_screen.dart
 //
-// FASE 2 (Fresc-O-rden) — Módulo de Recetas:
+// Módulo de Recetas:
 // Recibe la entidad Recipe (y sus RecipeIngredient faltantes) en vez de
 // Map<String,dynamic>. Los pasos de preparación, antes en un switch
 // hardcodeado aquí mismo, ahora vienen de receta.steps (cargados desde

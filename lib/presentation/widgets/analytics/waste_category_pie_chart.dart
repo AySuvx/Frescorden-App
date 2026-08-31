@@ -1,6 +1,6 @@
 // lib/presentation/widgets/analytics/waste_category_pie_chart.dart
 //
-// FASE 3 — Gráficos de Analíticas:
+// Gráficos de Analíticas:
 // Dona con la proporción de productos VENCIDOS por categoría (sobre el
 // total de vencidos, no sobre el total del historial — este gráfico solo
 // habla de dónde se concentra el desperdicio). Consume AnalyticsProvider

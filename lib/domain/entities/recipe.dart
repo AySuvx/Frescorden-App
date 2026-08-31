@@ -1,6 +1,6 @@
 // lib/domain/entities/recipe.dart
 //
-// FASE 2 (Fresc-O-rden) — Módulo de Recetas:
+// Módulo de Recetas:
 // Entidad de dominio que reemplaza el List<Map<String,dynamic>> hardcodeado
 // que antes vivía dentro de RecetasScreen y el switch de pasos de
 // DetalleRecetaScreen. El contenido real (5 recetas colombianas) ahora se

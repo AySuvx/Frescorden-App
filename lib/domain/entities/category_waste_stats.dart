@@ -1,6 +1,6 @@
 // lib/domain/entities/category_waste_stats.dart
 //
-// FASE 3 — Gráficos de Analíticas (fl_chart):
+// Gráficos de Analíticas (fl_chart):
 // Desglose por categoría de cuántos productos se consumieron a tiempo vs.
 // cuántos vencieron. Es la base de datos de ambos gráficos:
 //  - WasteVsConsumedBarChart: consumedOnTime vs expired por categoría.

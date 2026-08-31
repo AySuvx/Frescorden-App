@@ -1,6 +1,6 @@
 // lib/domain/entities/product_history_entry.dart
 //
-// FASE 3 — Historial de Productos:
+// Historial de Productos:
 // Registro de un producto ya resuelto (eliminado del inventario), con el
 // dato que antes se perdía por completo: ¿se consumió a tiempo o venció?
 // Esta es la fuente de datos cruda sobre la que AnalyticsRepositoryImpl

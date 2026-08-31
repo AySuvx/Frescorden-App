@@ -27,7 +27,7 @@ import '../../domain/repositories/i_product_history_repository.dart';
 class ProductProvider extends ChangeNotifier {
   final IProductRepository _repository;
 
-  // FASE 3 — Historial de Productos: registra cada eliminación como
+  // Historial de Productos: registra cada eliminación como
   // "consumido a tiempo" o "vencido" (ver deleteProduct). Opcional para no
   // romper ningún test/uso existente que construya ProductProvider sin él.
   final IProductHistoryRepository? _historyRepository;
@@ -47,7 +47,7 @@ class ProductProvider extends ChangeNotifier {
   String? get error => _error;
   int get count => _products.length;
 
-  // ─── PASO 2: Alertas de Stock mínimo (#2) ──────────────────────────────────
+  // ─── Alertas de Stock mínimo (#2) ──────────────────────────────────
 
   /// Productos cuya cantidad actual llegó o bajó del umbral que el usuario
   /// definió (`minStock`). Los productos sin `minStock` nunca aparecen aquí.
@@ -56,7 +56,7 @@ class ProductProvider extends ChangeNotifier {
 
   int get lowStockCount => lowStockProducts.length;
 
-  // ─── PASO 2: Categorización de Alimentos (#1) ──────────────────────────────
+  // ─── Categorización de Alimentos (#1) ──────────────────────────────
 
   /// Agrupa los productos actuales por categoría, en el orden declarado en
   /// [FoodCategory]. Las categorías sin productos no aparecen en el mapa.
@@ -83,7 +83,7 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // BUG CRÍTICO CORREGIDO (hallado en prueba manual de Fase 3): el
+      // BUG CRÍTICO CORREGIDO (hallado en prueba manual en dispositivo): el
       // objeto que retorna _repository.getProducts() está reificado en
       // tiempo de ejecución como List<ProductModel> (así lo construye
       // FirestoreProductDataSource.getAll()), aunque la interfaz declare
@@ -180,7 +180,7 @@ class ProductProvider extends ChangeNotifier {
 
   /// Elimina el producto con el [id] indicado.
   ///
-  /// FASE 3 — Historial: antes de borrar, se captura una copia del producto
+  /// Historial: antes de borrar, se captura una copia del producto
   /// para registrar en el historial si se consumió a tiempo o venció
   /// (comparando el momento de la eliminación contra `expirationDate`). El
   /// registro de historial es best-effort: si falla, NO afecta la
@@ -264,13 +264,13 @@ class ProductProvider extends ChangeNotifier {
       unit: map['unit'] as String? ?? 'unidad',
       imagePath: (imagePath != null && imagePath.isNotEmpty) ? imagePath : null,
       expirationDate: parseDate(map['expirationDate']),
-      // FASE 3 — mismo criterio de fallback que ProductModel._fromMap:
+      // mismo criterio de fallback que ProductModel._fromMap:
       // entryDate > storedAt (legacy) > DateTime.now().
       entryDate:
           parseDate(map['entryDate']) ?? parseDate(map['storedAt']) ?? DateTime.now(),
-      isBulk: map['isBulk'] as bool? ?? false, // FASE 3
-      category: FoodCategory.fromName(map['category'] as String?), // PASO 2
-      minStock: parseMinStock(map['minStock']), // PASO 2
+      isBulk: map['isBulk'] as bool? ?? false,
+      category: FoodCategory.fromName(map['category'] as String?),
+      minStock: parseMinStock(map['minStock']),
     );
   }
 }

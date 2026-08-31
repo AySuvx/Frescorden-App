@@ -1,6 +1,6 @@
 // lib/main.dart
 //
-// FASE 2 — Clean Architecture:
+// Clean Architecture:
 // Se reemplaza el ChangeNotifierProvider único por MultiProvider y se
 // registran ProductProvider y AuthProvider con su cadena de dependencias
 // inyectadas:
@@ -57,13 +57,13 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Tema oscuro/claro — sin cambios respecto a Fase 1
+        // Tema oscuro/claro
         ChangeNotifierProvider<ThemeProvider>(
           create: (_) => ThemeProvider(),
         ),
 
         // ProductProvider con inyección de dependencias.
-        // FASE 3 — recibe también IProductHistoryRepository para registrar
+        // recibe también IProductHistoryRepository para registrar
         // cada eliminación en el historial (ver ProductProvider.deleteProduct).
         ChangeNotifierProvider<ProductProvider>(
           create: (_) => ProductProvider(

@@ -1,6 +1,6 @@
 // lib/domain/usecases/get_analytics_usecase.dart
 //
-// FASE 3 — primer caso de uso explícito del proyecto. Hasta ahora los
+// primer caso de uso explícito del proyecto. Hasta ahora los
 // providers llamaban directo al repositorio (ver ProductProvider,
 // RecipeProvider, ShoppingProvider); este es más delgado — hoy solo
 // delega — pero establece el punto de extensión: si más adelante

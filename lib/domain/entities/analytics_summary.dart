@@ -1,6 +1,6 @@
 // lib/domain/entities/analytics_summary.dart
 //
-// FASE 3 — Capa de Dominio de Analíticas:
+// Capa de Dominio de Analíticas:
 // Resumen agregado de KPIs, calculado por AnalyticsRepositoryImpl a partir
 // del historial de productos resueltos (ProductHistoryEntry). Ver ese
 // archivo para el detalle de cómo se calcula cada campo.

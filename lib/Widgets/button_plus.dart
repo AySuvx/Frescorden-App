@@ -1,6 +1,6 @@
 // lib/Widgets/button_plus.dart
 //
-// FASE 2 (Fresc-O-rden) — Limpieza de escáner:
+// Limpieza de escáner:
 // Se elimina por completo la opción "Agregar con código" (mobile_scanner).
 // El proyecto ya no depende de ningún paquete de escaneo (regla #4: sin
 // lógica de escaneo manual ni por cámara).

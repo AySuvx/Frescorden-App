@@ -1,10 +1,10 @@
 // lib/screens/inicio_screen.dart
 //
-// FASE 2 — Clean Architecture:
+// Clean Architecture:
 // Toda la lógica de Firestore (cargar, agregar, acumular, eliminar) ha sido
 // removida de esta pantalla y centralizada en ProductProvider.
 //
-// Cambios respecto a Fase 1:
+// Cambios respecto a la versión original:
 //  - Eliminados: _cargarProductosDesdeFirestore(), agregarOActualizarProducto(),
 //    editarProducto(), eliminarProductoConConfirmacion() (eran accesos directos
 //    a Firestore; ahora viven en ProductProvider).
@@ -12,7 +12,7 @@
 //  - initState solo llama provider.loadProducts() — sin Firestore directo.
 //  - Los callbacks de sub-pantallas recargan vía provider.loadProducts().
 //
-// La UI y el comportamiento visible son IDÉNTICOS al de Fase 1.
+// La UI y el comportamiento visible no cambiaron.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -66,14 +66,14 @@ class _InicioScreenState extends State<InicioScreen> {
   /// `context.read<ProductProvider>().saveProduct()` directamente — este
   /// callback `onSave` volvía a llamarlo, guardando CADA producto DOS VECES
   /// por cada tap en "Guardar" (la lógica de acumular-por-nombre duplicaba
-  /// la cantidad cada vez). Preexistente desde Fase 2; quedó oculto detrás
+  /// la cantidad cada vez). Bug preexistente; quedó oculto detrás
   /// del bug de casteo ProductModel corregido antes en esta misma sesión,
   /// que siempre lanzaba excepción antes de que la duplicación fuera
   /// visible. `onSave` se mantiene como hook opcional (no persiste nada)
   /// por si una futura pantalla necesita reaccionar al guardado sin
   /// duplicar la escritura.
   ///
-  /// Fase 2 — Limpieza de escáner: ya no existe el flujo de escaneo, así que
+  /// Limpieza de escáner: ya no existe el flujo de escaneo, así que
   /// toda alta nueva es manual (`isManualAdd: true`). [isBulkEntry] distingue
   /// el "Registro a Granel" del alta estándar por categoría.
   void _navegarAgregarProducto({bool isBulkEntry = false}) {
@@ -186,7 +186,7 @@ class _InicioScreenState extends State<InicioScreen> {
             ListTile(
               leading: const Icon(Icons.shopping_basket),
               title: Text('Productos (${productos.length})'),
-              // PASO 2 — Alertas de Stock mínimo (#2): aviso visible en el
+              // Alertas de Stock mínimo (#2): aviso visible en el
               // drawer cuando hay productos que llegaron a su cantidad mínima.
               subtitle:
                   provider.lowStockCount > 0

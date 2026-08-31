@@ -1,6 +1,6 @@
 // lib/presentation/utils/food_category_ui.dart
 //
-// PASO 2 — Categorización de Alimentos (#1):
+// Categorización de Alimentos (#1):
 // Mapeo de FoodCategory -> IconData. Vive en `presentation` (y no en
 // `domain`) porque IconData es un detalle de Flutter/UI, no una regla
 // de negocio. Las pantallas importan esta extensión en vez de repetir
@@ -35,7 +35,7 @@ extension FoodCategoryUi on FoodCategory {
     }
   }
 
-  /// FASE 3 — Color estable por categoría, usado en los gráficos de
+  /// Color estable por categoría, usado en los gráficos de
   /// analíticas (WasteVsConsumedBarChart, WasteCategoryPieChart) y su
   /// leyenda. Mismo criterio que `icon`: es un detalle de presentación,
   /// no una regla de negocio, por eso vive aquí y no en el dominio.

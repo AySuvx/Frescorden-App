@@ -1,6 +1,6 @@
 // lib/presentation/widgets/analytics/analytics_chart_helpers.dart
 //
-// FASE 3 — Gráficos de Analíticas:
+// Gráficos de Analíticas:
 // Piezas compartidas entre WasteVsConsumedBarChart y WasteCategoryPieChart
 // para no duplicar la leyenda ni el estado "sin datos suficientes".
 

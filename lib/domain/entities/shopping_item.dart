@@ -1,6 +1,6 @@
 // lib/domain/entities/shopping_item.dart
 //
-// FASE 2 (Fresc-O-rden) — Módulo de Compras Inteligentes:
+// Módulo de Compras Inteligentes:
 // Ítem de la canasta básica de un [BudgetTier]. Reemplaza los Strings
 // sueltos ('Arroz 5kg', 'Huevos 30 unidades', ...) del mock original por
 // una estructura con cantidad, unidad y precio estimado — necesaria para

@@ -19,10 +19,10 @@ class ProductModel extends Product {
     super.imagePath,
     super.expirationDate,
     super.createdAt,
-    required super.entryDate, // FASE 3
-    super.isBulk, // FASE 3
-    super.category, // PASO 2
-    super.minStock, // PASO 2
+    required super.entryDate,
+    super.isBulk,
+    super.category,
+    super.minStock,
   });
 
   // ─── Desde Firestore ───────────────────────────────────────────────────────
@@ -77,19 +77,19 @@ class ProductModel extends Product {
       imagePath: imagePath,
       expirationDate: parseDate(data['expirationDate']),
       createdAt: parseDate(data['createdAt']),
-      // FASE 3 — entryDate es obligatoria. Prioridad de resolución:
-      // 1) 'entryDate' (campo actual), 2) 'storedAt' (nombre legacy de
-      // Fase 3 antes de esta formalización — se preserva el dato real del
-      // usuario en vez de descartarlo), 3) DateTime.now() si el doc no
-      // trae ninguno de los dos (docs de Fase 1/2, o creados sin fecha).
+      // entryDate es obligatoria. Prioridad de resolución:
+      // 1) 'entryDate' (campo actual), 2) 'storedAt' (nombre legacy previo
+      // a esta formalización — se preserva el dato real del usuario en vez
+      // de descartarlo), 3) DateTime.now() si el doc no trae ninguno de los
+      // dos (docs antiguos, o creados sin fecha).
       entryDate: parseDate(data['entryDate']) ??
           parseDate(data['storedAt']) ??
           DateTime.now(),
-      isBulk: data['isBulk'] as bool? ?? false, // FASE 3
-      // PASO 2 — docs creados antes de esta fase no traen 'category':
+      isBulk: data['isBulk'] as bool? ?? false,
+      // docs creados antes de esta fase no traen 'category':
       // fromName() los resuelve como FoodCategory.otros.
       category: FoodCategory.fromName(data['category'] as String?),
-      minStock: parseMinStock(data['minStock']), // PASO 2
+      minStock: parseMinStock(data['minStock']),
     );
   }
 
@@ -106,10 +106,10 @@ class ProductModel extends Product {
       if (imagePath != null && imagePath!.isNotEmpty) 'imagePath': imagePath,
       if (expirationDate != null)
         'expirationDate': expirationDate!.toIso8601String(),
-      'entryDate': entryDate.toIso8601String(), // FASE 3
-      'isBulk': isBulk, // FASE 3
-      'category': category.name, // PASO 2
-      if (minStock != null) 'minStock': minStock, // PASO 2
+      'entryDate': entryDate.toIso8601String(),
+      'isBulk': isBulk,
+      'category': category.name,
+      if (minStock != null) 'minStock': minStock,
     };
   }
 
@@ -127,10 +127,10 @@ class ProductModel extends Product {
       imagePath: entity.imagePath,
       expirationDate: entity.expirationDate,
       createdAt: entity.createdAt,
-      entryDate: entity.entryDate, // FASE 3
-      isBulk: entity.isBulk, // FASE 3
-      category: entity.category, // PASO 2
-      minStock: entity.minStock, // PASO 2
+      entryDate: entity.entryDate,
+      isBulk: entity.isBulk,
+      category: entity.category,
+      minStock: entity.minStock,
     );
   }
 }

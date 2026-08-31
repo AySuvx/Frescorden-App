@@ -70,15 +70,15 @@ class FirestoreProductDataSource {
 
   /// Agrega un documento nuevo y retorna el [ProductModel] con su ID.
   ///
-  /// BUG CRÍTICO CORREGIDO (hallado en prueba manual de Fase 3, "Registro a
-  /// Granel"): `Product.copyWith()` está declarado en la clase base `Product`
-  /// y SIEMPRE construye un `Product` (no hay override en `ProductModel`).
-  /// `model.copyWith(id: ref.id) as ProductModel` lanzaba
+  /// BUG CRÍTICO CORREGIDO (hallado en prueba manual en dispositivo,
+  /// "Registro a Granel"): `Product.copyWith()` está declarado en la clase
+  /// base `Product` y SIEMPRE construye un `Product` (no hay override en
+  /// `ProductModel`). `model.copyWith(id: ref.id) as ProductModel` lanzaba
   /// `type 'Product' is not a subtype of type 'ProductModel'` en every alta
   /// de producto NUEVO (no afectaba ediciones ni el acumulado por
-  /// barcode/nombre, que van por `updateProduct`). Preexistente desde Fase 2;
-  /// no detectado hasta ahora porque no se había probado un alta nueva
-  /// end-to-end desde ese refactor.
+  /// barcode/nombre, que van por `updateProduct`). Bug preexistente; no
+  /// detectado hasta ahora porque no se había probado un alta nueva
+  /// end-to-end desde el refactor que lo introdujo.
   /// FIX: `ProductModel.fromEntity()` reconstruye un `ProductModel` real a
   /// partir del `Product` que retorna `copyWith`, sin cast inseguro.
   Future<ProductModel> add(ProductModel model) async {

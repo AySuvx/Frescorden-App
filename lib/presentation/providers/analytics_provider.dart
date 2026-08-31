@@ -1,6 +1,6 @@
 // lib/presentation/providers/analytics_provider.dart
 //
-// FASE 3 — Proveedor de estado para la pantalla de Analíticas. Delega el
+// Proveedor de estado para la pantalla de Analíticas. Delega el
 // cálculo a GetAnalyticsUseCase (no llama al repositorio directo — primer
 // provider del proyecto que consume un caso de uso en vez de un repository
 // inyectado a mano).

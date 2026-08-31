@@ -1,6 +1,6 @@
 // lib/domain/entities/budget_tier.dart
 //
-// FASE 2 (Fresc-O-rden) — Módulo de Compras Inteligentes:
+// Módulo de Compras Inteligentes:
 // Enum de dominio con los niveles de presupuesto para la canasta básica
 // familiar. Reemplaza los 3 títulos de texto hardcodeados
 // ("Lista básica (Presupuesto: $50,000 COP)", etc.) que antes vivían

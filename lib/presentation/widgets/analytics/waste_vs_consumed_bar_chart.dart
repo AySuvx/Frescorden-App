@@ -1,6 +1,6 @@
 // lib/presentation/widgets/analytics/waste_vs_consumed_bar_chart.dart
 //
-// FASE 3 — Gráficos de Analíticas:
+// Gráficos de Analíticas:
 // Barras agrupadas por categoría: verde = consumido a tiempo,
 // rojo/naranja = desperdiciado. Consume AnalyticsProvider directamente
 // (mismo patrón que RecetasScreen/ShoppingListScreen consumen su provider),

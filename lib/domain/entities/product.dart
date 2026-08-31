@@ -1,6 +1,6 @@
 // lib/domain/entities/product.dart
 //
-// FASE 3 — Trazabilidad de perecederos a granel (formalizado):
+// Trazabilidad de perecederos a granel (formalizado):
 // El antiguo `storedAt` (DateTime nullable, opt-in) se reemplaza por
 // `entryDate` (DateTime, obligatorio): fecha en que el producto entró al
 // inventario. Todo producto la tiene — si no se registró explícitamente,
@@ -16,12 +16,12 @@
 // Computed getter `daysInStorage`: días transcurridos desde entryDate.
 // Ya no es nullable — entryDate siempre existe.
 //
-// PASO 2 — Categorización de Alimentos (#1):
+// Categorización de Alimentos (#1):
 // Se añade `category` (FoodCategory, no nula). Los productos ya existentes
 // en Firestore que no tenían este campo se reconstruyen como
 // `FoodCategory.otros` (ver ProductModel._fromMap / FoodCategory.fromName).
 //
-// PASO 2 — Alertas de Stock mínimo (#2):
+// Alertas de Stock mínimo (#2):
 // Se añade `minStock` (int? opcional). Cuando el usuario lo define, el
 // producto se considera en "stock bajo" cuando `quantity <= minStock`.
 // Si no se define, el producto nunca dispara la alerta (comportamiento
@@ -39,20 +39,20 @@ class Product {
   final DateTime? expirationDate;
   final DateTime? createdAt;
 
-  /// FASE 3 — Fecha en que el producto entró al inventario (nevera/despensa).
+  /// Fecha en que el producto entró al inventario (nevera/despensa).
   /// Obligatoria: si el usuario no la registra explícitamente, se resuelve
   /// a DateTime.now() en la capa de datos (ver ProductModel).
   final DateTime entryDate;
 
-  /// FASE 3 — `true` cuando el producto se registró vía "Registro a Granel"
+  /// `true` cuando el producto se registró vía "Registro a Granel"
   /// (perecederos de plaza/mercado, sin fecha de caducidad impresa).
   final bool isBulk;
 
-  /// PASO 2 — Categoría del alimento. No nula: los productos sin categoría
+  /// Categoría del alimento. No nula: los productos sin categoría
   /// asignada (creados antes de esta fase) se tratan como [FoodCategory.otros].
   final FoodCategory category;
 
-  /// PASO 2 — Cantidad mínima deseada. `null` significa que el usuario no
+  /// Cantidad mínima deseada. `null` significa que el usuario no
   /// activó la alerta de stock para este producto.
   final int? minStock;
 
@@ -71,10 +71,10 @@ class Product {
     this.minStock,
   });
 
-  /// FASE 3 — Días transcurridos desde que el producto entró al inventario.
+  /// Días transcurridos desde que el producto entró al inventario.
   int get daysInStorage => DateTime.now().difference(entryDate).inDays;
 
-  /// FASE 3 — Indica si el tiempo almacenado merece una alerta visual.
+  /// Indica si el tiempo almacenado merece una alerta visual.
   /// Solo relevante para productos a granel (`isBulk`); un producto
   /// empacado normal no dispara esta alerta aunque lleve muchos días.
   bool get isStorageCritical => isBulk && daysInStorage >= storageCriticalDays;
@@ -83,7 +83,7 @@ class Product {
   /// Valor por defecto: 5 días. Se puede personalizar por producto en futuras fases.
   int get storageCriticalDays => 5;
 
-  /// PASO 2 — Alertas de Stock mínimo (#2):
+  /// Alertas de Stock mínimo (#2):
   /// `true` cuando el usuario definió `minStock` y la cantidad actual ya
   /// llegó a ese umbral o está por debajo. Si `minStock` es `null`, el
   /// producto nunca se marca en stock bajo.
@@ -139,10 +139,10 @@ class Product {
       'image': imagePath, // alias retrocompatibilidad (Bug #11)
       'expirationDate': expirationDate?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
-      'entryDate': entryDate.toIso8601String(), // FASE 3
-      'isBulk': isBulk, // FASE 3
-      'category': category.name, // PASO 2
-      'minStock': minStock, // PASO 2
+      'entryDate': entryDate.toIso8601String(),
+      'isBulk': isBulk,
+      'category': category.name,
+      'minStock': minStock,
     };
   }
 

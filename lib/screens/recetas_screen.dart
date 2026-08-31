@@ -1,6 +1,6 @@
 // lib/screens/recetas_screen.dart
 //
-// FASE 2 (Fresc-O-rden) — Módulo de Recetas:
+// Módulo de Recetas:
 // Se elimina el mock (List<Map> hardcodeada + verificarIngredientes()) y
 // se conecta a RecipeProvider + ProductProvider. Ya no recibe el inventario
 // por parámetro (productosInventario): lo lee directamente del provider,
