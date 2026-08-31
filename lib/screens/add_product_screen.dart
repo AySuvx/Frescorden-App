@@ -17,6 +17,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
@@ -153,8 +154,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   // BUG #1 FIX: guard con SharedPreferences
+  //
+  // BUG CRÍTICO CORREGIDO (hallado en prueba visual en dispositivo): este
+  // chequeo nunca verificaba si el permiso YA estaba concedido — solo si
+  // ya se había preguntado antes — así que siempre ofrecía el diálogo y
+  // redirigía a "Alarmas y recordatorios" del sistema aunque la app ya
+  // tuviera USE_EXACT_ALARM (auto-otorgado, no requiere toggle). El
+  // usuario llegaba a esa pantalla y la app nunca aparecía ahí — no hay
+  // nada que activar cuando USE_EXACT_ALARM ya cubre la capacidad.
+  // FIX: Permission.scheduleExactAlarm.isGranted consulta el estado real
+  // (AlarmManager.canScheduleExactAlarms()), sin importar cuál de los dos
+  // permisos del manifest es el que la concede.
   Future<void> _checkExactAlarmPermission() async {
     if (!await _isAndroid12OrHigher()) return;
+    if (await Permission.scheduleExactAlarm.isGranted) return;
+
     final prefs = await SharedPreferences.getInstance();
     final alreadyAsked = prefs.getBool(_kAlarmPermAsked) ?? false;
     if (alreadyAsked) return;

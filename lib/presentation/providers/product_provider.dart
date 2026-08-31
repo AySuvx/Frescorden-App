@@ -154,9 +154,23 @@ class ProductProvider extends ChangeNotifier {
         existing ??= await _repository.findByName(name);
 
         if (existing != null) {
-          // Acumular cantidad sobre el producto existente
+          // Acumular cantidad sobre el producto existente.
+          //
+          // BUG CRÍTICO CORREGIDO (hallado en prueba visual en dispositivo):
+          // `existing.copyWith(quantity: newQty)` solo sobreescribía la
+          // cantidad y copiaba el resto de campos (expirationDate,
+          // categoría, unidad, isBulk, entryDate, minStock) del registro viejo,
+          // ignorando lo que el usuario acababa de escribir en el
+          // formulario. Síntoma reportado: una fecha de vencimiento "fantasma"
+          // reaparecía en productos guardados sin fecha, porque el nombre
+          // coincidía con un registro anterior que sí tenía fecha.
+          // FIX: se parte del Product recién construido desde el formulario
+          // (refleja fielmente lo que el usuario ingresó ahora) y solo se
+          // preservan el id (mismo documento) y la cantidad acumulada.
           final newQty = existing.quantity + incomingQty;
-          final updated = existing.copyWith(quantity: newQty);
+          final updated = _productFromMap(
+            map,
+          ).copyWith(id: existing.id, quantity: newQty);
           await _repository.updateProduct(updated);
 
           final idx = _products.indexWhere((p) => p.id == existing!.id);
