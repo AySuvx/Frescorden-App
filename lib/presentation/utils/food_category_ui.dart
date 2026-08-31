@@ -34,4 +34,33 @@ extension FoodCategoryUi on FoodCategory {
         return Icons.category_outlined;
     }
   }
+
+  /// FASE 3 — Color estable por categoría, usado en los gráficos de
+  /// analíticas (WasteVsConsumedBarChart, WasteCategoryPieChart) y su
+  /// leyenda. Mismo criterio que `icon`: es un detalle de presentación,
+  /// no una regla de negocio, por eso vive aquí y no en el dominio.
+  Color get chartColor {
+    switch (this) {
+      case FoodCategory.lacteos:
+        return const Color(0xFF64B5F6); // azul
+      case FoodCategory.carnesYEmbutidos:
+        return const Color(0xFFE57373); // rojo
+      case FoodCategory.frutasYVerduras:
+        return const Color(0xFF81C784); // verde
+      case FoodCategory.granosYCereales:
+        return const Color(0xFFD4A76A); // marrón claro
+      case FoodCategory.panaderia:
+        return const Color(0xFFFFB74D); // naranja
+      case FoodCategory.bebidas:
+        return const Color(0xFF4DD0E1); // cian
+      case FoodCategory.congelados:
+        return const Color(0xFF9575CD); // morado
+      case FoodCategory.condimentosYSalsas:
+        return const Color(0xFFFFD54F); // amarillo
+      case FoodCategory.enlatadosYConservas:
+        return const Color(0xFF90A4AE); // gris azulado
+      case FoodCategory.otros:
+        return const Color(0xFFA1887F); // marrón neutro
+    }
+  }
 }

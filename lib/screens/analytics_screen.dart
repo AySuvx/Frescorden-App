@@ -1,19 +1,22 @@
 // lib/screens/analytics_screen.dart
 //
-// FASE 3 — Capa de Presentación (solo KPIs numéricos, sin gráficos —
-// los gráficos interactivos se integran en el siguiente paso, según lo
-// acordado). Consume AnalyticsProvider, que a su vez llama a
-// GetAnalyticsUseCase.
+// FASE 3 — Capa de Presentación: KPIs numéricos + gráficos (fl_chart).
+// Consume AnalyticsProvider, que a su vez llama a GetAnalyticsUseCase.
 //
 // Estado vacío: un usuario nuevo (o que nunca eliminó un producto) no
 // tiene historial todavía. En vez de mostrar 0% / $0 de forma engañosa,
 // se muestra un mensaje explicando por qué no hay datos aún
-// (AnalyticsSummary.hasData).
+// (AnalyticsSummary.hasData). Los gráficos individuales manejan además su
+// propio estado vacío más específico (ver WasteVsConsumedBarChart /
+// WasteCategoryPieChart) para el caso en que sí hay KPIs pero el desglose
+// por categoría todavía es insuficiente.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/analytics_summary.dart';
 import '../presentation/providers/analytics_provider.dart';
+import '../presentation/widgets/analytics/waste_vs_consumed_bar_chart.dart';
+import '../presentation/widgets/analytics/waste_category_pie_chart.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -91,6 +94,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             'Sin datos',
                         subtitle: 'La que más se vence antes de consumirse',
                       ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Detalle por categoría',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const WasteVsConsumedBarChart(),
+                      const WasteCategoryPieChart(),
                     ],
                   ),
                 ),

@@ -7,6 +7,7 @@
 // mostrar ese estado (ver AnalyticsScreen).
 
 import '../../domain/entities/analytics_summary.dart';
+import '../../domain/entities/category_waste_stats.dart';
 import '../../domain/entities/food_category.dart';
 import '../../domain/entities/product_history_entry.dart';
 import '../../domain/repositories/i_analytics_repository.dart';
@@ -37,38 +38,67 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
         history.fold<int>(0, (sum, e) => sum + e.daysInStorage) /
             history.length;
 
+    final categoryBreakdown = _categoryBreakdown(history);
+
     return AnalyticsSummary(
       wasteReductionPercentage: wasteReductionPercentage,
       moneySavedCop: moneySavedCop,
       averageRotationDays: averageRotationDays,
-      worstExpirationCategory: _worstExpirationCategory(history),
+      worstExpirationCategory: _worstExpirationCategory(categoryBreakdown),
       totalResolved: history.length,
+      categoryBreakdown: categoryBreakdown,
     );
   }
 
-  /// Categoría con mayor tasa de vencimiento (vencidos / total de esa
-  /// categoría). Ignora categorías sin historial. `null` si ninguna
-  /// categoría tuvo al menos un producto vencido.
-  FoodCategory? _worstExpirationCategory(List<ProductHistoryEntry> history) {
-    final totalByCategory = <FoodCategory, int>{};
+  /// Agrupa el historial por categoría, contando consumidos a tiempo vs.
+  /// vencidos. Base tanto de `worstExpirationCategory` como de los gráficos
+  /// (WasteVsConsumedBarChart, WasteCategoryPieChart). Ordenado por total
+  /// descendente para que los gráficos muestren primero lo más relevante.
+  List<CategoryWasteStats> _categoryBreakdown(
+    List<ProductHistoryEntry> history,
+  ) {
+    final consumedByCategory = <FoodCategory, int>{};
     final expiredByCategory = <FoodCategory, int>{};
 
     for (final entry in history) {
-      totalByCategory[entry.category] =
-          (totalByCategory[entry.category] ?? 0) + 1;
       if (entry.outcome == ProductOutcome.expired) {
         expiredByCategory[entry.category] =
             (expiredByCategory[entry.category] ?? 0) + 1;
+      } else {
+        consumedByCategory[entry.category] =
+            (consumedByCategory[entry.category] ?? 0) + 1;
       }
     }
 
+    final categories = {...consumedByCategory.keys, ...expiredByCategory.keys};
+    final breakdown = categories
+        .map(
+          (category) => CategoryWasteStats(
+            category: category,
+            consumedOnTime: consumedByCategory[category] ?? 0,
+            expired: expiredByCategory[category] ?? 0,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.total.compareTo(a.total));
+
+    return breakdown;
+  }
+
+  /// Categoría con mayor tasa de vencimiento (vencidos / total de esa
+  /// categoría). `null` si ninguna categoría tuvo al menos un producto
+  /// vencido.
+  FoodCategory? _worstExpirationCategory(
+    List<CategoryWasteStats> categoryBreakdown,
+  ) {
     FoodCategory? worst;
     double worstRate = 0;
-    for (final category in expiredByCategory.keys) {
-      final rate = expiredByCategory[category]! / totalByCategory[category]!;
+    for (final stats in categoryBreakdown) {
+      if (stats.expired == 0) continue;
+      final rate = stats.expired / stats.total;
       if (rate > worstRate) {
         worstRate = rate;
-        worst = category;
+        worst = stats.category;
       }
     }
     return worst;

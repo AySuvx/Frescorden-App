@@ -5,6 +5,7 @@
 // del historial de productos resueltos (ProductHistoryEntry). Ver ese
 // archivo para el detalle de cómo se calcula cada campo.
 
+import 'category_waste_stats.dart';
 import 'food_category.dart';
 
 class AnalyticsSummary {
@@ -28,12 +29,18 @@ class AnalyticsSummary {
   /// todavía no tiene historial.
   final int totalResolved;
 
+  /// Desglose consumido-a-tiempo vs. vencido por categoría — base de los
+  /// gráficos de barras y de dona. Solo incluye categorías con al menos
+  /// una entrada de historial; vacío si `!hasData`.
+  final List<CategoryWasteStats> categoryBreakdown;
+
   const AnalyticsSummary({
     required this.wasteReductionPercentage,
     required this.moneySavedCop,
     required this.averageRotationDays,
     required this.worstExpirationCategory,
     required this.totalResolved,
+    required this.categoryBreakdown,
   });
 
   factory AnalyticsSummary.empty() => const AnalyticsSummary(
@@ -42,7 +49,12 @@ class AnalyticsSummary {
         averageRotationDays: 0,
         worstExpirationCategory: null,
         totalResolved: 0,
+        categoryBreakdown: [],
       );
+
+  /// `true` cuando hay al menos una categoría con algún producto vencido —
+  /// condición mínima para que el gráfico de dona tenga algo que mostrar.
+  bool get hasWasteData => categoryBreakdown.any((c) => c.expired > 0);
 
   bool get hasData => totalResolved > 0;
 }
