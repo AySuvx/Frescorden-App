@@ -312,6 +312,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: ListTile(
+        // FIX alineación: con el subtítulo de hasta 4 líneas (categoría +
+        // cantidad + vencimiento + badge de trazabilidad a granel), el
+        // centrado vertical por defecto de ListTile dejaba la imagen
+        // `leading` desalineada respecto al bloque de texto. `top` ancla
+        // leading/title/trailing al inicio, consistente sin importar cuántas
+        // líneas tenga el subtítulo.
+        titleAlignment: ListTileTitleAlignment.top,
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8.0),
           child:
@@ -353,9 +360,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
             ),
             Row(
               children: [
-                Text(
-                  'Cantidad: ${producto['quantity'] ?? '-'} '
-                  '${producto['unit'] ?? ''}',
+                // FIX overflow: sin Flexible, "Cantidad: N unidad" + el
+                // badge de stock bajo podían exceder el ancho disponible del
+                // subtítulo (acotado por leading + trailing del ListTile).
+                Flexible(
+                  child: Text(
+                    'Cantidad: ${producto['quantity'] ?? '-'} '
+                    '${producto['unit'] ?? ''}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 // PASO 2: badge de stock bajo
                 if (_esStockBajo(producto)) ...[

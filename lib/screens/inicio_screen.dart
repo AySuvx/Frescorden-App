@@ -343,14 +343,24 @@ class Textos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text('Da en la  '),
-        Image.asset('assets/manzana.png', width: 25.0, height: 25.0),
-        const SizedBox(width: 3.0),
-        const Text(' para agregar un producto'),
-      ],
+    // FIX overflow: Row sin Expanded/Flexible desbordaba horizontalmente en
+    // pantallas angostas o con escalado de fuente grande ("RIGHT OVERFLOWED
+    // BY 197 PIXELS"). Se envuelve en Padding + Flexible en cada Text para
+    // que el texto pueda hacer wrap dentro de su espacio disponible en vez
+    // de forzar el ancho del Row más allá de la pantalla.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Flexible(child: Text('Da en la  ', textAlign: TextAlign.right)),
+          Image.asset('assets/manzana.png', width: 25.0, height: 25.0),
+          const SizedBox(width: 3.0),
+          const Flexible(
+            child: Text(' para agregar un producto', textAlign: TextAlign.left),
+          ),
+        ],
+      ),
     );
   }
 }
