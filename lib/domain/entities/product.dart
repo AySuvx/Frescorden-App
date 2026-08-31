@@ -1,14 +1,20 @@
 // lib/domain/entities/product.dart
 //
-// FASE 3 — Trazabilidad de perecederos a granel:
-// Se añade el campo `storedAt` (DateTime nullable).
-// Representa la fecha en que el producto fue almacenado en la nevera/despensa.
-// Se usa principalmente para productos de plaza/mercado (tomate, papa, frutas)
-// donde no existe una fecha de caducidad impresa, pero el usuario quiere saber
-// cuántos días lleva en casa.
+// FASE 3 — Trazabilidad de perecederos a granel (formalizado):
+// El antiguo `storedAt` (DateTime nullable, opt-in) se reemplaza por
+// `entryDate` (DateTime, obligatorio): fecha en que el producto entró al
+// inventario. Todo producto la tiene — si no se registró explícitamente,
+// ProductModel.fromMap la resuelve a DateTime.now() (ver ese archivo).
 //
-// Computed getter `daysStored`: retorna los días transcurridos desde storedAt,
-// o null si el campo no fue registrado.
+// `isBulk` (bool) marca productos de plaza/mercado comprados a granel
+// (tomate, papa, frutas sin fecha de caducidad impresa) — se setea desde
+// el flujo "Registro a Granel" del FAB (AddProductScreen.isBulkEntry).
+// Solo estos productos muestran el badge "Almacenado hace N días" en la
+// tarjeta de inventario: para un producto empacado recién agregado, ese
+// dato no aporta nada (siempre diría "0 días").
+//
+// Computed getter `daysInStorage`: días transcurridos desde entryDate.
+// Ya no es nullable — entryDate siempre existe.
 //
 // PASO 2 — Categorización de Alimentos (#1):
 // Se añade `category` (FoodCategory, no nula). Los productos ya existentes
@@ -33,9 +39,14 @@ class Product {
   final DateTime? expirationDate;
   final DateTime? createdAt;
 
-  /// FASE 3 — Fecha de almacenamiento en nevera/despensa.
-  /// Opcional: solo se registra cuando el usuario lo indica explícitamente.
-  final DateTime? storedAt;
+  /// FASE 3 — Fecha en que el producto entró al inventario (nevera/despensa).
+  /// Obligatoria: si el usuario no la registra explícitamente, se resuelve
+  /// a DateTime.now() en la capa de datos (ver ProductModel).
+  final DateTime entryDate;
+
+  /// FASE 3 — `true` cuando el producto se registró vía "Registro a Granel"
+  /// (perecederos de plaza/mercado, sin fecha de caducidad impresa).
+  final bool isBulk;
 
   /// PASO 2 — Categoría del alimento. No nula: los productos sin categoría
   /// asignada (creados antes de esta fase) se tratan como [FoodCategory.otros].
@@ -54,25 +65,19 @@ class Product {
     this.imagePath,
     this.expirationDate,
     this.createdAt,
-    this.storedAt,
+    required this.entryDate,
+    this.isBulk = false,
     this.category = FoodCategory.otros,
     this.minStock,
   });
 
-  /// FASE 3 — Días transcurridos desde que el producto fue almacenado.
-  /// Retorna `null` si `storedAt` no fue registrado.
-  int? get daysStored {
-    if (storedAt == null) return null;
-    return DateTime.now().difference(storedAt!).inDays;
-  }
+  /// FASE 3 — Días transcurridos desde que el producto entró al inventario.
+  int get daysInStorage => DateTime.now().difference(entryDate).inDays;
 
   /// FASE 3 — Indica si el tiempo almacenado merece una alerta visual.
-  /// Cada categoría tiene un umbral diferente (en días).
-  bool get isStorageCritical {
-    final days = daysStored;
-    if (days == null) return false;
-    return days >= storageCriticalDays;
-  }
+  /// Solo relevante para productos a granel (`isBulk`); un producto
+  /// empacado normal no dispara esta alerta aunque lleve muchos días.
+  bool get isStorageCritical => isBulk && daysInStorage >= storageCriticalDays;
 
   /// Umbral de días para considerar el almacenamiento "crítico".
   /// Valor por defecto: 5 días. Se puede personalizar por producto en futuras fases.
@@ -99,7 +104,8 @@ class Product {
     String? imagePath,
     DateTime? expirationDate,
     DateTime? createdAt,
-    DateTime? storedAt,
+    DateTime? entryDate,
+    bool? isBulk,
     FoodCategory? category,
     int? minStock,
     bool clearMinStock = false,
@@ -113,7 +119,8 @@ class Product {
       imagePath: imagePath ?? this.imagePath,
       expirationDate: expirationDate ?? this.expirationDate,
       createdAt: createdAt ?? this.createdAt,
-      storedAt: storedAt ?? this.storedAt,
+      entryDate: entryDate ?? this.entryDate,
+      isBulk: isBulk ?? this.isBulk,
       category: category ?? this.category,
       minStock: clearMinStock ? null : (minStock ?? this.minStock),
     );
@@ -132,7 +139,8 @@ class Product {
       'image': imagePath, // alias retrocompatibilidad (Bug #11)
       'expirationDate': expirationDate?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
-      'storedAt': storedAt?.toIso8601String(), // FASE 3
+      'entryDate': entryDate.toIso8601String(), // FASE 3
+      'isBulk': isBulk, // FASE 3
       'category': category.name, // PASO 2
       'minStock': minStock, // PASO 2
     };
@@ -149,5 +157,5 @@ class Product {
   @override
   String toString() =>
       'Product(id: $id, name: $name, qty: $quantity $unit, '
-      'exp: $expirationDate, storedAt: $storedAt)';
+      'exp: $expirationDate, entryDate: $entryDate, isBulk: $isBulk)';
 }

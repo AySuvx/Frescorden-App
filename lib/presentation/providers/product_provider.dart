@@ -16,15 +16,23 @@
 //
 // Las pantallas ya NO llaman a FirebaseFirestore.instance directamente.
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/food_category.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/entities/product_history_entry.dart';
 import '../../domain/repositories/i_product_repository.dart';
+import '../../domain/repositories/i_product_history_repository.dart';
 
 class ProductProvider extends ChangeNotifier {
   final IProductRepository _repository;
 
-  ProductProvider(this._repository);
+  // FASE 3 — Historial de Productos: registra cada eliminación como
+  // "consumido a tiempo" o "vencido" (ver deleteProduct). Opcional para no
+  // romper ningún test/uso existente que construya ProductProvider sin él.
+  final IProductHistoryRepository? _historyRepository;
+
+  ProductProvider(this._repository, [this._historyRepository]);
 
   // ─── Estado ───────────────────────────────────────────────────────────────
 
@@ -157,14 +165,56 @@ class ProductProvider extends ChangeNotifier {
   // ─── Eliminar ─────────────────────────────────────────────────────────────
 
   /// Elimina el producto con el [id] indicado.
+  ///
+  /// FASE 3 — Historial: antes de borrar, se captura una copia del producto
+  /// para registrar en el historial si se consumió a tiempo o venció
+  /// (comparando el momento de la eliminación contra `expirationDate`). El
+  /// registro de historial es best-effort: si falla, NO afecta la
+  /// eliminación (que ya ocurrió) ni se propaga como error al caller — solo
+  /// se pierde ese dato para analíticas.
   Future<void> deleteProduct(String id) async {
+    Product? resolved;
     try {
+      final matches = _products.where((p) => p.id == id);
+      resolved = matches.isEmpty ? null : matches.first;
       await _repository.deleteProduct(id);
       _products.removeWhere((p) => p.id == id);
       notifyListeners();
     } catch (e) {
       debugPrint('ProductProvider.deleteProduct error: $e');
       rethrow;
+    }
+
+    if (resolved != null) {
+      unawaited(_logHistory(resolved));
+    }
+  }
+
+  /// Registra en el historial el resultado de haber eliminado [product].
+  /// `outcome` se infiere: consumido a tiempo si se elimina en o antes de
+  /// `expirationDate` (o si el producto no tiene fecha de vencimiento);
+  /// vencido si se elimina después.
+  Future<void> _logHistory(Product product) async {
+    if (_historyRepository == null) return;
+    try {
+      final now = DateTime.now();
+      final expired = product.expirationDate != null &&
+          now.isAfter(product.expirationDate!);
+
+      await _historyRepository.logResolution(
+        ProductHistoryEntry(
+          productId: product.id,
+          name: product.name,
+          category: product.category,
+          entryDate: product.entryDate,
+          expirationDate: product.expirationDate,
+          resolvedAt: now,
+          outcome:
+              expired ? ProductOutcome.expired : ProductOutcome.consumedOnTime,
+        ),
+      );
+    } catch (e) {
+      debugPrint('ProductProvider._logHistory error: $e');
     }
   }
 
@@ -200,7 +250,11 @@ class ProductProvider extends ChangeNotifier {
       unit: map['unit'] as String? ?? 'unidad',
       imagePath: (imagePath != null && imagePath.isNotEmpty) ? imagePath : null,
       expirationDate: parseDate(map['expirationDate']),
-      storedAt: parseDate(map['storedAt']), // FASE 3
+      // FASE 3 — mismo criterio de fallback que ProductModel._fromMap:
+      // entryDate > storedAt (legacy) > DateTime.now().
+      entryDate:
+          parseDate(map['entryDate']) ?? parseDate(map['storedAt']) ?? DateTime.now(),
+      isBulk: map['isBulk'] as bool? ?? false, // FASE 3
       category: FoodCategory.fromName(map['category'] as String?), // PASO 2
       minStock: parseMinStock(map['minStock']), // PASO 2
     );

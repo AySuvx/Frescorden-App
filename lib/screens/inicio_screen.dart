@@ -25,6 +25,7 @@ import 'add_product_screen.dart';
 import '../Widgets/button_plus.dart';
 import 'login_screen.dart';
 import 'shopping_list_screen.dart';
+import 'analytics_screen.dart';
 import 'settings_screen.dart';
 import 'contact_screen.dart';
 import 'about_screen.dart';
@@ -246,6 +247,17 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ShoppingListScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bar_chart),
+              title: const Text('Analíticas'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
                 );
               },
             ),

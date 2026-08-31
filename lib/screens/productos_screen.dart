@@ -407,17 +407,24 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   /// FASE 3: Etiqueta de trazabilidad de perecederos a granel.
-  /// Muestra cuántos días lleva almacenado el producto.
-  /// Solo visible cuando el usuario registró una fecha de almacenamiento.
+  /// Muestra cuántos días lleva almacenado el producto. Solo visible para
+  /// productos registrados como "a granel" (isBulk) — entryDate ahora es
+  /// obligatoria para TODOS los productos, así que gatear por isBulk evita
+  /// mostrar "Almacenado hace 0 días" en cada producto empacado recién
+  /// agregado (dato sin valor informativo fuera del caso de granel).
   Widget _buildStorageLabel(Map<String, dynamic> producto) {
-    final storedAtStr = producto['storedAt'] as String?;
-    if (storedAtStr == null || storedAtStr.isEmpty)
-      return const SizedBox.shrink();
-    final storedAt = DateTime.tryParse(storedAtStr);
-    if (storedAt == null) return const SizedBox.shrink();
+    final isBulk = producto['isBulk'] as bool? ?? false;
+    if (!isBulk) return const SizedBox.shrink();
 
-    final daysStored = DateTime.now().difference(storedAt).inDays;
-    final isCritical = daysStored >= 5;
+    final entryDateStr = producto['entryDate'] as String?;
+    if (entryDateStr == null || entryDateStr.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final entryDate = DateTime.tryParse(entryDateStr);
+    if (entryDate == null) return const SizedBox.shrink();
+
+    final daysInStorage = DateTime.now().difference(entryDate).inDays;
+    final isCritical = daysInStorage >= 5;
 
     return Padding(
       padding: const EdgeInsets.only(top: 3),
@@ -430,7 +437,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
           ),
           const SizedBox(width: 4),
           Text(
-            'Almacenado hace $daysStored día${daysStored == 1 ? '' : 's'}',
+            'Almacenado hace $daysInStorage día${daysInStorage == 1 ? '' : 's'}',
             style: TextStyle(
               fontSize: 12,
               color: isCritical ? Colors.deepOrange : Colors.blueGrey,

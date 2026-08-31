@@ -34,15 +34,20 @@ import 'data/datasources/recipe_local_datasource.dart';
 import 'data/repositories/recipe_repository_impl.dart';
 import 'data/datasources/shopping_local_datasource.dart';
 import 'data/repositories/shopping_repository_impl.dart';
+import 'data/datasources/firestore_product_history_datasource.dart';
+import 'data/repositories/product_history_repository_impl.dart';
+import 'data/repositories/analytics_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/entities/app_user.dart';
+import 'domain/usecases/get_analytics_usecase.dart';
 
 // Capa de presentación
 import 'presentation/providers/product_provider.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/recipe_provider.dart';
 import 'presentation/providers/shopping_provider.dart';
+import 'presentation/providers/analytics_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,11 +62,17 @@ void main() async {
           create: (_) => ThemeProvider(),
         ),
 
-        // ProductProvider con inyección de dependencias
+        // ProductProvider con inyección de dependencias.
+        // FASE 3 — recibe también IProductHistoryRepository para registrar
+        // cada eliminación en el historial (ver ProductProvider.deleteProduct).
         ChangeNotifierProvider<ProductProvider>(
           create: (_) => ProductProvider(
             ProductRepositoryImpl(
               FirestoreProductDataSource(),
+            ),
+            ProductHistoryRepositoryImpl(
+              FirestoreProductHistoryDataSource(),
+              ShoppingLocalDataSource(), // Opción A: catálogo de precios
             ),
           ),
         ),
@@ -84,6 +95,16 @@ void main() async {
         ChangeNotifierProvider<ShoppingProvider>(
           create: (_) => ShoppingProvider(
             ShoppingRepositoryImpl(ShoppingLocalDataSource()),
+          ),
+        ),
+
+        // AnalyticsProvider — KPIs calculados a partir del historial de
+        // productos resueltos (ver AnalyticsRepositoryImpl / GetAnalyticsUseCase).
+        ChangeNotifierProvider<AnalyticsProvider>(
+          create: (_) => AnalyticsProvider(
+            GetAnalyticsUseCase(
+              AnalyticsRepositoryImpl(FirestoreProductHistoryDataSource()),
+            ),
           ),
         ),
       ],

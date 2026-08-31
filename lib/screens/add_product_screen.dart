@@ -62,7 +62,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _selectedUnit = 'unidad';
   File? _imageFile;
   DateTime? _expiryDate;
-  DateTime? _storedAt; // FASE 3: fecha de almacenamiento en nevera
+  DateTime? _entryDate; // FASE 3: fecha de entrada al inventario (opcional en UI, obligatoria en el dominio)
+  bool _isBulk = false; // FASE 3: registro a granel (perecederos de plaza/mercado)
   FoodCategory _selectedCategory = FoodCategory.otros; // PASO 2
   final TextEditingController _minStockController =
       TextEditingController(); // PASO 2: stock mínimo (opcional)
@@ -99,10 +100,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
           widget.initialProduct!['expirationDate'],
         );
       }
-      // FASE 3: cargar storedAt al editar
-      if (widget.initialProduct!['storedAt'] != null) {
-        _storedAt = DateTime.tryParse(widget.initialProduct!['storedAt']);
+      // FASE 3: cargar entryDate al editar (con fallback al nombre legacy
+      // 'storedAt', igual criterio que ProductModel._fromMap).
+      final entryDateStr = widget.initialProduct!['entryDate'] as String? ??
+          widget.initialProduct!['storedAt'] as String?;
+      if (entryDateStr != null) {
+        _entryDate = DateTime.tryParse(entryDateStr);
       }
+      _isBulk = widget.initialProduct!['isBulk'] as bool? ?? false;
       // PASO 2: cargar categoría y stock mínimo al editar
       _selectedCategory = FoodCategory.fromName(
         widget.initialProduct!['category'] as String?,
@@ -113,6 +118,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
     } else {
       _isManualAdd = widget.isManualAdd;
+      _isBulk = widget.isBulkEntry;
       // Registro a granel: valores por defecto típicos de perecederos de
       // plaza/mercado. El usuario puede cambiarlos libremente.
       if (widget.isBulkEntry) {
@@ -300,8 +306,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'unit': _selectedUnit,
         'imagePath': _imageFile?.path,
         'expirationDate': _expiryDate?.toIso8601String(),
-        if (_storedAt != null) // FASE 3
-          'storedAt': _storedAt!.toIso8601String(),
+        // FASE 3 — entryDate es obligatoria en el dominio: si el usuario no
+        // eligió una fecha de entrada explícita, se usa el momento de
+        // guardado (mismo criterio de fallback que ProductModel._fromMap).
+        'entryDate': (_entryDate ?? DateTime.now()).toIso8601String(),
+        'isBulk': _isBulk, // FASE 3
         'category': _selectedCategory.name, // PASO 2
         if (minStock != null) 'minStock': minStock, // PASO 2
       };
@@ -577,12 +586,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           final now = DateTime.now();
                           final picked = await showDatePicker(
                             context: context,
-                            initialDate: _storedAt ?? now,
+                            initialDate: _entryDate ?? now,
                             firstDate: now.subtract(const Duration(days: 365)),
                             lastDate: now,
                           );
                           if (picked != null) {
-                            setState(() => _storedAt = picked);
+                            setState(() => _entryDate = picked);
                           }
                         },
                         child: Container(
@@ -598,21 +607,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           child: Row(
                             children: [
                               Text(
-                                _storedAt == null
+                                _entryDate == null
                                     ? 'Seleccionar fecha de entrada al hogar'
-                                    : 'Guardado el: ${_storedAt!.day}/${_storedAt!.month}/${_storedAt!.year}',
+                                    : 'Guardado el: ${_entryDate!.day}/${_entryDate!.month}/${_entryDate!.year}',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color:
-                                      _storedAt == null
+                                      _entryDate == null
                                           ? Colors.grey
                                           : Colors.black87,
                                 ),
                               ),
-                              if (_storedAt != null) ...[
+                              if (_entryDate != null) ...[
                                 const SizedBox(width: 8),
                                 Text(
-                                  '(${DateTime.now().difference(_storedAt!).inDays} días)',
+                                  '(${DateTime.now().difference(_entryDate!).inDays} días)',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.blueGrey,
@@ -621,7 +630,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                 ),
                                 const Spacer(),
                                 GestureDetector(
-                                  onTap: () => setState(() => _storedAt = null),
+                                  onTap: () => setState(() => _entryDate = null),
                                   child: const Icon(
                                     Icons.clear,
                                     size: 16,
