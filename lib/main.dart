@@ -30,6 +30,10 @@ import 'screens/inicio_screen.dart';
 import 'data/datasources/firestore_product_datasource.dart';
 import 'data/repositories/product_repository_impl.dart';
 import 'data/repositories/auth_repository_impl.dart';
+import 'data/datasources/recipe_local_datasource.dart';
+import 'data/repositories/recipe_repository_impl.dart';
+import 'data/datasources/shopping_local_datasource.dart';
+import 'data/repositories/shopping_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/entities/app_user.dart';
@@ -37,6 +41,8 @@ import 'domain/entities/app_user.dart';
 // Capa de presentación
 import 'presentation/providers/product_provider.dart';
 import 'presentation/providers/auth_provider.dart';
+import 'presentation/providers/recipe_provider.dart';
+import 'presentation/providers/shopping_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +69,22 @@ void main() async {
         // AuthProvider con inyección de dependencias
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(AuthRepositoryImpl()),
+        ),
+
+        // RecipeProvider — catálogo de recetas (fuente local, ver
+        // RecipeLocalDataSource)
+        ChangeNotifierProvider<RecipeProvider>(
+          create: (_) => RecipeProvider(
+            RecipeRepositoryImpl(RecipeLocalDataSource()),
+          ),
+        ),
+
+        // ShoppingProvider — canastas por nivel de presupuesto (fuente
+        // local) cruzadas dinámicamente contra el inventario real.
+        ChangeNotifierProvider<ShoppingProvider>(
+          create: (_) => ShoppingProvider(
+            ShoppingRepositoryImpl(ShoppingLocalDataSource()),
+          ),
         ),
       ],
       child: const MyApp(),

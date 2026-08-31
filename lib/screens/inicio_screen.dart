@@ -233,8 +233,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (_) => RecetasScreen(productosInventario: productos),
+                    builder: (_) => const RecetasScreen(),
                   ),
                 );
               },
