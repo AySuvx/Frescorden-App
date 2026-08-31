@@ -10,6 +10,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../presentation/providers/auth_provider.dart';
@@ -41,13 +42,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    setState(() {
-      _notificationsEnabled = prefs.getBool(_kNotifEnabled) ?? true;
-    });
+    final enabled = prefs.getBool(_kNotifEnabled) ?? true;
+    setState(() => _notificationsEnabled = enabled);
+    // Android 13+ requiere el permiso POST_NOTIFICATIONS en tiempo de
+    // ejecución: si el usuario ya tenía notificaciones activadas (o es la
+    // primera vez que abre esta pantalla), se solicita al entrar.
+    if (enabled) {
+      await _requestNotificationPermission();
+    }
   }
 
   // BUG #8 FIX: guarda el valor cada vez que el usuario lo cambia
   Future<void> _setNotificationsEnabled(bool value) async {
+    if (value) {
+      await _requestNotificationPermission();
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kNotifEnabled, value);
     setState(() => _notificationsEnabled = value);
@@ -62,6 +72,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       await AndroidAlarmManager.cancel(0);
     }
+  }
+
+  /// Solicita el permiso POST_NOTIFICATIONS (Android 13+). Si el usuario ya
+  /// lo denegó permanentemente, permission_handler no vuelve a mostrar el
+  /// diálogo nativo — en ese caso se explica por qué se necesita y se ofrece
+  /// un atajo directo a los ajustes del sistema.
+  Future<void> _requestNotificationPermission() async {
+    final status = await Permission.notification.status;
+    if (status.isGranted) return;
+
+    final result = await Permission.notification.request();
+    if (result.isGranted) return;
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Notificaciones desactivadas'),
+        content: const Text(
+          'Para avisarte cuando un producto está por vencer, Fresc(o)rden '
+          'necesita permiso para mostrar notificaciones. Actívalo desde '
+          'los ajustes del sistema.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Ahora no'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            child: const Text('Ir a ajustes'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
