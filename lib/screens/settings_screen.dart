@@ -8,14 +8,37 @@
 //   FIX: Se guarda y carga con SharedPreferences bajo la clave
 //   'notifications_enabled'. El valor se lee en initState de forma asíncrona.
 
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../presentation/providers/auth_provider.dart';
 import '../theme_provider.dart';
 import 'login_screen.dart';
+
+/// applicationId fijo del proyecto (ver android/app/build.gradle.kts) —
+/// se necesita como String literal para el intent de ajustes de la app;
+/// no hay una fuente en tiempo de ejecución más simple que agregar
+/// package_info_plus solo para esto.
+const _kPackageName = 'com.frescorden.app';
+
+/// Fabricantes conocidos por tener ROMs con gestión de batería agresiva
+/// que puede matar procesos en segundo plano antes de mostrar una
+/// notificación programada (confirmado en prueba real: MIUI bloqueaba la
+/// notificación pese a que la alarma sí se disparaba — ver commit del
+/// hallazgo). La tarjeta de ayuda solo se muestra en estos fabricantes;
+/// en un Pixel/AOSP estándar no aporta nada y solo generaría confusión.
+const _kAggressiveRomManufacturers = {
+  'xiaomi', 'redmi', 'poco', // MIUI / HyperOS
+  'samsung', // One UI
+  'huawei', 'honor', // EMUI / MagicOS
+  'oppo', 'realme', 'oneplus', // ColorOS
+  'vivo', 'iqoo', // OriginOS / FuntouchOS
+};
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -29,6 +52,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   String _selectedLanguage = 'Español';
 
+  /// `true` cuando el fabricante del dispositivo es conocido por matar
+  /// procesos en segundo plano (ver _kAggressiveRomManufacturers). Controla
+  /// si se muestra la tarjeta de ayuda de autoinicio/batería.
+  bool _showBackgroundAlertsCard = false;
+
   // Clave SharedPreferences para persistir el estado de notificaciones
   static const _kNotifEnabled = 'notifications_enabled';
 
@@ -36,6 +64,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadPreferences();
+    _checkAggressiveRom();
+  }
+
+  Future<void> _checkAggressiveRom() async {
+    if (!Platform.isAndroid) return;
+    final info = await DeviceInfoPlugin().androidInfo;
+    final manufacturer = info.manufacturer.toLowerCase();
+    if (!mounted) return;
+    setState(() {
+      _showBackgroundAlertsCard =
+          _kAggressiveRomManufacturers.any(manufacturer.contains);
+    });
   }
 
   // BUG #8 FIX: carga el valor guardado al abrir la pantalla
@@ -112,6 +152,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Diálogo informativo antes de mandar al usuario a configurar el
+  /// sistema — explica POR QUÉ se necesita, en vez de abrir ajustes sin
+  /// contexto.
+  Future<void> _showBackgroundAlertsDialog() async {
+    final goToSettings = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Alertas en segundo plano'),
+        content: const Text(
+          'Para asegurar que las alertas de vencimiento suenen a tiempo, '
+          'asegúrate de activar "Autoinicio" y seleccionar "Sin '
+          'restricciones" en Ahorro de batería.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ahora no'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ir a Configuración'),
+          ),
+        ],
+      ),
+    );
+
+    if (goToSettings == true) {
+      await _optimizeBackgroundAlerts();
+    }
+  }
+
+  /// Encadena las dos acciones del sistema relevantes:
+  ///  1. Exención de optimización de batería — Android sí expone un intent
+  ///     dedicado (ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) que
+  ///     permission_handler envuelve como Permission.ignoreBatteryOptimizations.
+  ///  2. Información de la app — MIUI y otras ROMs no exponen un intent
+  ///     público y estable específicamente para "Autoinicio" (el nombre del
+  ///     componente cambia entre versiones); la pantalla de Información de
+  ///     la App sí es una API estable de Android desde donde el usuario
+  ///     puede llegar a los permisos/autoinicio específicos del fabricante.
+  Future<void> _optimizeBackgroundAlerts() async {
+    if (!await Permission.ignoreBatteryOptimizations.isGranted) {
+      await Permission.ignoreBatteryOptimizations.request();
+    }
+
+    try {
+      await const AndroidIntent(
+        action: 'android.settings.APPLICATION_DETAILS_SETTINGS',
+        data: 'package:$_kPackageName',
+      ).launch();
+    } catch (e) {
+      debugPrint('No se pudo abrir la información de la app: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
@@ -141,6 +236,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _notificationsEnabled,
             onChanged: _setNotificationsEnabled,
           ),
+          if (_showBackgroundAlertsCard)
+            Card(
+              color: Colors.orange[50],
+              margin: const EdgeInsets.only(top: 8),
+              child: ListTile(
+                leading: const Icon(Icons.battery_alert, color: Colors.deepOrange),
+                title: const Text('Optimizar alertas en segundo plano'),
+                subtitle: const Text(
+                  'Tu fabricante puede bloquear las notificaciones si no '
+                  'activas Autoinicio y desactivas el ahorro de batería.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _showBackgroundAlertsDialog,
+              ),
+            ),
           const Divider(),
 
           ListTile(

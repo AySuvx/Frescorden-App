@@ -21,6 +21,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Requerido para lanzar ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+         (exención de ahorro de batería en ROMs agresivas: MIUI/HyperOS,
+         One UI, ColorOS, etc.) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <!-- Red -->
     <uses-permission android:name="android.permission.INTERNET"/>
