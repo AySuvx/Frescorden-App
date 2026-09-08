@@ -4,12 +4,15 @@
 // (compatible con el Provider ya instalado en el proyecto).
 //
 // Responsabilidades:
-//  1. Mantener la lista de Product en memoria como fuente única de verdad.
+//  1. Mantener la lista de Product en memoria como fuente única de verdad,
+//     sincronizada en tiempo real con Firestore (ver setActiveHousehold):
+//     altas, bajas y modificaciones de CUALQUIER miembro del hogar, desde
+//     cualquier dispositivo, llegan solas por el stream — no hace falta
+//     refrescar manualmente.
 //  2. Exponer `productosMap` (List<Map<String,dynamic>>) para retrocompatibilidad
 //     con las pantallas que ya funcionan con Maps.
 //  3. Centralizar toda la lógica de negocio de productos que antes estaba
 //     dispersa en inicio_screen y add_product_screen:
-//       - Carga inicial
 //       - Upsert (agregar o acumular cantidad si ya existe por barcode/nombre)
 //       - Actualización completa de un producto existente
 //       - Eliminación
@@ -36,6 +39,9 @@ class ProductProvider extends ChangeNotifier {
 
   // ─── Estado ───────────────────────────────────────────────────────────────
 
+  String? _householdId;
+  StreamSubscription<List<Product>>? _productsSub;
+
   List<Product> _products = [];
   bool _isLoading = false;
   String? _error;
@@ -46,6 +52,10 @@ class ProductProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   int get count => _products.length;
+
+  /// Hogar cuyo inventario se está mirando actualmente, o `null` si
+  /// todavía no hay uno activo (ver setActiveHousehold).
+  String? get activeHouseholdId => _householdId;
 
   // ─── Alertas de Stock mínimo (#2) ──────────────────────────────────
 
@@ -73,40 +83,65 @@ class ProductProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get productosMap =>
       _products.map((p) => p.toMap()).toList();
 
-  // ─── Carga ────────────────────────────────────────────────────────────────
+  // ─── Sincronización con el hogar activo ────────────────────────────────────
 
-  /// Carga todos los productos del usuario desde Firestore.
-  /// Notifica a los listeners al iniciar y al terminar.
-  Future<void> loadProducts() async {
+  /// Llamado por main.dart (ChangeNotifierProxyProvider<HouseholdProvider,
+  /// _>) cada vez que cambia el hogar activo del usuario (login, logout,
+  /// creó/se unió a un hogar, o cambió de hogar). (Re)suscribe el stream de
+  /// productos de Firestore para ese hogar — de ahí en más, cualquier alta,
+  /// baja o modificación (propia o de otro miembro, desde cualquier
+  /// dispositivo) llega sola y dispara notifyListeners().
+  void setActiveHousehold(String? householdId) {
+    if (householdId == _householdId) return;
+    _householdId = householdId;
+
+    unawaited(_productsSub?.cancel());
+    _productsSub = null;
+
+    if (householdId == null) {
+      _products = [];
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    try {
-      // BUG CRÍTICO CORREGIDO (hallado en prueba manual en dispositivo): el
-      // objeto que retorna _repository.getProducts() está reificado en
-      // tiempo de ejecución como List<ProductModel> (así lo construye
-      // FirestoreProductDataSource.getAll()), aunque la interfaz declare
-      // List<Product>. Dart no "amplía" el tipo de un List ya construido —
-      // asignarlo tal cual a _products dejaba _products apuntando a esa
-      // misma List<ProductModel> reificada. Cualquier escritura posterior
-      // (_products.add(...), _products[idx] = ...) con un Product base
-      // (copyWith()/_productFromMap() siempre construyen la clase base, no
-      // el subtipo) lanzaba en runtime:
-      // "type 'Product' is not a subtype of type 'ProductModel' of 'value'".
-      // FIX: List<Product>.of(...) crea una lista NUEVA reificada
-      // exactamente como List<Product> — acepta cualquier Product desde
-      // ese punto en adelante, sin importar qué subtipo devolvió el repo.
-      _products = List<Product>.of(await _repository.getProducts());
-      _error = null;
-    } catch (e) {
-      _error = e.toString();
-      debugPrint('ProductProvider.loadProducts error: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    _productsSub = _repository.watchProducts(householdId).listen(
+      (products) {
+        // BUG CRÍTICO CORREGIDO (hallado en prueba manual en dispositivo):
+        // el objeto que emite watchProducts() está reificado en tiempo de
+        // ejecución como List<ProductModel>, aunque la interfaz declare
+        // List<Product>. Dart no "amplía" el tipo de un List ya construido —
+        // asignarlo tal cual a _products dejaba _products apuntando a esa
+        // misma List<ProductModel> reificada. Cualquier escritura posterior
+        // con un Product base (copyWith() siempre construye la clase base,
+        // no el subtipo) lanzaba en runtime:
+        // "type 'Product' is not a subtype of type 'ProductModel' of 'value'".
+        // FIX: List<Product>.of(...) crea una lista NUEVA reificada
+        // exactamente como List<Product>.
+        _products = List<Product>.of(products);
+        _isLoading = false;
+        _error = null;
+        notifyListeners();
+      },
+      onError: (Object e) {
+        _error = e.toString();
+        _isLoading = false;
+        debugPrint('ProductProvider.watchProducts error: $e');
+        notifyListeners();
+      },
+    );
   }
+
+  /// Compatibilidad: con el inventario ahora sincronizado en tiempo real
+  /// (ver setActiveHousehold), ya no hace falta una recarga manual — el
+  /// stream mantiene `products` al día solo. Se conserva como no-op seguro
+  /// para no romper las pantallas que todavía la invocan tras acciones
+  /// puntuales (volver de una sub-pantalla, pull-to-refresh, etc.).
+  Future<void> loadProducts() async {}
 
   // ─── Agregar / Actualizar (upsert) ─────────────────────────────────────────
 
@@ -121,7 +156,21 @@ class ProductProvider extends ChangeNotifier {
   /// Reemplaza los métodos agregarOActualizarProducto() de inicio_screen y
   /// _guardarProducto() de add_product_screen que operaban sobre Firestore
   /// directamente.
+  ///
+  /// Nota (inventario en tiempo real): este método solo escribe en
+  /// Firestore — ya NO toca `_products` a mano. El stream suscrito en
+  /// setActiveHousehold es la única fuente de verdad de la lista; en
+  /// cuanto Firestore confirma la escritura, el snapshot llega solo y
+  /// dispara notifyListeners(). Evita el desfase de tener dos caminos
+  /// (mutación local + stream) que podían pisarse entre sí.
   Future<void> saveProduct(Map<String, dynamic> map) async {
+    final householdId = _householdId;
+    if (householdId == null) {
+      throw StateError(
+        'ProductProvider.saveProduct: no hay un hogar activo todavía.',
+      );
+    }
+
     try {
       final isEdit =
           map['id'] != null &&
@@ -131,15 +180,7 @@ class ProductProvider extends ChangeNotifier {
       if (isEdit) {
         // ── Edición completa ────────────────────────────────────────────────
         final updated = _productFromMap(map);
-        await _repository.updateProduct(updated);
-
-        // Actualizar en memoria
-        final idx = _products.indexWhere((p) => p.id == updated.id);
-        if (idx != -1) {
-          _products[idx] = updated;
-        } else {
-          _products.add(updated);
-        }
+        await _repository.updateProduct(householdId, updated);
       } else {
         // ── Agregar o acumular ──────────────────────────────────────────────
         final barcode = map['barcode'] as String? ?? '';
@@ -149,9 +190,9 @@ class ProductProvider extends ChangeNotifier {
 
         Product? existing;
         if (barcode.isNotEmpty) {
-          existing = await _repository.findByBarcode(barcode);
+          existing = await _repository.findByBarcode(householdId, barcode);
         }
-        existing ??= await _repository.findByName(name);
+        existing ??= await _repository.findByName(householdId, name);
 
         if (existing != null) {
           // Acumular cantidad sobre el producto existente.
@@ -171,19 +212,13 @@ class ProductProvider extends ChangeNotifier {
           final updated = _productFromMap(
             map,
           ).copyWith(id: existing.id, quantity: newQty);
-          await _repository.updateProduct(updated);
-
-          final idx = _products.indexWhere((p) => p.id == existing!.id);
-          if (idx != -1) _products[idx] = updated;
+          await _repository.updateProduct(householdId, updated);
         } else {
           // Nuevo producto
           final newProduct = _productFromMap(map);
-          final saved = await _repository.addProduct(newProduct);
-          _products.add(saved);
+          await _repository.addProduct(householdId, newProduct);
         }
       }
-
-      notifyListeners();
     } catch (e) {
       debugPrint('ProductProvider.saveProduct error: $e');
       rethrow; // La pantalla decide si muestra un SnackBar
@@ -201,13 +236,20 @@ class ProductProvider extends ChangeNotifier {
   /// eliminación (que ya ocurrió) ni se propaga como error al caller — solo
   /// se pierde ese dato para analíticas.
   Future<void> deleteProduct(String id) async {
+    final householdId = _householdId;
+    if (householdId == null) {
+      throw StateError(
+        'ProductProvider.deleteProduct: no hay un hogar activo todavía.',
+      );
+    }
+
     Product? resolved;
     try {
       final matches = _products.where((p) => p.id == id);
       resolved = matches.isEmpty ? null : matches.first;
-      await _repository.deleteProduct(id);
-      _products.removeWhere((p) => p.id == id);
-      notifyListeners();
+      await _repository.deleteProduct(householdId, id);
+      // `_products` se actualiza solo cuando llega el próximo snapshot del
+      // stream (ver setActiveHousehold) — no se muta a mano aquí.
     } catch (e) {
       debugPrint('ProductProvider.deleteProduct error: $e');
       rethrow;
@@ -286,5 +328,11 @@ class ProductProvider extends ChangeNotifier {
       category: FoodCategory.fromName(map['category'] as String?),
       minStock: parseMinStock(map['minStock']),
     );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_productsSub?.cancel());
+    super.dispose();
   }
 }

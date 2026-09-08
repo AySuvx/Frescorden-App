@@ -1,22 +1,5 @@
-// lib/screens/inicio_screen.dart
-//
-// Clean Architecture:
-// Toda la lógica de Firestore (cargar, agregar, acumular, eliminar) ha sido
-// removida de esta pantalla y centralizada en ProductProvider.
-//
-// Cambios respecto a la versión original:
-//  - Eliminados: _cargarProductosDesdeFirestore(), agregarOActualizarProducto(),
-//    editarProducto(), eliminarProductoConConfirmacion() (eran accesos directos
-//    a Firestore; ahora viven en ProductProvider).
-//  - La lista de productos se lee de context.watch<ProductProvider>().productosMap.
-//  - initState solo llama provider.loadProducts() — sin Firestore directo.
-//  - Los callbacks de sub-pantallas recargan vía provider.loadProducts().
-//
-// La UI y el comportamiento visible no cambiaron.
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../presentation/providers/auth_provider.dart';
 import '../presentation/providers/product_provider.dart';
 import 'recetas_screen.dart';
@@ -29,6 +12,7 @@ import 'analytics_screen.dart';
 import 'settings_screen.dart';
 import 'contact_screen.dart';
 import 'about_screen.dart';
+import 'household_screen.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -59,20 +43,7 @@ class _InicioScreenState extends State<InicioScreen> {
     }
   }
 
-  /// Navega a AddProductScreen para AGREGAR un producto.
-  ///
-  /// BUG CRÍTICO CORREGIDO (hallado probando la app en dispositivo físico):
-  /// AddProductScreen._guardarProducto() ya llama a
-  /// `context.read<ProductProvider>().saveProduct()` directamente — este
-  /// callback `onSave` volvía a llamarlo, guardando CADA producto DOS VECES
-  /// por cada tap en "Guardar" (la lógica de acumular-por-nombre duplicaba
-  /// la cantidad cada vez). Bug preexistente; quedó oculto detrás
-  /// del bug de casteo ProductModel corregido antes en esta misma sesión,
-  /// que siempre lanzaba excepción antes de que la duplicación fuera
-  /// visible. `onSave` se mantiene como hook opcional (no persiste nada)
-  /// por si una futura pantalla necesita reaccionar al guardado sin
-  /// duplicar la escritura.
-  ///
+
   /// Limpieza de escáner: ya no existe el flujo de escaneo, así que
   /// toda alta nueva es manual (`isManualAdd: true`). [isBulkEntry] distingue
   /// el "Registro a Granel" del alta estándar por categoría.
@@ -102,48 +73,6 @@ class _InicioScreenState extends State<InicioScreen> {
               onSave: (_) {},
             ),
       ),
-    );
-  }
-
-  /// Muestra diálogo de confirmación y elimina vía provider.
-  void _confirmarEliminar(String productoId) {
-    showDialog(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Confirmar Eliminación'),
-            content: const Text(
-              '¿Estás seguro de que quieres eliminar este producto?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Cancelar'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  try {
-                    await context.read<ProductProvider>().deleteProduct(
-                      productoId,
-                    );
-                  } catch (_) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Error al eliminar el producto'),
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: const Text(
-                  'Eliminar',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          ),
     );
   }
 
@@ -202,31 +131,31 @@ class _InicioScreenState extends State<InicioScreen> {
                   provider.lowStockCount > 0
                       ? const Icon(Icons.error_outline, color: Colors.red)
                       : null,
-              onTap: () async {
-                // Capturar el provider ANTES de los awaits
-                // (fix use_build_context_synchronously)
-                final provider = context.read<ProductProvider>();
+              onTap: () {
+                // ProductosScreen ahora es reactiva (context.watch<ProductProvider>()
+                // internamente) — ya no necesita un snapshot por constructor
+                // ni un refresh manual al volver.
                 Navigator.pop(context);
-                await Navigator.push(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder:
                         (_) => ProductosScreen(
-                          productos: productos,
-                          onEdit: (index) {
-                            _navegarEditarProducto(productos[index]);
-                          },
-                          onDelete: (index) {
-                            final id = productos[index]['id'] as String? ?? '';
-                            if (id.isNotEmpty) _confirmarEliminar(id);
-                          },
+                          onEdit: _navegarEditarProducto,
                         ),
                   ),
                 );
-                // Refresca por si la sub-pantalla cambió algo directamente
-                if (mounted) {
-                  await provider.loadProducts();
-                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.home_filled),
+              title: const Text('Mi Hogar'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HouseholdScreen()),
+                );
               },
             ),
             ListTile(

@@ -1,23 +1,26 @@
 // lib/screens/productos_screen.dart
 //
-// BUG #9 CORREGIDO: La pantalla mutaba widget.productos directamente
-//   (_actualizarProductos hacía widget.productos.clear() y addAll()).
-//   Flutter prohíbe que un widget hijo mute una lista que pertenece al padre;
-//   en navegación rápida esto causaba "setState on disposed widget".
-//   FIX: Se usa una copia local _productos (inicializada en initState y
-//   actualizada en _actualizarProductos) sin tocar nunca widget.productos.
-//
 // BUG #11 CORREGIDO: El widget leía producto['image'] para mostrar la foto,
 //   pero add_product_screen guarda el campo como 'imagePath'. Por eso las
 //   imágenes nunca aparecían en la lista.
 //   FIX: Se lee 'imagePath' con fallback a 'image' para retrocompatibilidad
 //   con documentos existentes en Firestore que puedan tener el campo viejo.
 //
-// MEJORA: Se reemplaza print() por debugPrint() (el linter lo exige).
+// Reactividad en tiempo real (Fase 4 — Household):
+// Antes, esta pantalla recibía `productos` como snapshot fijo por
+// constructor (copiado a un campo local `_productos` en initState) y solo
+// se refrescaba manualmente al volver de una sub-pantalla
+// (`_actualizarProductos`). Con el inventario ahora sincronizado por
+// stream (ver ProductProvider.setActiveHousehold), esa copia local quedaba
+// obsoleta apenas otro miembro del hogar editaba algo mientras esta
+// pantalla seguía abierta.
+// FIX: se elimina el constructor `productos` y la copia local — el build()
+// lee `context.watch<ProductProvider>().productosMap` directo, así que
+// cualquier cambio (propio o de otro dispositivo del hogar) reconstruye la
+// lista sola. Filtro/búsqueda/orden pasan a ser criterios persistentes
+// (campos de estado) que se reaplican en cada build sobre los datos
+// frescos del provider, en vez de mutar una lista guardada una sola vez.
 
-// LINT FIX: eliminados 'package:firebase_auth/firebase_auth.dart' (unused_import)
-// y el campo 'user' (unused_element). La eliminación de productos ahora
-// pasa por ProductProvider que gestiona la autenticación internamente.
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,37 +28,22 @@ import '../domain/entities/food_category.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/utils/food_category_ui.dart';
 
-class ProductosScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> productos;
-  final Function(int) onEdit;
-  final Function(int) onDelete;
+enum _SortOption { expirationAsc, quantityDesc, quantityAsc }
 
-  const ProductosScreen({
-    super.key,
-    required this.productos,
-    required this.onEdit,
-    required this.onDelete,
-  });
+class ProductosScreen extends StatefulWidget {
+  final void Function(Map<String, dynamic> producto) onEdit;
+
+  const ProductosScreen({super.key, required this.onEdit});
 
   @override
   State<ProductosScreen> createState() => _ProductosScreenState();
 }
 
 class _ProductosScreenState extends State<ProductosScreen> {
-  // BUG #9 FIX: copia local — nunca mutamos widget.productos
-  late List<Map<String, dynamic>> _productos;
-  List<Map<String, dynamic>> _productosFiltrados = [];
   String _busqueda = '';
-
   FoodCategory? _filtroCategoria; // null = todas las categorías
   bool _soloStockBajo = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _productos = List<Map<String, dynamic>>.from(widget.productos);
-    _productosFiltrados = List<Map<String, dynamic>>.from(_productos);
-  }
+  _SortOption? _sortOption; // null = orden natural (el que entrega el stream)
 
   void _mostrarDialogoFiltros() {
     showModalBottomSheet(
@@ -93,7 +81,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         selected: _filtroCategoria == null,
                         onSelected: (_) {
                           setSheetState(() => _filtroCategoria = null);
-                          setState(_actualizarFiltroSinSetState);
+                          setState(() {});
                         },
                       ),
                       for (final cat in FoodCategory.values)
@@ -103,7 +91,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           selected: _filtroCategoria == cat,
                           onSelected: (_) {
                             setSheetState(() => _filtroCategoria = cat);
-                            setState(_actualizarFiltroSinSetState);
+                            setState(() {});
                           },
                         ),
                     ],
@@ -120,7 +108,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     value: _soloStockBajo,
                     onChanged: (value) {
                       setSheetState(() => _soloStockBajo = value);
-                      setState(_actualizarFiltroSinSetState);
+                      setState(() {});
                     },
                   ),
                   const Divider(),
@@ -132,51 +120,21 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ListTile(
                     title: const Text('Fecha de expiración (más cercana)'),
                     onTap: () {
-                      setState(() {
-                        _productosFiltrados.sort((a, b) {
-                          final da =
-                              DateTime.tryParse(a['expirationDate'] ?? '') ??
-                              DateTime(9999);
-                          final db =
-                              DateTime.tryParse(b['expirationDate'] ?? '') ??
-                              DateTime(9999);
-                          return da.compareTo(db);
-                        });
-                      });
+                      setState(() => _sortOption = _SortOption.expirationAsc);
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
                     title: const Text('Cantidad (mayor a menor)'),
                     onTap: () {
-                      setState(() {
-                        _productosFiltrados.sort((a, b) {
-                          final qa =
-                              int.tryParse(a['quantity']?.toString() ?? '0') ??
-                              0;
-                          final qb =
-                              int.tryParse(b['quantity']?.toString() ?? '0') ??
-                              0;
-                          return qb.compareTo(qa);
-                        });
-                      });
+                      setState(() => _sortOption = _SortOption.quantityDesc);
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
                     title: const Text('Cantidad (menor a mayor)'),
                     onTap: () {
-                      setState(() {
-                        _productosFiltrados.sort((a, b) {
-                          final qa =
-                              int.tryParse(a['quantity']?.toString() ?? '0') ??
-                              0;
-                          final qb =
-                              int.tryParse(b['quantity']?.toString() ?? '0') ??
-                              0;
-                          return qa.compareTo(qb);
-                        });
-                      });
+                      setState(() => _sortOption = _SortOption.quantityAsc);
                       Navigator.pop(context);
                     },
                   ),
@@ -189,46 +147,52 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  // delega la recarga al ProductProvider en lugar de Firestore directo
-  // FIX #H3: provider capturado ANTES del await para evitar uso de context
-  // en gap asíncrono (use_build_context_synchronously).
-  Future<void> _actualizarProductos() async {
-    final provider = context.read<ProductProvider>();
-    try {
-      await provider.loadProducts();
-      if (!mounted) return;
-      setState(() {
-        _productos = provider.productosMap;
-        _actualizarFiltroSinSetState();
-      });
-    } catch (e) {
-      debugPrint('Error al actualizar productos: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al actualizar los productos')),
-        );
-      }
-    }
-  }
-
-  // Versión sin setState para llamar desde dentro de otro setState
-  void _actualizarFiltroSinSetState() {
-    _productosFiltrados =
-        _productos.where((producto) {
+  /// Aplica búsqueda + filtros + orden (criterios persistentes en el
+  /// estado) sobre los datos frescos del provider. Se recalcula en cada
+  /// build — barato: son listas de inventario doméstico, no miles de ítems.
+  List<Map<String, dynamic>> _filtrarYOrdenar(
+    List<Map<String, dynamic>> productos,
+  ) {
+    final filtrados =
+        productos.where((producto) {
           final nombre = producto['name']?.toString().toLowerCase() ?? '';
           final coincideBusqueda = nombre.contains(_busqueda.toLowerCase());
 
-          // filtro por categoría
           final coincideCategoria =
               _filtroCategoria == null ||
               FoodCategory.fromName(producto['category'] as String?) ==
                   _filtroCategoria;
 
-          // filtro "solo stock bajo"
           final coincideStock = !_soloStockBajo || _esStockBajo(producto);
 
           return coincideBusqueda && coincideCategoria && coincideStock;
         }).toList();
+
+    switch (_sortOption) {
+      case _SortOption.expirationAsc:
+        filtrados.sort((a, b) {
+          final da =
+              DateTime.tryParse(a['expirationDate'] ?? '') ?? DateTime(9999);
+          final db =
+              DateTime.tryParse(b['expirationDate'] ?? '') ?? DateTime(9999);
+          return da.compareTo(db);
+        });
+      case _SortOption.quantityDesc:
+        filtrados.sort((a, b) {
+          final qa = int.tryParse(a['quantity']?.toString() ?? '0') ?? 0;
+          final qb = int.tryParse(b['quantity']?.toString() ?? '0') ?? 0;
+          return qb.compareTo(qa);
+        });
+      case _SortOption.quantityAsc:
+        filtrados.sort((a, b) {
+          final qa = int.tryParse(a['quantity']?.toString() ?? '0') ?? 0;
+          final qb = int.tryParse(b['quantity']?.toString() ?? '0') ?? 0;
+          return qa.compareTo(qb);
+        });
+      case null:
+        break;
+    }
+    return filtrados;
   }
 
   /// Alertas de Stock mínimo (#2): replica `Product.isLowStock`
@@ -244,6 +208,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // watch: reconstruye esta pantalla cuando el inventario del hogar
+    // cambia — propio o de cualquier otro miembro, desde cualquier
+    // dispositivo (ver ProductProvider.setActiveHousehold).
+    final productos = context.watch<ProductProvider>().productosMap;
+    final productosFiltrados = _filtrarYOrdenar(productos);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Productos Agregados'),
@@ -264,25 +234,18 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _busqueda = value;
-                  _actualizarFiltroSinSetState();
-                });
-              },
+              onChanged: (value) => setState(() => _busqueda = value),
             ),
           ),
           Expanded(
             child:
-                _productosFiltrados.isEmpty
+                productosFiltrados.isEmpty
                     ? const Center(child: Text('No hay productos agregados'))
-                    : RefreshIndicator(
-                      onRefresh: _actualizarProductos,
-                      child: ListView.builder(
-                        itemCount: _productosFiltrados.length,
-                        itemBuilder:
-                            (context, index) => _buildProductoCard(index),
-                      ),
+                    : ListView.builder(
+                      itemCount: productosFiltrados.length,
+                      itemBuilder:
+                          (context, index) =>
+                              _buildProductoCard(productosFiltrados[index]),
                     ),
           ),
         ],
@@ -290,8 +253,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  Widget _buildProductoCard(int index) {
-    final producto = _productosFiltrados[index];
+  Widget _buildProductoCard(Map<String, dynamic> producto) {
     final String dateStr = producto['expirationDate'] ?? '';
     // null = sin fecha de vencimiento registrada (frecuente en productos a
     // granel) — distinto de "vence hoy" (0), que antes se mostraba por error
@@ -405,17 +367,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
-              onPressed: () {
-                // Buscamos el índice en la lista original del padre
-                final idxOriginal = widget.productos.indexWhere(
-                  (p) => p['id'] == producto['id'],
-                );
-                widget.onEdit(idxOriginal != -1 ? idxOriginal : index);
-              },
+              onPressed: () => widget.onEdit(producto),
             ),
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _eliminarProductoConConfirmacion(index),
+              onPressed: () => _eliminarProductoConConfirmacion(producto),
             ),
           ],
         ),
@@ -486,8 +442,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  void _eliminarProductoConConfirmacion(int index) {
-    final producto = _productosFiltrados[index];
+  void _eliminarProductoConConfirmacion(Map<String, dynamic> producto) {
     final productoId = producto['id'] as String?;
 
     if (productoId == null) {
@@ -513,16 +468,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.of(ctx).pop();
-                // delega eliminación al ProductProvider
+                // delega eliminación al ProductProvider — la lista se
+                // actualiza sola vía el stream, no hace falta setState.
                 try {
                   await context.read<ProductProvider>().deleteProduct(
                     productoId,
                   );
                   if (!mounted) return;
-                  setState(() {
-                    _productos.removeWhere((p) => p['id'] == productoId);
-                    _productosFiltrados.removeAt(index);
-                  });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Producto eliminado correctamente'),

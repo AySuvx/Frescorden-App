@@ -1,12 +1,3 @@
-// lib/domain/repositories/i_auth_repository.dart
-//
-// Contrato (interfaz) que define QUÉ puede hacerse con la autenticación,
-// sin especificar CÓMO. El dominio depende de esta abstracción; la
-// implementación real (Firebase) vive en lib/data/.
-//
-// Regla de dependencias de Clean Architecture:
-//   domain ← data (data implementa domain, no al revés)
-
 import '../entities/app_user.dart';
 
 /// Excepción de dominio para casos que no vienen directamente de Firebase

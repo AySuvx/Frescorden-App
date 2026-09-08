@@ -6,7 +6,10 @@ service cloud.firestore {
       allow read, write, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Permitir acceso a los productos dentro de cada usuario
+    // Legacy (pre-Household): inventario por usuario individual. Se
+    // conserva de solo lectura/escritura para el propio dueño porque
+    // bootstrapPersonalHousehold copia (no borra) estos documentos al
+    // migrar a households/{id}/productos — quedan como respaldo.
     match /usuarios/{userId}/productos/{productId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
@@ -16,6 +19,79 @@ service cloud.firestore {
     // vencido, usado por AnalyticsRepositoryImpl para calcular los KPIs.
     match /usuarios/{userId}/historial/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ─── Módulo de Grupos Familiares (Household) ──────────────────────────
+    //
+    // Los IDs de documento de Firestore son strings aleatorios de 20+
+    // caracteres, no enumerables ni adivinables: permitir `get` (lectura
+    // puntual por ID ya conocido) a cualquier usuario autenticado es el
+    // patrón estándar de Firestore para "quien tiene el enlace/ID puede
+    // verlo" — necesario porque quien se está uniendo a un hogar todavía
+    // NO es miembro en el momento de leerlo por primera vez. `list`
+    // (queries) sobre la colección completa SÍ se deniega: la app nunca
+    // necesita listar todos los hogares, solo leer uno por ID conocido.
+    match /households/{householdId} {
+      allow get: if request.auth != null;
+      allow list: if false;
+
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.createdBy
+        && request.resource.data.members is list
+        && request.resource.data.members == [request.auth.uid];
+
+      // Dos casos permitidos:
+      //  1) Ya soy miembro: puedo actualizar libremente (nombre, código de
+      //     invitación, etc.).
+      //  2) Me estoy uniendo: los ÚNICOS cambios permitidos son agregarme a
+      //     mí mismo (y solo a mí) al final de `members`, y anotar mi email
+      //     en `memberEmails` (denormalizado para mostrar la lista de
+      //     miembros en la UI sin leer perfiles ajenos) — nada más.
+      allow update: if request.auth != null && (
+        request.auth.uid in resource.data.members ||
+        (
+          request.resource.data.members == resource.data.members.concat([request.auth.uid]) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberEmails'])
+        )
+      );
+
+      allow delete: if false;
+
+      // Inventario compartido del hogar: cualquier miembro lee/escribe.
+      // La membresía se resuelve leyendo el documento padre (mismo patrón
+      // documentado en las reglas oficiales de Firestore para
+      // subcolecciones con control de acceso basado en el padre).
+      match /productos/{productId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+      }
+    }
+
+    // Lookup de código de invitación → householdId. Colección aparte (en
+    // vez de una query `where('inviteCode', ...)` sobre /households) por
+    // la razón documentada arriba de las reglas de Household: una `list`
+    // restringida a miembros no puede usarse para encontrar un hogar en el
+    // que TODAVÍA no soy miembro ("rules are not filters" — Firestore
+    // deniega la query completa si no puede garantizar el resultado para
+    // cualquier documento que pudiera matchear).
+    //
+    // El código en sí (6 caracteres, ver InviteCodeGenerator) es el ID del
+    // documento: no enumerable por fuerza bruta razonable, así que un
+    // `get` público (cualquier autenticado) es seguro — equivalente a
+    // "quien tiene el código puede consultarlo". La vigencia real
+    // (¿expiró? ¿fue rotado?) se valida aparte contra el campo
+    // `inviteCode`/`codeExpiresAt` VIGENTE del documento Household — un
+    // código viejo cuyo lookup nunca se borró simplemente deja de
+    // coincidir después de una rotación.
+    match /inviteCodes/{code} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create, update: if request.auth != null
+        && request.resource.data.householdId is string
+        && request.auth.uid in get(
+             /databases/$(database)/documents/households/$(request.resource.data.householdId)
+           ).data.members;
+      allow delete: if false;
     }
   }
 }

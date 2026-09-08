@@ -3,7 +3,10 @@ plugins {
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
-    id("kotlin-android")
+    // Built-in Kotlin (AGP 9+): ya no se aplica el plugin kotlin-android por
+    // separado — AGP compila Kotlin de forma nativa. La versión de Kotlin
+    // para los módulos de plugins de terceros que aún lo requieren sigue
+    // resuelta desde settings.gradle.kts (org.jetbrains.kotlin.android).
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }

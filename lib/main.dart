@@ -37,6 +37,8 @@ import 'data/repositories/shopping_repository_impl.dart';
 import 'data/datasources/firestore_product_history_datasource.dart';
 import 'data/repositories/product_history_repository_impl.dart';
 import 'data/repositories/analytics_repository_impl.dart';
+import 'data/datasources/firestore_household_datasource.dart';
+import 'data/repositories/household_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/entities/app_user.dart';
@@ -48,6 +50,7 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/recipe_provider.dart';
 import 'presentation/providers/shopping_provider.dart';
 import 'presentation/providers/analytics_provider.dart';
+import 'presentation/providers/household_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,10 +65,34 @@ void main() async {
           create: (_) => ThemeProvider(),
         ),
 
+        // AuthProvider con inyección de dependencias
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(AuthRepositoryImpl()),
+        ),
+
+        // HouseholdProvider — Módulo de Grupos Familiares. Escucha
+        // directo authStateChanges (no ChangeNotifierProxyProvider: ver
+        // nota de diseño en household_provider.dart) para saber qué hogar
+        // activo mostrar apenas resuelve la sesión. Debe registrarse antes
+        // que ProductProvider: este último lo lee vía ProxyProvider.
+        ChangeNotifierProvider<HouseholdProvider>(
+          create: (context) => HouseholdProvider(
+            HouseholdRepositoryImpl(FirestoreHouseholdDataSource()),
+            context.read<AuthProvider>().authStateChanges,
+          ),
+        ),
+
         // ProductProvider con inyección de dependencias.
         // recibe también IProductHistoryRepository para registrar
         // cada eliminación en el historial (ver ProductProvider.deleteProduct).
-        ChangeNotifierProvider<ProductProvider>(
+        //
+        // ChangeNotifierProxyProvider en vez de ChangeNotifierProvider: el
+        // inventario ahora es por-hogar (households/{id}/productos), así
+        // que ProductProvider necesita enterarse cada vez que cambia el
+        // `activeHouseholdId` de HouseholdProvider (login, logout, creó o
+        // se unió a un hogar) para (re)suscribir su stream al hogar
+        // correcto — ver ProductProvider.setActiveHousehold.
+        ChangeNotifierProxyProvider<HouseholdProvider, ProductProvider>(
           create: (_) => ProductProvider(
             ProductRepositoryImpl(
               FirestoreProductDataSource(),
@@ -75,11 +102,10 @@ void main() async {
               ShoppingLocalDataSource(), // Opción A: catálogo de precios
             ),
           ),
-        ),
-
-        // AuthProvider con inyección de dependencias
-        ChangeNotifierProvider<AuthProvider>(
-          create: (_) => AuthProvider(AuthRepositoryImpl()),
+          update: (_, householdProvider, productProvider) {
+            return productProvider!
+              ..setActiveHousehold(householdProvider.activeHouseholdId);
+          },
         ),
 
         // RecipeProvider — catálogo de recetas (fuente local, ver

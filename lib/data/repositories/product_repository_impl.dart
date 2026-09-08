@@ -19,34 +19,34 @@ class ProductRepositoryImpl implements IProductRepository {
   ProductRepositoryImpl(this._dataSource);
 
   @override
-  Future<List<Product>> getProducts() {
-    return _dataSource.getAll();
+  Stream<List<Product>> watchProducts(String householdId) {
+    return _dataSource.watchAll(householdId);
   }
 
   @override
-  Future<Product> addProduct(Product product) async {
+  Future<Product> addProduct(String householdId, Product product) async {
     final model = ProductModel.fromEntity(product);
-    return _dataSource.add(model);
+    return _dataSource.add(householdId, model);
   }
 
   @override
-  Future<void> updateProduct(Product product) {
+  Future<void> updateProduct(String householdId, Product product) {
     final model = ProductModel.fromEntity(product);
-    return _dataSource.update(product.id, model);
+    return _dataSource.update(householdId, product.id, model);
   }
 
   @override
-  Future<void> deleteProduct(String id) {
-    return _dataSource.delete(id);
+  Future<void> deleteProduct(String householdId, String id) {
+    return _dataSource.delete(householdId, id);
   }
 
   @override
-  Future<Product?> findByBarcode(String barcode) {
-    return _dataSource.findByBarcode(barcode);
+  Future<Product?> findByBarcode(String householdId, String barcode) {
+    return _dataSource.findByBarcode(householdId, barcode);
   }
 
   @override
-  Future<Product?> findByName(String name) {
-    return _dataSource.findByName(name);
+  Future<Product?> findByName(String householdId, String name) {
+    return _dataSource.findByName(householdId, name);
   }
 }
