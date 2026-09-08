@@ -32,6 +32,10 @@ extension FoodCategoryUi on FoodCategory {
         return Icons.inventory_2_outlined;
       case FoodCategory.otros:
         return Icons.category_outlined;
+      case FoodCategory.frutas:
+        return Icons.apple;
+      case FoodCategory.verdurasYHortalizas:
+        return Icons.grass_outlined;
     }
   }
 
@@ -61,6 +65,10 @@ extension FoodCategoryUi on FoodCategory {
         return const Color(0xFF90A4AE); // gris azulado
       case FoodCategory.otros:
         return const Color(0xFFA1887F); // marrón neutro
+      case FoodCategory.frutas:
+        return const Color(0xFFFF8A65); // naranja rojizo
+      case FoodCategory.verdurasYHortalizas:
+        return const Color(0xFF66BB6A); // verde
     }
   }
 }

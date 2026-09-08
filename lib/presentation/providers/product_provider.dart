@@ -26,6 +26,7 @@ import '../../domain/entities/product.dart';
 import '../../domain/entities/product_history_entry.dart';
 import '../../domain/repositories/i_product_repository.dart';
 import '../../domain/repositories/i_product_history_repository.dart';
+import '../utils/notification_service.dart';
 
 class ProductProvider extends ChangeNotifier {
   final IProductRepository _repository;
@@ -181,6 +182,7 @@ class ProductProvider extends ChangeNotifier {
         // ── Edición completa ────────────────────────────────────────────────
         final updated = _productFromMap(map);
         await _repository.updateProduct(householdId, updated);
+        await _scheduleNotifications(updated);
       } else {
         // ── Agregar o acumular ──────────────────────────────────────────────
         final barcode = map['barcode'] as String? ?? '';
@@ -213,15 +215,30 @@ class ProductProvider extends ChangeNotifier {
             map,
           ).copyWith(id: existing.id, quantity: newQty);
           await _repository.updateProduct(householdId, updated);
+          await _scheduleNotifications(updated);
         } else {
           // Nuevo producto
           final newProduct = _productFromMap(map);
-          await _repository.addProduct(householdId, newProduct);
+          final saved = await _repository.addProduct(householdId, newProduct);
+          await _scheduleNotifications(saved);
         }
       }
     } catch (e) {
       debugPrint('ProductProvider.saveProduct error: $e');
       rethrow; // La pantalla decide si muestra un SnackBar
+    }
+  }
+
+  /// Programa (o reprograma, si ya existía una con el mismo ID
+  /// determinista) las alertas de vencimiento y de almacenamiento a granel
+  /// del producto recién guardado. Best-effort: un fallo aquí no debe
+  /// deshacer el guardado, que ya se confirmó en Firestore.
+  Future<void> _scheduleNotifications(Product product) async {
+    try {
+      await NotificationService.instance.scheduleExpirationAlert(product);
+      await NotificationService.instance.scheduleBulkStorageAlert(product);
+    } catch (e) {
+      debugPrint('ProductProvider._scheduleNotifications error: $e');
     }
   }
 
@@ -254,6 +271,11 @@ class ProductProvider extends ChangeNotifier {
       debugPrint('ProductProvider.deleteProduct error: $e');
       rethrow;
     }
+
+    // Cancela cualquier alerta pendiente (vencimiento/almacenamiento) de
+    // este producto — "consumirlo" en la UI también pasa por acá, ya que
+    // ambos casos son el mismo deleteProduct.
+    unawaited(NotificationService.instance.cancelForProduct(id));
 
     if (resolved != null) {
       unawaited(_logHistory(resolved));

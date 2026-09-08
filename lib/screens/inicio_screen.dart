@@ -14,6 +14,8 @@ import 'contact_screen.dart';
 import 'about_screen.dart';
 import 'household_screen.dart';
 import 'assistant_screen.dart';
+import 'category_picker_screen.dart';
+import '../domain/entities/food_category.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -45,10 +47,17 @@ class _InicioScreenState extends State<InicioScreen> {
   }
 
 
-  /// Limpieza de escáner: ya no existe el flujo de escaneo, así que
-  /// toda alta nueva es manual (`isManualAdd: true`). [isBulkEntry] distingue
-  /// el "Registro a Granel" del alta estándar por categoría.
-  void _navegarAgregarProducto({bool isBulkEntry = false}) {
+  /// Flujo "Por Categoría" de la manzanita: primero el selector de
+  /// categorías (CategoryPickerScreen), después el formulario estándar con
+  /// esa categoría ya preseleccionada. Si el usuario vuelve atrás sin
+  /// elegir ninguna, no se abre el formulario.
+  Future<void> _navegarAgregarPorCategoria() async {
+    final categoria = await Navigator.push<FoodCategory>(
+      context,
+      MaterialPageRoute(builder: (_) => const CategoryPickerScreen()),
+    );
+    if (categoria == null || !mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -56,7 +65,23 @@ class _InicioScreenState extends State<InicioScreen> {
             (_) => AddProductScreen(
               onSave: (_) {},
               isManualAdd: true,
-              isBulkEntry: isBulkEntry,
+              initialCategory: categoria,
+            ),
+      ),
+    );
+  }
+
+  /// Flujo "A Granel" de la manzanita: mismo formulario, sin paso de
+  /// selección de categoría — va directo con isBulkEntry: true.
+  void _navegarAgregarAGranel() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => AddProductScreen(
+              onSave: (_) {},
+              isManualAdd: true,
+              isBulkEntry: true,
             ),
       ),
     );
@@ -274,8 +299,8 @@ class _InicioScreenState extends State<InicioScreen> {
                 ],
               ),
       floatingActionButton: ButtonPlus(
-        onManualAdd: () => _navegarAgregarProducto(),
-        onBulkAdd: () => _navegarAgregarProducto(isBulkEntry: true),
+        onManualAdd: _navegarAgregarPorCategoria,
+        onBulkAdd: _navegarAgregarAGranel,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );

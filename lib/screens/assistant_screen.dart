@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,9 +23,25 @@ class AssistantScreen extends StatefulWidget {
 class _AssistantScreenState extends State<AssistantScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _connectivity = Connectivity();
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  bool _isOffline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectivity.checkConnectivity().then(_updateOffline);
+    _connectivitySub = _connectivity.onConnectivityChanged.listen(_updateOffline);
+  }
+
+  void _updateOffline(List<ConnectivityResult> result) {
+    if (!mounted) return;
+    setState(() => _isOffline = !result.hasConnectivity);
+  }
 
   @override
   void dispose() {
+    _connectivitySub?.cancel();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -66,6 +85,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
       ),
       body: Column(
         children: [
+          if (_isOffline) _buildOfflineBanner(),
           Expanded(
             child: provider.messages.isEmpty
                 ? _buildEmptyState()
@@ -81,7 +101,27 @@ class _AssistantScreenState extends State<AssistantScreen> {
                     },
                   ),
           ),
-          _buildInputBar(provider.isLoading),
+          _buildInputBar(provider.isLoading || _isOffline),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineBanner() {
+    return Container(
+      width: double.infinity,
+      color: Colors.orange.shade100,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Icon(Icons.wifi_off, size: 18, color: Colors.orange.shade800),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Sin conexión — el chat con el asistente necesita internet.',
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
+            ),
+          ),
         ],
       ),
     );
@@ -107,7 +147,10 @@ class _AssistantScreenState extends State<AssistantScreen> {
             alignment: WrapAlignment.center,
             children: [
               for (final s in _suggestions)
-                ActionChip(label: Text(s), onPressed: () => _send(s)),
+                ActionChip(
+                  label: Text(s),
+                  onPressed: _isOffline ? null : () => _send(s),
+                ),
             ],
           ),
         ],
@@ -163,7 +206,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
   }
 
-  Widget _buildInputBar(bool isLoading) {
+  Widget _buildInputBar(bool disabled) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -172,7 +215,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
             Expanded(
               child: TextField(
                 controller: _controller,
-                enabled: !isLoading,
+                enabled: !disabled,
                 decoration: const InputDecoration(
                   hintText: 'Escribe tu consulta...',
                   border: OutlineInputBorder(),
@@ -183,7 +226,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
             ),
             const SizedBox(width: 8),
             IconButton.filled(
-              onPressed: isLoading ? null : () => _send(),
+              onPressed: disabled ? null : () => _send(),
               icon: const Icon(Icons.send),
               style: IconButton.styleFrom(backgroundColor: Colors.green),
             ),

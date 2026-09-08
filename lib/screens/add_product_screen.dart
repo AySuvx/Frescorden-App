@@ -9,11 +9,9 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
-import 'package:timezone/timezone.dart' as tz;
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -37,12 +35,18 @@ class AddProductScreen extends StatefulWidget {
   /// y deja el formulario listo para registrar la fecha de almacenamiento.
   final bool isBulkEntry;
 
+  /// Flujo "Por Categoría" del FAB: categoría ya elegida en
+  /// CategoryPickerScreen, antes de llegar a este formulario. Se ignora
+  /// si [initialProduct] no es null (editar respeta la categoría guardada).
+  final FoodCategory? initialCategory;
+
   const AddProductScreen({
     super.key,
     required this.onSave,
     this.initialProduct,
     this.isManualAdd = false,
     this.isBulkEntry = false,
+    this.initialCategory,
   });
 
   @override
@@ -67,8 +71,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _minStockController =
       TextEditingController(); // stock mínimo (opcional)
   final picker = ImagePicker();
-  final FlutterLocalNotificationsPlugin _notifPlugin =
-      FlutterLocalNotificationsPlugin();
   final List<String> _units = ['unidad', 'kg', 'g', 'L', 'ml', 'lbs', 'oz'];
 
   static const _kAlarmPermAsked = 'exact_alarm_permission_asked';
@@ -76,8 +78,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   void initState() {
     super.initState();
-    tzdata.initializeTimeZones();
-    _initializeNotificationPlugin();
     _checkExactAlarmPermission();
 
     if (widget.initialProduct != null) {
@@ -123,6 +123,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (widget.isBulkEntry) {
         _selectedCategory = FoodCategory.frutasYVerduras;
         _selectedUnit = 'kg';
+      } else if (widget.initialCategory != null) {
+        _selectedCategory = widget.initialCategory!;
       }
     }
   }
@@ -135,15 +137,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _quantityController.dispose();
     _minStockController.dispose();
     super.dispose();
-  }
-
-  Future<void> _initializeNotificationPlugin() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-    );
-    await _notifPlugin.initialize(settings);
   }
 
   // BUG #1 FIX: usa DeviceInfoPlugin para el API level real
@@ -209,37 +202,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  // BUG #2 FIX: se elimina matchDateTimeComponents → disparo único
-  Future<void> _scheduleNotification(
-    String productName,
-    DateTime expiryDate,
-  ) async {
-    final notificationTime = expiryDate.subtract(const Duration(days: 3));
-    if (!notificationTime.isAfter(DateTime.now())) return;
-
-    try {
-      await _notifPlugin.zonedSchedule(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        'Producto por vencer',
-        'El producto "$productName" vencerá en 3 días.',
-        tz.TZDateTime.from(notificationTime, tz.local),
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'vencimiento_channel',
-            'Notificaciones de Vencimiento',
-            channelDescription:
-                'Avisos de productos cercanos a su fecha de vencimiento',
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      );
-    } catch (e) {
-      debugPrint('Error al programar la notificación: $e');
-    }
-  }
-
   // BUG #4 FIX: copia la imagen al directorio permanente
   Future<File> _copyImageToPermanentStorage(File tempFile) async {
     final appDir = await getApplicationDocumentsDirectory();
@@ -283,8 +245,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
       return;
     }
 
-    if (name.isEmpty || quantity.isEmpty || int.tryParse(quantity) == null) {
+    final parsedQuantity = int.tryParse(quantity);
+    if (name.isEmpty || quantity.isEmpty || parsedQuantity == null) {
       _showSnack('Por favor, completa todos los campos correctamente');
+      setState(() => _isSaving = false);
+      return;
+    }
+    if (parsedQuantity <= 0) {
+      _showSnack('La cantidad debe ser mayor a cero');
       setState(() => _isSaving = false);
       return;
     }
@@ -326,15 +294,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
         if (minStock != null) 'minStock': minStock,
       };
 
-      // Delegar al provider — sin Firestore directo
+      // Delegar al provider — sin Firestore directo. También programa/
+      // reprograma las notificaciones (vencimiento y almacenamiento a
+      // granel) vía NotificationService, con el producto ya guardado
+      // (con su id real, necesario para el ID determinista de la
+      // notificación) — ver ProductProvider.saveProduct.
       await context.read<ProductProvider>().saveProduct(productoMap);
-
-      // Notificación: lógica de presentación, se mantiene aquí. Sin fecha
-      // de vencimiento no hay nada que programar (era _expiryDate! antes,
-      // lo que crasheaba en cuanto la fecha dejó de ser obligatoria).
-      if (_expiryDate != null) {
-        await _scheduleNotification(name, _expiryDate!);
-      }
 
       // Callback opcional (inicio_screen ya no lo usa para Firestore,
       // pero se mantiene por si otras pantallas dependen de él)
@@ -353,6 +318,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  /// Categorías seleccionables + la actual, aunque sea la legacy
+  /// `frutasYVerduras` (editar un producto viejo no debe romper el
+  /// dropdown por value sin match en items).
+  List<FoodCategory> get _categoryOptions {
+    final options = FoodCategory.selectable;
+    return options.contains(_selectedCategory)
+        ? options
+        : [_selectedCategory, ...options];
   }
 
   void _showSnack(String message) {
@@ -434,6 +409,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]'),
+                ),
+                LengthLimitingTextInputFormatter(30),
+              ],
               decoration: InputDecoration(
                 hintText: 'Ej: Leche deslactosada',
                 border: OutlineInputBorder(
@@ -478,6 +459,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   child: TextField(
                     controller: _quantityController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       hintText: 'Ej: 3',
                       border: OutlineInputBorder(
@@ -526,7 +508,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   isExpanded: true,
                   value: _selectedCategory,
                   items:
-                      FoodCategory.values
+                      _categoryOptions
                           .map(
                             (cat) => DropdownMenuItem(
                               value: cat,
@@ -564,6 +546,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             TextField(
               controller: _minStockController,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 hintText: 'Ej: 2',
                 prefixIcon: const Icon(Icons.warning_amber_outlined),

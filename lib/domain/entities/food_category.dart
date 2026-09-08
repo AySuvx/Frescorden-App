@@ -18,7 +18,15 @@ enum FoodCategory {
   congelados,
   condimentosYSalsas,
   enlatadosYConservas,
-  otros;
+  otros,
+
+  /// Catálogo ampliado (Fase 4.5): `frutasYVerduras` combinaba ambas.
+  /// Se agregan por separado para el selector nuevo — `frutasYVerduras` se
+  /// conserva (no se borra ni renombra) para que los productos ya
+  /// guardados con esa categoría sigan resolviendo bien con [fromName];
+  /// solo queda fuera de [selectable] para no listarla dos veces.
+  frutas,
+  verdurasYHortalizas;
 
   /// Etiqueta legible para mostrar en la UI.
   String get label {
@@ -26,7 +34,7 @@ enum FoodCategory {
       case FoodCategory.lacteos:
         return 'Lácteos';
       case FoodCategory.carnesYEmbutidos:
-        return 'Carnes y embutidos';
+        return 'Carnes y aves';
       case FoodCategory.frutasYVerduras:
         return 'Frutas y verduras';
       case FoodCategory.granosYCereales:
@@ -38,13 +46,24 @@ enum FoodCategory {
       case FoodCategory.congelados:
         return 'Congelados';
       case FoodCategory.condimentosYSalsas:
-        return 'Condimentos y salsas';
+        return 'Condimentos y especias';
       case FoodCategory.enlatadosYConservas:
         return 'Enlatados y conservas';
       case FoodCategory.otros:
         return 'Otros';
+      case FoodCategory.frutas:
+        return 'Frutas';
+      case FoodCategory.verdurasYHortalizas:
+        return 'Verduras y hortalizas';
     }
   }
+
+  /// Categorías que se ofrecen para elegir (selector de "Por Categoría",
+  /// filtros, formulario). Excluye `frutasYVerduras`: es la categoría
+  /// combinada legacy, ya reemplazada por `frutas`/`verdurasYHortalizas`
+  /// por separado — se mantiene solo para no romper productos existentes.
+  static List<FoodCategory> get selectable =>
+      values.where((c) => c != FoodCategory.frutasYVerduras).toList();
 
   /// Reconstruye una [FoodCategory] a partir del nombre guardado en
   /// Firestore ([FoodCategory.name]). Si el valor es nulo, vacío o no

@@ -20,6 +20,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:provider/provider.dart';
@@ -60,6 +61,13 @@ import 'presentation/providers/assistant_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  // Persistencia offline nativa: el inventario queda disponible sin
+  // conexión y las escrituras se encolan hasta reconectar. En Android ya
+  // viene activada por defecto, pero se declara explícito para que el
+  // comportamiento no dependa de un default de la plataforma.
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
   // Firebase AI Logic exige App Check. En debug se usa el proveedor debug
   // (requiere registrar el token que imprime logcat en la consola de
   // Firebase); en release, Play Integrity.

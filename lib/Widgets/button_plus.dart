@@ -5,13 +5,13 @@
 // El proyecto ya no depende de ningún paquete de escaneo (regla #4: sin
 // lógica de escaneo manual ni por cámara).
 //
-// El Speed Dial se mantiene con dos acciones, ambas conectadas a la misma
-// lógica de ProductProvider vía los callbacks del widget padre:
-//   - "Agregar por Categoría": flujo estándar (AddProductScreen con
-//     selección de categoría, tal como ya existía).
-//   - "Registro a Granel": mismo formulario, pre-configurado para
-//     perecederos comprados a granel (plaza/mercado) — ver
-//     AddProductScreen(isBulkEntry: true).
+// El Speed Dial se mantiene con dos acciones, cada una con su propio flujo
+// de navegación (ver inicio_screen.dart):
+//   - "Agregar por Categoría": abre primero CategoryPickerScreen (grid de
+//     categorías) y luego AddProductScreen con esa categoría preseleccionada.
+//   - "Registro a Granel": va directo al mismo formulario, pre-configurado
+//     para perecederos comprados a granel (plaza/mercado) — sin paso de
+//     selección de categoría — ver AddProductScreen(isBulkEntry: true).
 //
 // FIX #C2 (se conserva): guard `if (!mounted) return;` antes de tocar
 // estado tras un await, aunque ya no queda ningún await de por medio en
