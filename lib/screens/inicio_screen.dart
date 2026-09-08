@@ -13,6 +13,7 @@ import 'settings_screen.dart';
 import 'contact_screen.dart';
 import 'about_screen.dart';
 import 'household_screen.dart';
+import 'assistant_screen.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -155,6 +156,17 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const HouseholdScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.smart_toy),
+              title: const Text('Asistente Culinario'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AssistantScreen()),
                 );
               },
             ),

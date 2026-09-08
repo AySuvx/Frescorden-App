@@ -8,6 +8,12 @@
 //  - signInWithGoogle cierra la sesión de Google previa antes de elegir cuenta.
 //  - deleteAccount borra primero el documento Firestore del usuario.
 //
+// google_sign_in v7: API rediseñada como singleton (`GoogleSignIn.instance`,
+// ya no `GoogleSignIn()`), separa autenticación (idToken) de autorización
+// (scopes/accessToken) — `GoogleSignInAuthentication` ya solo expone
+// `idToken`. `signIn()` se reemplaza por `authenticate()`, que lanza
+// `GoogleSignInException` en vez de devolver `null` al cancelar.
+//
 // Las excepciones de Firebase (FirebaseAuthException) se dejan propagar tal
 // cual para que la presentación conserve los mismos mensajes de error.
 
@@ -20,16 +26,21 @@ import '../../domain/repositories/i_auth_repository.dart';
 
 class AuthRepositoryImpl implements IAuthRepository {
   final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final FirebaseFirestore _db;
+  bool _googleSignInReady = false;
 
   AuthRepositoryImpl({
     FirebaseAuth? auth,
-    GoogleSignIn? googleSignIn,
     FirebaseFirestore? db,
   })  : _auth = auth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(),
         _db = db ?? FirebaseFirestore.instance;
+
+  Future<void> _ensureGoogleSignInReady() async {
+    if (_googleSignInReady) return;
+    await _googleSignIn.initialize();
+    _googleSignInReady = true;
+  }
 
   AppUser? _toAppUser(User? user) {
     if (user == null) return null;
@@ -74,16 +85,18 @@ class AuthRepositoryImpl implements IAuthRepository {
 
   @override
   Future<void> signInWithGoogle() async {
+    await _ensureGoogleSignInReady();
     await _googleSignIn.signOut(); // Asegura elegir cuenta nueva
-    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) return; // Usuario canceló el selector
 
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-    await _auth.signInWithCredential(credential);
+    try {
+      final googleUser = await _googleSignIn.authenticate();
+      final idToken = googleUser.authentication.idToken;
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      await _auth.signInWithCredential(credential);
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) return; // Usuario canceló
+      rethrow;
+    }
   }
 
   @override
@@ -94,6 +107,7 @@ class AuthRepositoryImpl implements IAuthRepository {
   @override
   Future<void> signOut() async {
     await _auth.signOut();
+    await _ensureGoogleSignInReady();
     await _googleSignIn.signOut();
   }
 

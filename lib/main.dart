@@ -18,7 +18,9 @@
 // través de context.read<...>() / context.watch<...>().
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -39,6 +41,8 @@ import 'data/repositories/product_history_repository_impl.dart';
 import 'data/repositories/analytics_repository_impl.dart';
 import 'data/datasources/firestore_household_datasource.dart';
 import 'data/repositories/household_repository_impl.dart';
+import 'data/datasources/gemini_assistant_data_source.dart';
+import 'data/repositories/assistant_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/entities/app_user.dart';
@@ -51,10 +55,19 @@ import 'presentation/providers/recipe_provider.dart';
 import 'presentation/providers/shopping_provider.dart';
 import 'presentation/providers/analytics_provider.dart';
 import 'presentation/providers/household_provider.dart';
+import 'presentation/providers/assistant_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  // Firebase AI Logic exige App Check. En debug se usa el proveedor debug
+  // (requiere registrar el token que imprime logcat en la consola de
+  // Firebase); en release, Play Integrity.
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: kDebugMode
+        ? const AndroidDebugProvider()
+        : const AndroidPlayIntegrityProvider(),
+  );
   await AndroidAlarmManager.initialize();
 
   runApp(
@@ -131,6 +144,14 @@ void main() async {
             GetAnalyticsUseCase(
               AnalyticsRepositoryImpl(FirestoreProductHistoryDataSource()),
             ),
+          ),
+        ),
+
+        // AssistantProvider — asistente culinario (Gemini vía firebase_ai).
+        ChangeNotifierProvider<AssistantProvider>(
+          create: (context) => AssistantProvider(
+            AssistantRepositoryImpl(GeminiAssistantDataSource()),
+            context.read<ProductProvider>(),
           ),
         ),
       ],

@@ -14,3 +14,11 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Asistente Culinario (Gemini)
+
+Usa `firebase_ai` (SDK oficial vigente; `google_generative_ai` está
+deprecado). No requiere una API key propia del cliente — se autentica con
+el proyecto Firebase ya configurado. Antes de usar el asistente, habilita
+**Gemini API** para este proyecto desde la consola de Firebase:
+https://console.firebase.google.com/project/frescorden/ai (sección "AI Logic").

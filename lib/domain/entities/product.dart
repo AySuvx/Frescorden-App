@@ -74,6 +74,11 @@ class Product {
   /// Días transcurridos desde que el producto entró al inventario.
   int get daysInStorage => DateTime.now().difference(entryDate).inDays;
 
+  /// Días que faltan para el vencimiento (negativo si ya venció).
+  /// `null` cuando el producto no tiene fecha de vencimiento registrada.
+  int? get daysToExpiration =>
+      expirationDate?.difference(DateTime.now()).inDays;
+
   /// Indica si el tiempo almacenado merece una alerta visual.
   /// Solo relevante para productos a granel (`isBulk`); un producto
   /// empacado normal no dispara esta alerta aunque lleve muchos días.
