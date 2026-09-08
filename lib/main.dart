@@ -44,9 +44,12 @@ import 'data/datasources/firestore_household_datasource.dart';
 import 'data/repositories/household_repository_impl.dart';
 import 'data/datasources/gemini_assistant_data_source.dart';
 import 'data/repositories/assistant_repository_impl.dart';
+import 'data/datasources/firestore_activity_log_datasource.dart';
+import 'data/repositories/activity_log_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/entities/app_user.dart';
+import 'domain/repositories/i_activity_log_repository.dart';
 import 'domain/usecases/get_analytics_usecase.dart';
 
 // Capa de presentación
@@ -103,9 +106,23 @@ void main() async {
           ),
         ),
 
+        // IActivityLogRepository — log de auditoría del inventario
+        // (Fase 4.5, Módulo 2). Provider simple (no ChangeNotifier: solo
+        // envuelve llamadas a Firestore, sin estado propio). Se registra
+        // antes que ProductProvider para poder inyectarlo ahí, y también
+        // lo leen las pantallas directamente (ver HouseholdScreen) para
+        // mostrar el historial de actividad con un StreamBuilder.
+        Provider<IActivityLogRepository>(
+          create: (_) => ActivityLogRepositoryImpl(
+            FirestoreActivityLogDataSource(),
+          ),
+        ),
+
         // ProductProvider con inyección de dependencias.
-        // recibe también IProductHistoryRepository para registrar
-        // cada eliminación en el historial (ver ProductProvider.deleteProduct).
+        // recibe también IProductHistoryRepository para registrar cada
+        // eliminación en el historial, e IActivityLogRepository para el
+        // log de actividad del hogar (ver ProductProvider.deleteProduct /
+        // saveProduct).
         //
         // ChangeNotifierProxyProvider en vez de ChangeNotifierProvider: el
         // inventario ahora es por-hogar (households/{id}/productos), así
@@ -114,7 +131,7 @@ void main() async {
         // se unió a un hogar) para (re)suscribir su stream al hogar
         // correcto — ver ProductProvider.setActiveHousehold.
         ChangeNotifierProxyProvider<HouseholdProvider, ProductProvider>(
-          create: (_) => ProductProvider(
+          create: (context) => ProductProvider(
             ProductRepositoryImpl(
               FirestoreProductDataSource(),
             ),
@@ -122,6 +139,7 @@ void main() async {
               FirestoreProductHistoryDataSource(),
               ShoppingLocalDataSource(), // Opción A: catálogo de precios
             ),
+            context.read<IActivityLogRepository>(),
           ),
           update: (_, householdProvider, productProvider) {
             return productProvider!

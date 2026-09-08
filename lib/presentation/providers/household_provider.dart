@@ -147,6 +147,17 @@ class HouseholdProvider extends ChangeNotifier {
         _household = household;
         _isLoading = false;
         notifyListeners();
+
+        // Me expulsaron (dejé de estar en members, pero el hogar sigue
+        // existiendo): autocorrijo limpiando mi propio activeHouseholdId.
+        // watchActiveHouseholdId recoge el null y dispara el bootstrap de
+        // un hogar personal nuevo, igual que un usuario sin hogar — sin
+        // esto quedaría "atado" a un hogar cuyo inventario ya no puede
+        // leer (las reglas de Firestore exigen ser miembro).
+        final uid = _uid;
+        if (uid != null && household != null && !household.isMember(uid)) {
+          unawaited(_repository.clearActiveHousehold(uid));
+        }
       },
       onError: (Object e) {
         _error = e.toString();
@@ -223,6 +234,69 @@ class HouseholdProvider extends ChangeNotifier {
     }
     try {
       return await _repository.generateNewInviteCode(householdId);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Expulsa a [memberUid] del hogar activo. Solo el administrador
+  /// (creador) puede expulsar a OTROS miembros — restricción aplicada
+  /// aquí, no en firestore.rules (mismo modelo de confianza que el resto
+  /// del hogar: cualquier miembro actual puede escribir libremente en el
+  /// documento). El propio administrador no puede expulsarse a sí mismo
+  /// por esta vía — ver [leaveHousehold].
+  Future<void> removeMember(String memberUid) async {
+    final household = _household;
+    final uid = _uid;
+    if (household == null || uid == null) {
+      throw const HouseholdException('No hay un hogar activo.');
+    }
+    if (uid != household.createdBy) {
+      throw const HouseholdException(
+        'Solo el administrador del hogar puede expulsar miembros.',
+      );
+    }
+    if (memberUid == household.createdBy) {
+      throw const HouseholdException(
+        'El administrador no puede expulsarse a sí mismo.',
+      );
+    }
+
+    try {
+      await _repository.removeMember(
+        householdId: household.id,
+        memberUid: memberUid,
+      );
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// El usuario actual sale del hogar activo: se quita de `members` y
+  /// limpia su `activeHouseholdId`. El bootstrap (mismo mecanismo que un
+  /// usuario nuevo sin hogar) le crea uno personal solo — ver
+  /// _onActiveHouseholdIdChanged. El administrador no puede salir por acá
+  /// (dejaría el hogar sin nadie que pueda expulsar/administrar); debe
+  /// expulsar a los demás miembros primero.
+  Future<void> leaveHousehold() async {
+    final household = _household;
+    final uid = _uid;
+    if (household == null || uid == null) {
+      throw const HouseholdException('No hay un hogar activo.');
+    }
+    if (uid == household.createdBy) {
+      throw const HouseholdException(
+        'El administrador no puede salir de su propio hogar.',
+      );
+    }
+
+    try {
+      await _repository.removeMember(householdId: household.id, memberUid: uid);
+      await _repository.clearActiveHousehold(uid);
     } catch (e) {
       _error = e.toString();
       notifyListeners();

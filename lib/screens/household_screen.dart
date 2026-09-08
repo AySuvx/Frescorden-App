@@ -14,7 +14,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/entities/activity_log_entry.dart';
 import '../domain/entities/household.dart';
+import '../domain/repositories/i_activity_log_repository.dart';
 import '../domain/repositories/i_household_repository.dart';
 import '../presentation/providers/household_provider.dart';
 
@@ -67,6 +69,65 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     }
   }
 
+  Future<void> _confirmRemoveMember(String memberUid, String memberLabel) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Expulsar miembro'),
+        content: Text('¿Quitar a "$memberLabel" del hogar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Expulsar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    try {
+      await context.read<HouseholdProvider>().removeMember(memberUid);
+      _showSnack('Miembro expulsado.');
+    } catch (e) {
+      _showSnack(_messageFor(e, 'No se pudo expulsar al miembro.'));
+    }
+  }
+
+  Future<void> _confirmLeaveHousehold() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Salir del hogar'),
+        content: const Text(
+          '¿Salir de este hogar? Dejarás de ver su inventario compartido; '
+          'se te asignará uno personal.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Salir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    try {
+      await context.read<HouseholdProvider>().leaveHousehold();
+      _showSnack('Saliste del hogar.');
+    } catch (e) {
+      _showSnack(_messageFor(e, 'No se pudo salir del hogar.'));
+    }
+  }
+
   Future<void> _joinHousehold() async {
     final code = _joinCodeController.text.trim().toUpperCase();
     if (code.length != 6) {
@@ -108,6 +169,25 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
               _buildHouseholdInfo(household, provider),
               const SizedBox(height: 20),
               _buildInviteCodeSection(household),
+              if (provider.currentUid != household.createdBy) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _confirmLeaveHousehold,
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    label: const Text(
+                      'Salir del Hogar',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              _buildActivityLogSection(household.id),
               const SizedBox(height: 24),
             ] else if (provider.isLoading) ...[
               const Center(
@@ -180,6 +260,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   ) {
     final isYou = uid == provider.currentUid;
     final isAdmin = uid == household.createdBy;
+    final iAmAdmin = provider.currentUid == household.createdBy;
     // Fallback al uid si todavía no se conoce el email (p. ej. hogares
     // creados antes de que memberEmails existiera) — mejor mostrar algo
     // que ocultar al miembro.
@@ -192,7 +273,15 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
       ),
       title: Text(label, overflow: TextOverflow.ellipsis),
       subtitle: isAdmin ? const Text('Administrador') : null,
-      trailing: isYou ? const Chip(label: Text('Tú')) : null,
+      trailing: isYou
+          ? const Chip(label: Text('Tú'))
+          : (iAmAdmin
+              ? IconButton(
+                  icon: const Icon(Icons.person_remove, color: Colors.red),
+                  tooltip: 'Expulsar',
+                  onPressed: () => _confirmRemoveMember(uid, label),
+                )
+              : null),
     );
   }
 
@@ -277,6 +366,82 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildActivityLogSection(String householdId) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        leading: const Icon(Icons.history, color: Colors.green),
+        title: const Text(
+          'Historial de Actividad',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        children: [
+          StreamBuilder<List<ActivityLogEntry>>(
+            stream: context
+                .read<IActivityLogRepository>()
+                .watchRecentActivity(householdId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final entries = snapshot.data ?? const [];
+              if (entries.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Todavía no hay actividad registrada.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final entry in entries) _buildActivityTile(entry),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityTile(ActivityLogEntry entry) {
+    final (icon, color) = switch (entry.action) {
+      ActivityAction.creado => (Icons.add_circle_outline, Colors.green),
+      ActivityAction.editado => (Icons.edit_outlined, Colors.blue),
+      ActivityAction.consumido => (Icons.check_circle_outline, Colors.teal),
+      ActivityAction.eliminado => (Icons.delete_outline, Colors.red),
+    };
+
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, color: color),
+      title: Text('${entry.action.label}: ${entry.productName}'),
+      subtitle: Text(entry.userEmail ?? 'Miembro del hogar'),
+      trailing: Text(
+        _formatLogTime(entry.timestamp),
+        style: const TextStyle(fontSize: 11, color: Colors.grey),
+      ),
+    );
+  }
+
+  String _formatLogTime(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    final now = DateTime.now();
+    final sameDay = local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    if (sameDay) return '$hh:$mm';
+    return '${local.day}/${local.month} $hh:$mm';
   }
 
   Widget _buildJoinSection() {

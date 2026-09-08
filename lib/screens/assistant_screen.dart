@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../domain/entities/chat_message.dart';
 import '../presentation/providers/assistant_provider.dart';
+import '../presentation/utils/quota_service.dart';
 
 const _suggestions = [
   'Recetas con lo que vence pronto',
@@ -85,10 +86,11 @@ class _AssistantScreenState extends State<AssistantScreen> {
       ),
       body: Column(
         children: [
+          _buildQuotaBadge(provider.remainingQueries),
           if (_isOffline) _buildOfflineBanner(),
           Expanded(
             child: provider.messages.isEmpty
-                ? _buildEmptyState()
+                ? _buildEmptyState(provider.isLimitReached)
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(12),
@@ -101,8 +103,22 @@ class _AssistantScreenState extends State<AssistantScreen> {
                     },
                   ),
           ),
-          _buildInputBar(provider.isLoading || _isOffline),
+          if (provider.isLimitReached)
+            _buildLimitReachedCard(provider.timeUntilReset),
+          _buildInputBar(provider.isLoading || _isOffline || provider.isLimitReached),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuotaBadge(int remaining) {
+    return Container(
+      width: double.infinity,
+      color: Colors.green.shade50,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Text(
+        'Consultas de hoy: $remaining/${QuotaService.dailyLimit}',
+        style: TextStyle(fontSize: 12, color: Colors.green.shade800),
       ),
     );
   }
@@ -127,7 +143,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool limitReached) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -140,22 +156,64 @@ class _AssistantScreenState extends State<AssistantScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey),
           ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              for (final s in _suggestions)
-                ActionChip(
-                  label: Text(s),
-                  onPressed: _isOffline ? null : () => _send(s),
-                ),
-            ],
+          if (!limitReached) ...[
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final s in _suggestions)
+                  ActionChip(
+                    label: Text(s),
+                    onPressed: _isOffline ? null : () => _send(s),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLimitReachedCard(Duration timeUntilReset) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Has alcanzado el límite diario. Tus consultas se renuevan en:',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.green.shade900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _formatCountdown(timeUntilReset),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.green.shade800,
+              letterSpacing: 2,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatCountdown(Duration d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final h = two(d.inHours);
+    final m = two(d.inMinutes.remainder(60));
+    final s = two(d.inSeconds.remainder(60));
+    return '$h:$m:$s';
   }
 
   Widget _buildBubble(ChatMessage message) {

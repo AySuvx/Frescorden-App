@@ -21,9 +21,11 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../domain/entities/activity_log_entry.dart';
 import '../../domain/entities/food_category.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/product_history_entry.dart';
+import '../../domain/repositories/i_activity_log_repository.dart';
 import '../../domain/repositories/i_product_repository.dart';
 import '../../domain/repositories/i_product_history_repository.dart';
 import '../utils/notification_service.dart';
@@ -36,7 +38,16 @@ class ProductProvider extends ChangeNotifier {
   // romper ningún test/uso existente que construya ProductProvider sin él.
   final IProductHistoryRepository? _historyRepository;
 
-  ProductProvider(this._repository, [this._historyRepository]);
+  // Registro de Actividad del hogar (Fase 4.5, Módulo 2): CREADO/EDITADO/
+  // CONSUMIDO/ELIMINADO por producto. Opcional por el mismo motivo que
+  // _historyRepository.
+  final IActivityLogRepository? _activityLogRepository;
+
+  ProductProvider(
+    this._repository, [
+    this._historyRepository,
+    this._activityLogRepository,
+  ]);
 
   // ─── Estado ───────────────────────────────────────────────────────────────
 
@@ -183,6 +194,7 @@ class ProductProvider extends ChangeNotifier {
         final updated = _productFromMap(map);
         await _repository.updateProduct(householdId, updated);
         await _scheduleNotifications(updated);
+        unawaited(_logActivity(householdId, updated.name, ActivityAction.editado));
       } else {
         // ── Agregar o acumular ──────────────────────────────────────────────
         final barcode = map['barcode'] as String? ?? '';
@@ -216,11 +228,13 @@ class ProductProvider extends ChangeNotifier {
           ).copyWith(id: existing.id, quantity: newQty);
           await _repository.updateProduct(householdId, updated);
           await _scheduleNotifications(updated);
+          unawaited(_logActivity(householdId, updated.name, ActivityAction.editado));
         } else {
           // Nuevo producto
           final newProduct = _productFromMap(map);
           final saved = await _repository.addProduct(householdId, newProduct);
           await _scheduleNotifications(saved);
+          unawaited(_logActivity(householdId, saved.name, ActivityAction.creado));
         }
       }
     } catch (e) {
@@ -239,6 +253,26 @@ class ProductProvider extends ChangeNotifier {
       await NotificationService.instance.scheduleBulkStorageAlert(product);
     } catch (e) {
       debugPrint('ProductProvider._scheduleNotifications error: $e');
+    }
+  }
+
+  /// Registra un evento en el log de actividad del hogar. Best-effort
+  /// (unawaited en cada call site): un fallo acá no debe afectar la
+  /// acción real sobre el producto, que ya se confirmó.
+  Future<void> _logActivity(
+    String householdId,
+    String productName,
+    ActivityAction action,
+  ) async {
+    if (_activityLogRepository == null) return;
+    try {
+      await _activityLogRepository.logActivity(
+        householdId: householdId,
+        productName: productName,
+        action: action,
+      );
+    } catch (e) {
+      debugPrint('ProductProvider._logActivity error: $e');
     }
   }
 
@@ -278,21 +312,32 @@ class ProductProvider extends ChangeNotifier {
     unawaited(NotificationService.instance.cancelForProduct(id));
 
     if (resolved != null) {
-      unawaited(_logHistory(resolved));
+      // Mismo criterio para el historial de Fase 3 y el log de actividad
+      // de Fase 4.5: consumido a tiempo si se elimina en o antes de
+      // expirationDate (o si no tiene fecha); vencido si se elimina
+      // después — "eliminar" en esta app siempre representa "ya no está
+      // en el inventario", sea porque se consumió o porque venció.
+      final now = DateTime.now();
+      final expired = resolved.expirationDate != null &&
+          now.isAfter(resolved.expirationDate!);
+
+      unawaited(_logHistory(resolved, now: now, expired: expired));
+      unawaited(_logActivity(
+        householdId,
+        resolved.name,
+        expired ? ActivityAction.eliminado : ActivityAction.consumido,
+      ));
     }
   }
 
   /// Registra en el historial el resultado de haber eliminado [product].
-  /// `outcome` se infiere: consumido a tiempo si se elimina en o antes de
-  /// `expirationDate` (o si el producto no tiene fecha de vencimiento);
-  /// vencido si se elimina después.
-  Future<void> _logHistory(Product product) async {
+  Future<void> _logHistory(
+    Product product, {
+    required DateTime now,
+    required bool expired,
+  }) async {
     if (_historyRepository == null) return;
     try {
-      final now = DateTime.now();
-      final expired = product.expirationDate != null &&
-          now.isAfter(product.expirationDate!);
-
       await _historyRepository.logResolution(
         ProductHistoryEntry(
           productId: product.id,

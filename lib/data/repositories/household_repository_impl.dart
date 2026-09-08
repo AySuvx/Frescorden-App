@@ -54,4 +54,20 @@ class HouseholdRepositoryImpl implements IHouseholdRepository {
   Future<void> bootstrapPersonalHousehold(String uid, {String? email}) {
     return _dataSource.bootstrapPersonalHousehold(uid, email: email);
   }
+
+  @override
+  Future<void> removeMember({
+    required String householdId,
+    required String memberUid,
+  }) {
+    return _dataSource.removeMember(
+      householdId: householdId,
+      memberUid: memberUid,
+    );
+  }
+
+  @override
+  Future<void> clearActiveHousehold(String uid) {
+    return _dataSource.clearActiveHousehold(uid);
+  }
 }

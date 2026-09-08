@@ -90,6 +90,25 @@ class FirestoreHouseholdDataSource {
     );
   }
 
+  Future<void> clearActiveHousehold(String uid) {
+    return _userDoc(uid).update({'activeHouseholdId': FieldValue.delete()});
+  }
+
+  // ─── Miembros ────────────────────────────────────────────────────────────
+
+  /// Cubierta por la misma regla que ya permite a cualquier miembro actual
+  /// actualizar el documento del hogar libremente — no requirió cambios en
+  /// firestore.rules.
+  Future<void> removeMember({
+    required String householdId,
+    required String memberUid,
+  }) {
+    return _householdsCol.doc(householdId).update({
+      'members': FieldValue.arrayRemove([memberUid]),
+      'memberEmails.$memberUid': FieldValue.delete(),
+    });
+  }
+
   // ─── Crear / Unirse / Renovar código ────────────────────────────────────
 
   /// Crea un hogar nuevo, vincula a [creatorUid] como administrador y

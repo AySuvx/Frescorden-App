@@ -3,7 +3,6 @@
 // Firebase ya configurado en la app (sin API key propia del cliente).
 // Requiere habilitar "Gemini API" en la consola de Firebase del proyecto.
 import 'package:firebase_ai/firebase_ai.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/product.dart';
 
@@ -44,17 +43,14 @@ class GeminiAssistantDataSource {
         ? prompt
         : '${_inventoryContext(currentInventory)}\n\nConsulta: $prompt';
 
-    try {
-      _chat ??= _model.startChat();
-      final response = await _chat!.sendMessage(Content.text(fullPrompt));
-      return response.text ?? 'No obtuve una respuesta. Intenta de nuevo.';
-    } catch (e, st) {
-      debugPrint('GeminiAssistantDataSource.sendMessage error: '
-          '${e.runtimeType} $e\n$st');
-      return 'No pude conectar con el asistente. Verifica que la API de '
-          'Gemini esté habilitada en la consola de Firebase, o intenta de '
-          'nuevo en un momento.';
-    }
+    // Se deja propagar cualquier excepción (antes se atrapaba acá y se
+    // devolvía un mensaje amigable como si fuera una respuesta real —
+    // eso le ocultaba a AssistantProvider si la consulta falló, y con la
+    // cuota diaria necesita saberlo para NO descontarla en un fallo de
+    // red). El mensaje amigable ahora se arma en AssistantProvider.
+    _chat ??= _model.startChat();
+    final response = await _chat!.sendMessage(Content.text(fullPrompt));
+    return response.text ?? 'No obtuve una respuesta. Intenta de nuevo.';
   }
 
   void resetConversation() => _chat = null;

@@ -64,4 +64,21 @@ abstract interface class IHouseholdRepository {
   /// hogar. No hace nada si [uid] ya tiene un hogar activo — seguro de
   /// llamar más de una vez (p. ej. desde varios dispositivos a la vez).
   Future<void> bootstrapPersonalHousehold(String uid, {String? email});
+
+  /// Quita a [memberUid] de `members`/`memberEmails` del hogar
+  /// [householdId]. La usan tanto "Salir del hogar" (el propio miembro se
+  /// quita) como "Expulsar" (el admin quita a otro) — restringir que solo
+  /// el admin pueda expulsar a otros es responsabilidad de la capa de
+  /// presentación (HouseholdProvider), no de este método.
+  Future<void> removeMember({
+    required String householdId,
+    required String memberUid,
+  });
+
+  /// Limpia el `activeHouseholdId` de [uid] (lo deja sin hogar activo).
+  /// Usado al salir de un hogar, y como autocorrección del lado del
+  /// miembro cuando detecta que fue expulsado (ver HouseholdProvider): el
+  /// stream de watchActiveHouseholdId recoge el `null` y dispara el
+  /// bootstrap de un hogar personal nuevo, igual que un usuario sin hogar.
+  Future<void> clearActiveHousehold(String uid);
 }
