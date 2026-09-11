@@ -94,6 +94,23 @@ class FirestoreHouseholdDataSource {
     return _userDoc(uid).update({'activeHouseholdId': FieldValue.delete()});
   }
 
+  /// Actividad de usuario (Fase 4.5, Módulo 3 — Panel Administrativo):
+  /// marca `lastActiveAt` en cada resolución de sesión (login o restauración
+  /// silenciosa, ver HouseholdProvider.setUid) y fija `createdAt` una sola
+  /// vez, la primera vez que se ve a este uid. Transacción para que ambos
+  /// campos se escriban atómicamente sin pisar un `createdAt` ya existente.
+  Future<void> recordUserActivity(String uid) {
+    final ref = _userDoc(uid);
+    return _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = <String, dynamic>{'lastActiveAt': FieldValue.serverTimestamp()};
+      if (snap.data()?['createdAt'] == null) {
+        data['createdAt'] = FieldValue.serverTimestamp();
+      }
+      tx.set(ref, data, SetOptions(merge: true));
+    });
+  }
+
   // ─── Miembros ────────────────────────────────────────────────────────────
 
   /// Cubierta por la misma regla que ya permite a cualquier miembro actual

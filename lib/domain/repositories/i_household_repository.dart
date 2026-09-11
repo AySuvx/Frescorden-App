@@ -81,4 +81,11 @@ abstract interface class IHouseholdRepository {
   /// stream de watchActiveHouseholdId recoge el `null` y dispara el
   /// bootstrap de un hogar personal nuevo, igual que un usuario sin hogar.
   Future<void> clearActiveHousehold(String uid);
+
+  /// Marca `lastActiveAt` (y `createdAt` la primera vez) en el perfil de
+  /// [uid] — base de las métricas de usuarios activos del Panel
+  /// Administrativo Global (ver AdminStats). Best-effort: quien la llama
+  /// (HouseholdProvider.setUid) no debe dejar que un fallo aquí bloquee el
+  /// resto de la sesión.
+  Future<void> recordUserActivity(String uid);
 }

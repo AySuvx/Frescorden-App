@@ -1,4 +1,4 @@
-enum ActivityAction { creado, editado, consumido, eliminado }
+enum ActivityAction { creado, editado, consumido, eliminado, desperdiciado }
 
 extension ActivityActionLabel on ActivityAction {
   String get label {
@@ -11,6 +11,8 @@ extension ActivityActionLabel on ActivityAction {
         return 'Consumido';
       case ActivityAction.eliminado:
         return 'Eliminado';
+      case ActivityAction.desperdiciado:
+        return 'Desperdiciado';
     }
   }
 }

@@ -418,6 +418,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
       ActivityAction.editado => (Icons.edit_outlined, Colors.blue),
       ActivityAction.consumido => (Icons.check_circle_outline, Colors.teal),
       ActivityAction.eliminado => (Icons.delete_outline, Colors.red),
+      ActivityAction.desperdiciado => (Icons.delete_forever, Colors.deepOrange),
     };
 
     return ListTile(

@@ -18,6 +18,15 @@ Cuando sugieras una receta, usa siempre esta estructura:
 **Ingredientes de tu inventario:** (los que ya tiene el usuario)
 **Ingredientes adicionales:** (los que necesitaría comprar)
 **Pasos:** (breves, numerados)
+
+Al final de CADA receta que sugieras, en su propia línea, agrega siempre
+este enlace en formato Markdown (sin excepciones, incluso si sugieres
+varias recetas en la misma respuesta — una línea de enlace por receta):
+[Ver preparación en YouTube](https://www.youtube.com/results?search_query=Receta+NombreDeLaReceta)
+Reemplaza "NombreDeLaReceta" por el nombre real de la receta, con espacios
+reemplazados por "+" y sin tildes ni caracteres especiales (ej. una receta
+llamada "Arroz con Pollo" da como resultado
+https://www.youtube.com/results?search_query=Receta+Arroz+con+Pollo).
 ''';
 
 // gemini-1.5/2.0 fueron retirados (dan 404); esta es la versión estable

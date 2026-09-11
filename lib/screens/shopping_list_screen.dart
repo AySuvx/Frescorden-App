@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../domain/entities/budget_tier.dart';
+import '../domain/entities/nutrition_group.dart';
 import '../domain/entities/product.dart';
 import '../domain/entities/shopping_item.dart';
 import '../presentation/providers/product_provider.dart';
@@ -162,6 +163,93 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
+  /// 'Plato Equilibrado' (Fase 4.5, Módulo 4): muestra qué grupos
+  /// nutricionales cubre hoy el inventario real del hogar (chips verdes) y
+  /// cuáles faltan (chips rojos), con un botón para agregar a la lista de
+  /// compras los insumos sugeridos de los grupos faltantes en un solo toque.
+  Widget _buildBalancedPlateSection(
+    ShoppingProvider shoppingProvider,
+    List<Product> inventory,
+  ) {
+    final missingGroups = shoppingProvider.missingNutritionGroups(inventory);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.balance, color: Colors.green),
+                SizedBox(width: 8),
+                Text(
+                  'Plato Equilibrado',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Grupos nutricionales que cubre tu despensa hoy',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final group in NutritionGroup.values)
+                  Chip(
+                    avatar: Icon(
+                      missingGroups.contains(group)
+                          ? Icons.remove_circle_outline
+                          : Icons.check_circle,
+                      size: 18,
+                      color: missingGroups.contains(group)
+                          ? Colors.red
+                          : Colors.green,
+                    ),
+                    label: Text(group.label),
+                    backgroundColor: missingGroups.contains(group)
+                        ? Colors.red[50]
+                        : Colors.green[50],
+                  ),
+              ],
+            ),
+            if (missingGroups.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    shoppingProvider.addBalancedPlateItems(inventory);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Insumos agregados a tu lista de compras',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: Text(
+                    'Agregar insumos faltantes (${missingGroups.length})',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBudgetSummary(
     ShoppingProvider shoppingProvider,
     List<Product> inventory,
@@ -220,11 +308,19 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         title: const Text('Lista de Compras'),
         backgroundColor: Colors.green,
       ),
-      body: Column(
+      // Lista única desplazable en vez de Column fija + Expanded: con la
+      // tarjeta "Plato Equilibrado" (Fase 4.5, Módulo 4) el encabezado ya no
+      // entra siempre en una pantalla de celular — un Expanded fijo para
+      // "Por comprar" quedaba aplastado a una franja mínima. Con todo en un
+      // solo ListView, cada sección ocupa el alto que necesita y el usuario
+      // simplemente se desplaza; nada compite por espacio fijo.
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 16),
         children: [
           _buildTierSelector(shoppingProvider),
           _buildCustomBudgetField(shoppingProvider),
           _buildPersonCounter(shoppingProvider),
+          _buildBalancedPlateSection(shoppingProvider, inventory),
           _buildBudgetSummary(shoppingProvider, inventory),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -236,35 +332,42 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               ),
             ),
           ),
-          Expanded(
-            child: shoppingProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : missing.isEmpty
-                    ? const Center(
-                        child: Text(
-                          '¡Ya tienes todo lo de esta canasta en tu inventario! 🎉',
-                          textAlign: TextAlign.center,
+          const SizedBox(height: 4),
+          if (shoppingProvider.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (missing.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Center(
+                child: Text(
+                  '¡Ya tienes todo lo de esta canasta en tu inventario! 🎉',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  for (final ShoppingItem item in missing)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text(
+                          '${item.name} — ${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} ${item.unit}',
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: missing.length,
-                        itemBuilder: (context, index) {
-                          final ShoppingItem item = missing[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              title: Text(
-                                '${item.name} — ${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} ${item.unit}',
-                              ),
-                              trailing: item.estimatedPrice != null
-                                  ? Text(item.estimatedPrice!.asCop)
-                                  : null,
-                            ),
-                          );
-                        },
+                        trailing: item.estimatedPrice != null
+                            ? Text(item.estimatedPrice!.asCop)
+                            : null,
                       ),
-          ),
+                    ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(

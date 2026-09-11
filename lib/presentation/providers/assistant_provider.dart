@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/chat_message.dart';
 import '../../domain/repositories/i_assistant_repository.dart';
+import '../../domain/repositories/i_assistant_usage_repository.dart';
+import '../utils/analytics_service.dart';
 import '../utils/quota_service.dart';
 import 'product_provider.dart';
 
@@ -11,7 +13,16 @@ class AssistantProvider extends ChangeNotifier {
   final IAssistantRepository _repository;
   final ProductProvider _productProvider;
 
-  AssistantProvider(this._repository, this._productProvider) {
+  // Adopción del asistente (Fase 4.5, Módulo 3 — Panel Administrativo).
+  // Opcional para no romper ningún uso/test existente que construya
+  // AssistantProvider sin él (mismo criterio que ProductProvider).
+  final IAssistantUsageRepository? _usageRepository;
+
+  AssistantProvider(
+    this._repository,
+    this._productProvider, [
+    this._usageRepository,
+  ]) {
     _loadQuota();
   }
 
@@ -72,6 +83,16 @@ class AssistantProvider extends ChangeNotifier {
   Future<void> _recordSuccessfulQuery() async {
     _remainingQueries = await QuotaService.instance.recordSuccessfulQuery();
     if (isLimitReached) _startCountdown();
+    unawaited(AnalyticsService.instance.logAssistantQuery());
+
+    final householdId = _productProvider.activeHouseholdId;
+    if (_usageRepository != null && householdId != null) {
+      unawaited(
+        _usageRepository.logQuery(householdId: householdId).catchError(
+          (e) => debugPrint('AssistantProvider._recordSuccessfulQuery usage log error: $e'),
+        ),
+      );
+    }
   }
 
   /// Arranca el temporizador de 1s que cuenta hasta la medianoche. Al

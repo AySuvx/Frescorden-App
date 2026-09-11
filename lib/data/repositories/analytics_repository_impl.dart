@@ -1,15 +1,17 @@
 // lib/data/repositories/analytics_repository_impl.dart
 //
-// Implementación de IAnalyticsRepository. Lee todo el historial
-// (FirestoreProductHistoryDataSource.getAll()) y calcula los 4 KPIs de
-// AnalyticsSummary. Sin historial (usuario nuevo, o nadie ha eliminado
-// productos todavía), retorna AnalyticsSummary.empty() — la UI decide cómo
-// mostrar ese estado (ver AnalyticsScreen).
+// Implementación de IAnalyticsRepository. Lee el historial del hogar activo
+// (FirestoreProductHistoryDataSource.getAll(householdId)), lo acota al
+// último mes (Fase 4.5, Módulo 3: "Analítica Avanzada" es un reporte
+// mensual del hogar) y calcula los KPIs de AnalyticsSummary sobre esa
+// ventana. Sin historial en el último mes, retorna AnalyticsSummary.empty()
+// — la UI decide cómo mostrar ese estado (ver AnalyticsScreen).
 
 import '../../domain/entities/analytics_summary.dart';
 import '../../domain/entities/category_waste_stats.dart';
 import '../../domain/entities/food_category.dart';
 import '../../domain/entities/product_history_entry.dart';
+import '../../domain/entities/product_ranking_entry.dart';
 import '../../domain/repositories/i_analytics_repository.dart';
 import '../datasources/firestore_product_history_datasource.dart';
 
@@ -18,13 +20,21 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
 
   AnalyticsRepositoryImpl(this._dataSource);
 
+  static const _windowDuration = Duration(days: 30);
+
   @override
-  Future<AnalyticsSummary> getSummary() async {
-    final history = await _dataSource.getAll();
+  Future<AnalyticsSummary> getSummary(String householdId) async {
+    final allHistory = await _dataSource.getAll(householdId);
+
+    final cutoff = DateTime.now().subtract(_windowDuration);
+    final history =
+        allHistory.where((e) => e.resolvedAt.isAfter(cutoff)).toList();
     if (history.isEmpty) return AnalyticsSummary.empty();
 
     final consumedOnTime =
         history.where((e) => e.outcome == ProductOutcome.consumedOnTime);
+    final discarded =
+        history.where((e) => e.outcome == ProductOutcome.expired);
 
     final wasteReductionPercentage =
         consumedOnTime.length / history.length * 100;
@@ -40,6 +50,9 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
 
     final categoryBreakdown = _categoryBreakdown(history);
 
+    final discardedBreakdown = discarded.toList()
+      ..sort((a, b) => b.resolvedAt.compareTo(a.resolvedAt));
+
     return AnalyticsSummary(
       wasteReductionPercentage: wasteReductionPercentage,
       moneySavedCop: moneySavedCop,
@@ -47,6 +60,9 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
       worstExpirationCategory: _worstExpirationCategory(categoryBreakdown),
       totalResolved: history.length,
       categoryBreakdown: categoryBreakdown,
+      topConsumedProduct: _topProduct(consumedOnTime),
+      topDiscardedProduct: _topProduct(discarded),
+      discardedBreakdown: discardedBreakdown,
     );
   }
 
@@ -102,5 +118,23 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
       }
     }
     return worst;
+  }
+
+  /// Top Alimentos: producto con más apariciones dentro de [entries]
+  /// (ya filtradas por outcome — consumidos o desperdiciados). `null` si
+  /// [entries] está vacío.
+  ProductRankingEntry? _topProduct(Iterable<ProductHistoryEntry> entries) {
+    final counts = <String, int>{};
+    for (final entry in entries) {
+      final name = entry.name.trim();
+      if (name.isEmpty) continue;
+      counts[name] = (counts[name] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return null;
+
+    final top = counts.entries.reduce(
+      (a, b) => a.value >= b.value ? a : b,
+    );
+    return ProductRankingEntry(name: top.key, count: top.value);
   }
 }

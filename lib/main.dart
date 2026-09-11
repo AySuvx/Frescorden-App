@@ -46,11 +46,17 @@ import 'data/datasources/gemini_assistant_data_source.dart';
 import 'data/repositories/assistant_repository_impl.dart';
 import 'data/datasources/firestore_activity_log_datasource.dart';
 import 'data/repositories/activity_log_repository_impl.dart';
+import 'data/datasources/firestore_admin_datasource.dart';
+import 'data/repositories/admin_repository_impl.dart';
+import 'data/datasources/firestore_assistant_usage_datasource.dart';
+import 'data/repositories/assistant_usage_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/entities/app_user.dart';
 import 'domain/repositories/i_activity_log_repository.dart';
+import 'domain/repositories/i_assistant_usage_repository.dart';
 import 'domain/usecases/get_analytics_usecase.dart';
+import 'domain/usecases/get_admin_stats_usecase.dart';
 
 // Capa de presentación
 import 'presentation/providers/product_provider.dart';
@@ -60,6 +66,7 @@ import 'presentation/providers/shopping_provider.dart';
 import 'presentation/providers/analytics_provider.dart';
 import 'presentation/providers/household_provider.dart';
 import 'presentation/providers/assistant_provider.dart';
+import 'presentation/providers/admin_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -118,6 +125,16 @@ void main() async {
           ),
         ),
 
+        // IAssistantUsageRepository — adopción del asistente culinario
+        // (Fase 4.5, Módulo 3). Mismo criterio que IActivityLogRepository:
+        // provider simple, se registra antes que AssistantProvider para
+        // poder inyectarlo ahí.
+        Provider<IAssistantUsageRepository>(
+          create: (_) => AssistantUsageRepositoryImpl(
+            FirestoreAssistantUsageDataSource(),
+          ),
+        ),
+
         // ProductProvider con inyección de dependencias.
         // recibe también IProductHistoryRepository para registrar cada
         // eliminación en el historial, e IActivityLogRepository para el
@@ -164,13 +181,20 @@ void main() async {
         ),
 
         // AnalyticsProvider — KPIs calculados a partir del historial de
-        // productos resueltos (ver AnalyticsRepositoryImpl / GetAnalyticsUseCase).
-        ChangeNotifierProvider<AnalyticsProvider>(
+        // productos resueltos del hogar activo (ver AnalyticsRepositoryImpl /
+        // GetAnalyticsUseCase). ChangeNotifierProxyProvider igual que
+        // ProductProvider: el resumen es por-hogar, así que necesita
+        // enterarse cada vez que cambia `activeHouseholdId`.
+        ChangeNotifierProxyProvider<HouseholdProvider, AnalyticsProvider>(
           create: (_) => AnalyticsProvider(
             GetAnalyticsUseCase(
               AnalyticsRepositoryImpl(FirestoreProductHistoryDataSource()),
             ),
           ),
+          update: (_, householdProvider, analyticsProvider) {
+            return analyticsProvider!
+              ..setActiveHousehold(householdProvider.activeHouseholdId);
+          },
         ),
 
         // AssistantProvider — asistente culinario (Gemini vía firebase_ai).
@@ -178,6 +202,20 @@ void main() async {
           create: (context) => AssistantProvider(
             AssistantRepositoryImpl(GeminiAssistantDataSource()),
             context.read<ProductProvider>(),
+            context.read<IAssistantUsageRepository>(),
+          ),
+        ),
+
+        // AdminProvider — Panel Administrativo Global (Fase 4.5, Módulo 3).
+        // `lazy` por defecto en Provider: no consulta Firestore hasta que
+        // AdminDashboardScreen lo lea (y esa pantalla ya filtró por
+        // kAdminUid antes de hacerlo) — ningún costo para el resto de
+        // usuarios.
+        ChangeNotifierProvider<AdminProvider>(
+          create: (_) => AdminProvider(
+            GetAdminStatsUseCase(
+              AdminRepositoryImpl(FirestoreAdminDataSource()),
+            ),
           ),
         ),
       ],

@@ -60,6 +60,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Clave SharedPreferences para persistir el estado de notificaciones
   static const _kNotifEnabled = 'notifications_enabled';
 
+  // Ocultamiento Persistente de Alerta MIUI (Fase 4.5, Módulo 4): una vez
+  // que el usuario tocó "Configurar" o "Entendido, ocultar" en la tarjeta,
+  // no se le vuelve a mostrar en esta o futuras aperturas de la pantalla —
+  // ni siquiera si el fabricante sigue calificando como ROM agresiva.
+  static const _kMiuiOptimizationDismissed = 'miui_optimization_dismissed';
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +75,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _checkAggressiveRom() async {
     if (!Platform.isAndroid) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_kMiuiOptimizationDismissed) ?? false) return;
+
     final info = await DeviceInfoPlugin().androidInfo;
     final manufacturer = info.manufacturer.toLowerCase();
     if (!mounted) return;
@@ -76,6 +86,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showBackgroundAlertsCard =
           _kAggressiveRomManufacturers.any(manufacturer.contains);
     });
+  }
+
+  /// Guarda la bandera de descarte permanente y oculta la tarjeta de una
+  /// vez — se llama tanto desde "Entendido, ocultar" (acá mismo) como desde
+  /// el flujo de "Configurar" (ver _showBackgroundAlertsDialog), ya que
+  /// ambas acciones cuentan como que el usuario ya vio y atendió el aviso.
+  Future<void> _dismissBackgroundAlertsCard() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kMiuiOptimizationDismissed, true);
+    if (!mounted) return;
+    setState(() => _showBackgroundAlertsCard = false);
   }
 
   // BUG #8 FIX: carga el valor guardado al abrir la pantalla
@@ -180,6 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (goToSettings == true) {
       await _optimizeBackgroundAlerts();
+      await _dismissBackgroundAlertsCard();
     }
   }
 
@@ -240,15 +262,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Card(
               color: Colors.orange[50],
               margin: const EdgeInsets.only(top: 8),
-              child: ListTile(
-                leading: const Icon(Icons.battery_alert, color: Colors.deepOrange),
-                title: const Text('Optimizar alertas en segundo plano'),
-                subtitle: const Text(
-                  'Tu fabricante puede bloquear las notificaciones si no '
-                  'activas Autoinicio y desactivas el ahorro de batería.',
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _showBackgroundAlertsDialog,
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.battery_alert, color: Colors.deepOrange),
+                    title: const Text('Optimizar alertas en segundo plano'),
+                    subtitle: const Text(
+                      'Tu fabricante puede bloquear las notificaciones si no '
+                      'activas Autoinicio y desactivas el ahorro de batería.',
+                    ),
+                  ),
+                  OverflowBar(
+                    alignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: _dismissBackgroundAlertsCard,
+                        child: const Text('Entendido, ocultar'),
+                      ),
+                      TextButton(
+                        onPressed: _showBackgroundAlertsDialog,
+                        child: const Text('Configurar'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           const Divider(),

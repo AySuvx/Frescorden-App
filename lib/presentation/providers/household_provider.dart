@@ -27,6 +27,7 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/app_user.dart';
 import '../../domain/entities/household.dart';
 import '../../domain/repositories/i_household_repository.dart';
+import '../utils/analytics_service.dart';
 
 class HouseholdProvider extends ChangeNotifier {
   final IHouseholdRepository _repository;
@@ -106,6 +107,10 @@ class HouseholdProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // Actividad de usuario (Panel Administrativo Global): best-effort, no
+    // bloquea ni condiciona el resto de la resolución de sesión.
+    unawaited(_repository.recordUserActivity(uid));
+
     _activeIdSub = _repository.watchActiveHouseholdId(uid).listen(
       _onActiveHouseholdIdChanged,
       onError: (Object e) {
@@ -173,6 +178,7 @@ class HouseholdProvider extends ChangeNotifier {
     _bootstrapping = true;
     try {
       await _repository.bootstrapPersonalHousehold(uid, email: _email);
+      unawaited(AnalyticsService.instance.logHouseholdCreated());
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -199,6 +205,7 @@ class HouseholdProvider extends ChangeNotifier {
         creatorUid: uid,
         creatorEmail: _email,
       );
+      unawaited(AnalyticsService.instance.logHouseholdCreated());
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -217,6 +224,7 @@ class HouseholdProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _repository.joinHouseholdByCode(code: code, uid: uid, email: _email);
+      unawaited(AnalyticsService.instance.logHouseholdJoined());
     } catch (e) {
       _error = e.toString();
       _isLoading = false;

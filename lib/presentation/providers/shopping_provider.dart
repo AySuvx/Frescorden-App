@@ -23,6 +23,7 @@
 
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/budget_tier.dart';
+import '../../domain/entities/nutrition_group.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/shopping_item.dart';
 import '../../domain/repositories/i_shopping_repository.dart';
@@ -36,6 +37,12 @@ class ShoppingProvider extends ChangeNotifier {
   List<ShoppingItem> _basket = [];
   bool _isLoading = false;
   String? _error;
+
+  /// 'Plato Equilibrado' (Fase 4.5, Módulo 4): ítems agregados con un solo
+  /// toque para cubrir grupos nutricionales que faltan en el inventario —
+  /// se suman por encima de la canasta del nivel elegido (ver
+  /// addBalancedPlateItems / missingItems).
+  final List<ShoppingItem> _extraItems = [];
 
   /// Presupuesto escrito a mano por el usuario, si lo hay. Cuando está
   /// definido, gana sobre `BudgetTier.budgetCap` (ver `budgetCap`) — los
@@ -56,6 +63,7 @@ class ShoppingProvider extends ChangeNotifier {
   String? get error => _error;
   int? get customBudget => _customBudget;
   int get personCount => _personCount;
+  List<ShoppingItem> get extraItems => List.unmodifiable(_extraItems);
 
   /// Define un presupuesto personalizado. `null` (o un valor <= 0) vuelve a
   /// usar el techo del nivel seleccionado.
@@ -94,15 +102,52 @@ class ShoppingProvider extends ChangeNotifier {
     }
   }
 
-  /// Ítems de la canasta que el usuario todavía no tiene registrados en su
+  /// Ítems de la canasta (más los agregados por "Plato Equilibrado", ver
+  /// `_extraItems`) que el usuario todavía no tiene registrados en su
   /// inventario, con cantidad y precio escalados según `personCount`. Esto
   /// es lo que realmente falta comprar.
   List<ShoppingItem> missingItems(List<Product> inventory) {
     final inventoryNames = inventory.map((p) => p.name.toLowerCase()).toSet();
-    return _basket
+    return [..._basket, ..._extraItems]
         .where((item) => !inventoryNames.contains(item.name.toLowerCase()))
         .map(_scaled)
         .toList();
+  }
+
+  // ─── 'Plato Equilibrado' (Fase 4.5, Módulo 4) ──────────────────────────
+
+  /// Grupos nutricionales esenciales sin cobertura en el inventario actual
+  /// del hogar — ninguno de sus productos cae en las categorías de ese
+  /// grupo (ver NutritionGroup.categories). Base tanto del indicador visual
+  /// como del botón "Agregar insumos faltantes" en ShoppingListScreen.
+  Set<NutritionGroup> missingNutritionGroups(List<Product> inventory) {
+    final presentCategories = inventory.map((p) => p.category).toSet();
+    return {
+      for (final group in NutritionGroup.values)
+        if (!group.categories.any(presentCategories.contains)) group,
+    };
+  }
+
+  /// Agrega a la lista de compras, con un solo toque, los insumos
+  /// sugeridos de cada grupo nutricional que falta en el inventario actual
+  /// — sin duplicar un ítem que ya está en la canasta del nivel elegido o
+  /// que ya se había agregado antes.
+  void addBalancedPlateItems(List<Product> inventory) {
+    final missingGroups = missingNutritionGroups(inventory);
+    if (missingGroups.isEmpty) return;
+
+    final existingNames = {
+      for (final item in [..._basket, ..._extraItems]) item.name.toLowerCase(),
+    };
+
+    for (final group in missingGroups) {
+      for (final item in group.suggestedItems) {
+        if (existingNames.add(item.name.toLowerCase())) {
+          _extraItems.add(item);
+        }
+      }
+    }
+    notifyListeners();
   }
 
   /// Escala cantidad y precio estimado de [item] según `personCount`,

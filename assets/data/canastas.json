@@ -6,7 +6,9 @@
     { "nombre": "Aceite", "cantidad": 1, "unidad": "L", "categoria": "condimentosYSalsas", "precioEstimado": 9000 },
     { "nombre": "Panela", "cantidad": 1, "unidad": "kg", "categoria": "otros", "precioEstimado": 4500 },
     { "nombre": "Sal", "cantidad": 500, "unidad": "g", "categoria": "condimentosYSalsas", "precioEstimado": 2000 },
-    { "nombre": "Azúcar", "cantidad": 1, "unidad": "kg", "categoria": "otros", "precioEstimado": 4500 }
+    { "nombre": "Azúcar", "cantidad": 1, "unidad": "kg", "categoria": "otros", "precioEstimado": 4500 },
+    { "nombre": "Leche", "cantidad": 2, "unidad": "L", "categoria": "lacteos", "precioEstimado": 9000 },
+    { "nombre": "Pan", "cantidad": 1, "unidad": "paquete", "categoria": "panaderia", "precioEstimado": 4500 }
   ],
   "familiar": [
     { "nombre": "Carne", "cantidad": 2, "unidad": "kg", "categoria": "carnesYEmbutidos", "precioEstimado": 38000 },
@@ -15,7 +17,8 @@
     { "nombre": "Frutas", "cantidad": 2, "unidad": "kg", "categoria": "frutasYVerduras", "precioEstimado": 10000 },
     { "nombre": "Harina", "cantidad": 1, "unidad": "kg", "categoria": "granosYCereales", "precioEstimado": 4500 },
     { "nombre": "Pasta", "cantidad": 2, "unidad": "paquetes", "categoria": "granosYCereales", "precioEstimado": 6000 },
-    { "nombre": "Café", "cantidad": 500, "unidad": "g", "categoria": "bebidas", "precioEstimado": 12000 }
+    { "nombre": "Café", "cantidad": 500, "unidad": "g", "categoria": "bebidas", "precioEstimado": 12000 },
+    { "nombre": "Pan", "cantidad": 2, "unidad": "paquetes", "categoria": "panaderia", "precioEstimado": 9000 }
   ],
   "saludable": [
     { "nombre": "Quinua", "cantidad": 1, "unidad": "kg", "categoria": "granosYCereales", "precioEstimado": 18000 },
@@ -24,6 +27,7 @@
     { "nombre": "Verduras", "cantidad": 2, "unidad": "kg", "categoria": "frutasYVerduras", "precioEstimado": 12000 },
     { "nombre": "Aceite de oliva", "cantidad": 500, "unidad": "ml", "categoria": "condimentosYSalsas", "precioEstimado": 14000 },
     { "nombre": "Semillas de chía", "cantidad": 500, "unidad": "g", "categoria": "otros", "precioEstimado": 9500 },
-    { "nombre": "Frutos secos", "cantidad": 500, "unidad": "g", "categoria": "otros", "precioEstimado": 13000 }
+    { "nombre": "Frutos secos", "cantidad": 500, "unidad": "g", "categoria": "otros", "precioEstimado": 13000 },
+    { "nombre": "Pan integral", "cantidad": 1, "unidad": "paquete", "categoria": "panaderia", "precioEstimado": 6500 }
   ]
 }

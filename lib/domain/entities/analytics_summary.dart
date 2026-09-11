@@ -2,14 +2,20 @@
 //
 // Capa de Dominio de Analíticas:
 // Resumen agregado de KPIs, calculado por AnalyticsRepositoryImpl a partir
-// del historial de productos resueltos (ProductHistoryEntry). Ver ese
-// archivo para el detalle de cómo se calcula cada campo.
+// del historial de productos resueltos del hogar activo (ProductHistoryEntry,
+// ver getSummary). Fase 4.5, Módulo 3: todo el resumen queda acotado al
+// último mes (últimos 30 días) — "Analítica Avanzada" es, en esencia, un
+// reporte mensual del hogar. Ver ese archivo para el detalle de cómo se
+// calcula cada campo.
 
 import 'category_waste_stats.dart';
 import 'food_category.dart';
+import 'product_history_entry.dart';
+import 'product_ranking_entry.dart';
 
 class AnalyticsSummary {
-  /// % de productos resueltos que se consumieron a tiempo (0-100).
+  /// % de productos resueltos, en el último mes, que se consumieron
+  /// (aprovechamiento) en vez de desperdiciarse (0-100).
   final double wasteReductionPercentage;
 
   /// Suma estimada en COP de lo "salvado" al consumir a tiempo en vez de
@@ -34,6 +40,18 @@ class AnalyticsSummary {
   /// una entrada de historial; vacío si `!hasData`.
   final List<CategoryWasteStats> categoryBreakdown;
 
+  /// Top Alimentos: producto que más veces se marcó como consumido en el
+  /// último mes. `null` si ninguno se consumió en la ventana.
+  final ProductRankingEntry? topConsumedProduct;
+
+  /// Top Alimentos: producto que más veces se marcó como desperdiciado en
+  /// el último mes. `null` si ninguno se desperdició en la ventana.
+  final ProductRankingEntry? topDiscardedProduct;
+
+  /// Desglose Histórico: entradas del último mes marcadas como
+  /// desperdiciadas, de la más reciente a la más antigua.
+  final List<ProductHistoryEntry> discardedBreakdown;
+
   const AnalyticsSummary({
     required this.wasteReductionPercentage,
     required this.moneySavedCop,
@@ -41,6 +59,9 @@ class AnalyticsSummary {
     required this.worstExpirationCategory,
     required this.totalResolved,
     required this.categoryBreakdown,
+    required this.topConsumedProduct,
+    required this.topDiscardedProduct,
+    required this.discardedBreakdown,
   });
 
   factory AnalyticsSummary.empty() => const AnalyticsSummary(
@@ -50,6 +71,9 @@ class AnalyticsSummary {
         worstExpirationCategory: null,
         totalResolved: 0,
         categoryBreakdown: [],
+        topConsumedProduct: null,
+        topDiscardedProduct: null,
+        discardedBreakdown: [],
       );
 
   /// `true` cuando hay al menos una categoría con algún producto vencido —

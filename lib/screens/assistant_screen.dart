@@ -1,12 +1,20 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/entities/chat_message.dart';
 import '../presentation/providers/assistant_provider.dart';
 import '../presentation/utils/quota_service.dart';
+
+/// Enlaces de Video para Recetas (Fase 4.5, Módulo 4): detecta enlaces
+/// Markdown `[texto](url)` en la respuesta del asistente — hoy solo los usa
+/// el enlace de YouTube que GeminiAssistantDataSource agrega al final de
+/// cada receta, pero funciona para cualquier enlace con ese formato.
+final _markdownLinkPattern = RegExp(r'\[([^\]]+)\]\((https?://[^\s)]+)\)');
 
 const _suggestions = [
   'Recetas con lo que vence pronto',
@@ -230,12 +238,64 @@ class _AssistantScreenState extends State<AssistantScreen> {
           color: isUser ? Colors.green : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(color: isUser ? Colors.white : Colors.black87),
-        ),
+        child: _buildMessageContent(message.text, isUser),
       ),
     );
+  }
+
+  /// Renderiza [text] como texto plano, salvo los enlaces Markdown
+  /// `[texto](url)` (ver _markdownLinkPattern) — esos se muestran
+  /// subrayados y abren en la app nativa de YouTube o el navegador al
+  /// tocarlos (ver _openLink). No es un renderer de Markdown completo:
+  /// solo intercepta enlaces, que es todo lo que el asistente produce hoy.
+  Widget _buildMessageContent(String text, bool isUser) {
+    final baseStyle = TextStyle(color: isUser ? Colors.white : Colors.black87);
+    final matches = _markdownLinkPattern.allMatches(text).toList();
+    if (matches.isEmpty) {
+      return Text(text, style: baseStyle);
+    }
+
+    final linkStyle = baseStyle.copyWith(
+      color: isUser ? Colors.white : Colors.blue.shade800,
+      decoration: TextDecoration.underline,
+      fontWeight: FontWeight.w600,
+    );
+
+    final spans = <InlineSpan>[];
+    var lastEnd = 0;
+    for (final match in matches) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(text: text.substring(lastEnd, match.start)));
+      }
+      final label = match.group(1)!;
+      final url = match.group(2)!;
+      spans.add(
+        TextSpan(
+          text: label,
+          style: linkStyle,
+          recognizer: TapGestureRecognizer()..onTap = () => _openLink(url),
+        ),
+      );
+      lastEnd = match.end;
+    }
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(text: text.substring(lastEnd)));
+    }
+
+    return Text.rich(TextSpan(style: baseStyle, children: spans));
+  }
+
+  Future<void> _openLink(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir el enlace.')),
+      );
+    }
   }
 
   Widget _buildTypingIndicator() {

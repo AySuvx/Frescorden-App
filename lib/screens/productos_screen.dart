@@ -25,6 +25,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/food_category.dart';
+import '../domain/entities/product_history_entry.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/utils/food_category_ui.dart';
 
@@ -442,6 +443,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
+  /// Trazabilidad de Desperdicio vs. Consumo (Fase 4.5, Módulo 3): al
+  /// retirar un producto del inventario, quien lo hace declara
+  /// explícitamente si lo aprovechó o lo desperdició — ya no se infiere en
+  /// silencio comparando la fecha de vencimiento. Esa elección viaja como
+  /// [ProductOutcome] al historial y al log de actividad del hogar (ver
+  /// ProductProvider.deleteProduct).
   void _eliminarProductoConConfirmacion(Map<String, dynamic> producto) {
     final productoId = producto['id'] as String?;
 
@@ -452,13 +459,16 @@ class _ProductosScreenState extends State<ProductosScreen> {
       return;
     }
 
+    final nombre = producto['name']?.toString() ?? 'este producto';
+
     showDialog(
       context: context,
       builder: (BuildContext ctx) {
         return AlertDialog(
-          title: const Text('Confirmar Eliminación'),
-          content: const Text(
-            '¿Estás seguro de que quieres eliminar este producto?',
+          title: const Text('Retirar producto'),
+          content: Text(
+            '¿Qué pasó con "$nombre"? Esto queda registrado en tu '
+            'historial y en las analíticas del hogar.',
           ),
           actions: [
             TextButton(
@@ -466,38 +476,66 @@ class _ProductosScreenState extends State<ProductosScreen> {
               child: const Text('Cancelar'),
             ),
             TextButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                // delega eliminación al ProductProvider — la lista se
-                // actualiza sola vía el stream, no hace falta setState.
-                try {
-                  await context.read<ProductProvider>().deleteProduct(
-                    productoId,
-                  );
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Producto eliminado correctamente'),
-                    ),
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Error al eliminar el producto'),
-                    ),
-                  );
-                }
-              },
+              onPressed: () => _resolverProducto(
+                ctx,
+                productoId,
+                ProductOutcome.expired,
+              ),
               child: const Text(
-                'Eliminar',
-                style: TextStyle(color: Colors.red),
+                'Desperdiciado / Botado',
+                style: TextStyle(color: Colors.deepOrange),
+              ),
+            ),
+            TextButton(
+              onPressed: () => _resolverProducto(
+                ctx,
+                productoId,
+                ProductOutcome.consumedOnTime,
+              ),
+              child: const Text(
+                'Consumido',
+                style: TextStyle(color: Colors.green),
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  /// Ejecuta la eliminación con el [outcome] elegido en el diálogo (ver
+  /// _eliminarProductoConConfirmacion) y cierra el diálogo primero — mismo
+  /// orden que el resto de la app para no dejar el diálogo abierto mientras
+  /// se espera la respuesta de Firestore.
+  Future<void> _resolverProducto(
+    BuildContext dialogContext,
+    String productoId,
+    ProductOutcome outcome,
+  ) async {
+    Navigator.of(dialogContext).pop();
+    // delega eliminación al ProductProvider — la lista se actualiza sola
+    // vía el stream, no hace falta setState.
+    try {
+      await context.read<ProductProvider>().deleteProduct(
+        productoId,
+        outcome: outcome,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            outcome == ProductOutcome.consumedOnTime
+                ? 'Producto marcado como consumido'
+                : 'Producto marcado como desperdiciado',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al eliminar el producto')),
+      );
+    }
   }
 
   Color _getExpirationColor(int? daysRemaining) {

@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/app_config.dart';
 import '../presentation/providers/auth_provider.dart';
 import '../presentation/providers/product_provider.dart';
 import 'recetas_screen.dart';
@@ -15,6 +17,7 @@ import 'about_screen.dart';
 import 'household_screen.dart';
 import 'assistant_screen.dart';
 import 'category_picker_screen.dart';
+import 'admin_dashboard_screen.dart';
 import '../domain/entities/food_category.dart';
 
 class InicioScreen extends StatefulWidget {
@@ -263,6 +266,23 @@ class _InicioScreenState extends State<InicioScreen> {
                 );
               },
             ),
+            // Panel Administrativo Global (Fase 4.5, Módulo 3): entrada
+            // visible únicamente si el usuario autenticado es el admin
+            // (ver kAdminUid) — para cualquier otro no aparece en el drawer.
+            if (FirebaseAuth.instance.currentUser?.uid == kAdminUid)
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings),
+                title: const Text('Panel Administrativo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AdminDashboardScreen(),
+                    ),
+                  );
+                },
+              ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),

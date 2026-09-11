@@ -2,10 +2,13 @@
 //
 // Capa de Presentación: KPIs numéricos + gráficos (fl_chart).
 // Consume AnalyticsProvider, que a su vez llama a GetAnalyticsUseCase.
+// Household-aware: la carga inicial la dispara AnalyticsProvider solo, al
+// enterarse del hogar activo (ver ChangeNotifierProxyProvider en main.dart)
+// — esta pantalla solo dispara loadSummary() en el pull-to-refresh.
 //
-// Estado vacío: un usuario nuevo (o que nunca eliminó un producto) no
-// tiene historial todavía. En vez de mostrar 0% / $0 de forma engañosa,
-// se muestra un mensaje explicando por qué no hay datos aún
+// Estado vacío: un hogar nuevo (o que nunca eliminó un producto en el
+// último mes) no tiene historial todavía. En vez de mostrar 0% / $0 de
+// forma engañosa, se muestra un mensaje explicando por qué no hay datos aún
 // (AnalyticsSummary.hasData). Los gráficos individuales manejan además su
 // propio estado vacío más específico (ver WasteVsConsumedBarChart /
 // WasteCategoryPieChart) para el caso en que sí hay KPIs pero el desglose
@@ -14,7 +17,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/analytics_summary.dart';
+import '../domain/entities/product_history_entry.dart';
 import '../presentation/providers/analytics_provider.dart';
+import '../presentation/utils/food_category_ui.dart';
 import '../presentation/widgets/analytics/waste_vs_consumed_bar_chart.dart';
 import '../presentation/widgets/analytics/waste_category_pie_chart.dart';
 import '../presentation/utils/currency_format.dart';
@@ -27,14 +32,6 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AnalyticsProvider>().loadSummary();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AnalyticsProvider>();
@@ -57,7 +54,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       Text(
                         'Basado en ${summary.totalResolved} producto'
                         '${summary.totalResolved == 1 ? '' : 's'} resuelto'
-                        '${summary.totalResolved == 1 ? '' : 's'}',
+                        '${summary.totalResolved == 1 ? '' : 's'} en el '
+                        'último mes',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.blueGrey,
@@ -67,10 +65,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       _buildKpiCard(
                         icon: Icons.eco,
                         color: Colors.green,
-                        label: 'Reducción de desperdicio',
+                        label: 'Aprovechamiento del último mes',
                         value:
                             '${summary.wasteReductionPercentage.toStringAsFixed(0)}%',
-                        subtitle: 'Productos consumidos a tiempo',
+                        subtitle: 'Consumidos vs. desperdiciados',
                       ),
                       _buildKpiCard(
                         icon: Icons.savings,
@@ -97,6 +95,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
+                        'Top Alimentos',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildTopProductsCard(summary),
+                      const SizedBox(height: 20),
+                      const Text(
                         'Detalle por categoría',
                         style: TextStyle(
                           fontSize: 16,
@@ -106,10 +114,110 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(height: 12),
                       const WasteVsConsumedBarChart(),
                       const WasteCategoryPieChart(),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Desglose Histórico',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Alimentos marcados como desperdiciados en el último mes',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDiscardedBreakdownCard(summary.discardedBreakdown),
                     ],
                   ),
                 ),
     );
+  }
+
+  Widget _buildTopProductsCard(AnalyticsSummary summary) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        children: [
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0x2666BB6A),
+              child: Icon(Icons.emoji_events, color: Colors.green),
+            ),
+            title: const Text('Más consumido'),
+            subtitle: Text(
+              summary.topConsumedProduct?.name ?? 'Sin datos',
+            ),
+            trailing: summary.topConsumedProduct == null
+                ? null
+                : Text(
+                    '${summary.topConsumedProduct!.count}x',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0x26EF5350),
+              child: Icon(Icons.delete_forever, color: Colors.deepOrange),
+            ),
+            title: const Text('Más desperdiciado'),
+            subtitle: Text(
+              summary.topDiscardedProduct?.name ?? 'Sin datos',
+            ),
+            trailing: summary.topDiscardedProduct == null
+                ? null
+                : Text(
+                    '${summary.topDiscardedProduct!.count}x',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscardedBreakdownCard(List<ProductHistoryEntry> entries) {
+    if (entries.isEmpty) {
+      return const Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            '¡Sin desperdicio registrado este mes! 🎉',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (final entry in entries) ...[
+            ListTile(
+              dense: true,
+              leading: Icon(entry.category.icon, color: Colors.deepOrange),
+              title: Text(entry.name),
+              subtitle: Text(entry.category.label),
+              trailing: Text(
+                _formatShortDate(entry.resolvedAt),
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ),
+            if (entry != entries.last) const Divider(height: 1),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatShortDate(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    return '${local.day}/${local.month}';
   }
 
   Widget _buildKpiCard({

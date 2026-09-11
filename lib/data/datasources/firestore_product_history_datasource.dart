@@ -1,9 +1,12 @@
 // lib/data/datasources/firestore_product_history_datasource.dart
 //
 // Única clase que habla directamente con Cloud Firestore para el historial
-// de productos resueltos. Colección: usuarios/{uid}/historial (mismo patrón
-// de anidación por usuario que FirestoreProductDataSource usa para
-// 'productos').
+// de productos resueltos. Colección: households/{householdId}/
+// product_history — por-hogar, mismo patrón de anidación que
+// FirestoreProductDataSource usa para 'productos' y
+// FirestoreActivityLogDataSource para 'activity_log'. Reemplaza la
+// colección legacy usuarios/{uid}/historial (pre-Household), que se
+// conserva de solo lectura en firestore.rules pero ya no se escribe.
 //
 // La comparten dos repositorios con propósitos distintos (ISP):
 //  - ProductHistoryRepositoryImpl: escribe (logResolution, desde
@@ -11,36 +14,28 @@
 //  - AnalyticsRepositoryImpl: lee (getAll, para calcular AnalyticsSummary).
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/product_history_model.dart';
 import '../../domain/entities/product_history_entry.dart';
 
 class FirestoreProductHistoryDataSource {
   final FirebaseFirestore _db;
-  final FirebaseAuth _auth;
 
-  FirestoreProductHistoryDataSource({
-    FirebaseFirestore? db,
-    FirebaseAuth? auth,
-  })  : _db = db ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  FirestoreProductHistoryDataSource({FirebaseFirestore? db})
+      : _db = db ?? FirebaseFirestore.instance;
 
-  CollectionReference<Map<String, dynamic>> _col() {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw StateError(
-        'FirestoreProductHistoryDataSource: no hay usuario autenticado.',
-      );
-    }
-    return _db.collection('usuarios').doc(user.uid).collection('historial');
+  CollectionReference<Map<String, dynamic>> _col(String householdId) {
+    return _db
+        .collection('households')
+        .doc(householdId)
+        .collection('product_history');
   }
 
-  Future<void> add(ProductHistoryEntry entry) async {
-    await _col().add(ProductHistoryModel.toFirestore(entry));
+  Future<void> add(String householdId, ProductHistoryEntry entry) async {
+    await _col(householdId).add(ProductHistoryModel.toFirestore(entry));
   }
 
-  Future<List<ProductHistoryEntry>> getAll() async {
-    final snap = await _col().get();
+  Future<List<ProductHistoryEntry>> getAll(String householdId) async {
+    final snap = await _col(householdId).get();
     return snap.docs.map(ProductHistoryModel.fromFirestore).toList();
   }
 }

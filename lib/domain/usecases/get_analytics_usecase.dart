@@ -15,5 +15,6 @@ class GetAnalyticsUseCase {
 
   const GetAnalyticsUseCase(this._repository);
 
-  Future<AnalyticsSummary> call() => _repository.getSummary();
+  Future<AnalyticsSummary> call(String householdId) =>
+      _repository.getSummary(householdId);
 }

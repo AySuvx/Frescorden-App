@@ -70,4 +70,9 @@ class HouseholdRepositoryImpl implements IHouseholdRepository {
   Future<void> clearActiveHousehold(String uid) {
     return _dataSource.clearActiveHousehold(uid);
   }
+
+  @override
+  Future<void> recordUserActivity(String uid) {
+    return _dataSource.recordUserActivity(uid);
+  }
 }

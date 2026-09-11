@@ -21,11 +21,11 @@ class ProductHistoryRepositoryImpl implements IProductHistoryRepository {
   ProductHistoryRepositoryImpl(this._dataSource, this._priceCatalog);
 
   @override
-  Future<void> logResolution(ProductHistoryEntry entry) async {
+  Future<void> logResolution(String householdId, ProductHistoryEntry entry) async {
     final toSave = entry.estimatedPrice != null
         ? entry
         : entry.copyWith(estimatedPrice: await _estimatePrice(entry.name));
-    await _dataSource.add(toSave);
+    await _dataSource.add(householdId, toSave);
   }
 
   /// Busca `name` (case-insensitive) en las 3 canastas del catálogo local.

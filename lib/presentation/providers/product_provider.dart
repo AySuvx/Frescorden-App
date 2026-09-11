@@ -28,6 +28,7 @@ import '../../domain/entities/product_history_entry.dart';
 import '../../domain/repositories/i_activity_log_repository.dart';
 import '../../domain/repositories/i_product_repository.dart';
 import '../../domain/repositories/i_product_history_repository.dart';
+import '../utils/analytics_service.dart';
 import '../utils/notification_service.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -280,13 +281,19 @@ class ProductProvider extends ChangeNotifier {
 
   /// Elimina el producto con el [id] indicado.
   ///
-  /// Historial: antes de borrar, se captura una copia del producto
-  /// para registrar en el historial si se consumió a tiempo o venció
-  /// (comparando el momento de la eliminación contra `expirationDate`). El
-  /// registro de historial es best-effort: si falla, NO afecta la
-  /// eliminación (que ya ocurrió) ni se propaga como error al caller — solo
-  /// se pierde ese dato para analíticas.
-  Future<void> deleteProduct(String id) async {
+  /// Trazabilidad de Desperdicio vs. Consumo (Fase 4.5, Módulo 3): quien
+  /// retira un producto del inventario declara explícitamente si lo
+  /// aprovechó ([ProductOutcome.consumedOnTime]) o si lo desperdició
+  /// ([ProductOutcome.expired]) — ya NO se infiere comparando la fecha de
+  /// eliminación contra `expirationDate`. La pantalla es responsable de
+  /// mostrar el diálogo de confirmación y pasar el [outcome] elegido.
+  ///
+  /// Historial: antes de borrar, se captura una copia del producto para
+  /// registrar [outcome] en el historial y en el log de actividad del
+  /// hogar. Ambos registros son best-effort: si fallan, NO afectan la
+  /// eliminación (que ya ocurrió) ni se propagan como error al caller —
+  /// solo se pierde ese dato para analíticas/auditoría.
+  Future<void> deleteProduct(String id, {required ProductOutcome outcome}) async {
     final householdId = _householdId;
     if (householdId == null) {
       throw StateError(
@@ -307,38 +314,36 @@ class ProductProvider extends ChangeNotifier {
     }
 
     // Cancela cualquier alerta pendiente (vencimiento/almacenamiento) de
-    // este producto — "consumirlo" en la UI también pasa por acá, ya que
-    // ambos casos son el mismo deleteProduct.
+    // este producto — tanto "consumirlo" como "desperdiciarlo" en la UI
+    // pasan por acá, ya que ambos casos son el mismo deleteProduct.
     unawaited(NotificationService.instance.cancelForProduct(id));
 
     if (resolved != null) {
-      // Mismo criterio para el historial de Fase 3 y el log de actividad
-      // de Fase 4.5: consumido a tiempo si se elimina en o antes de
-      // expirationDate (o si no tiene fecha); vencido si se elimina
-      // después — "eliminar" en esta app siempre representa "ya no está
-      // en el inventario", sea porque se consumió o porque venció.
       final now = DateTime.now();
-      final expired = resolved.expirationDate != null &&
-          now.isAfter(resolved.expirationDate!);
-
-      unawaited(_logHistory(resolved, now: now, expired: expired));
+      unawaited(_logHistory(householdId, resolved, now: now, outcome: outcome));
       unawaited(_logActivity(
         householdId,
         resolved.name,
-        expired ? ActivityAction.eliminado : ActivityAction.consumido,
+        outcome == ProductOutcome.expired
+            ? ActivityAction.desperdiciado
+            : ActivityAction.consumido,
       ));
+      unawaited(AnalyticsService.instance.logProductResolved(outcome: outcome.name));
     }
   }
 
-  /// Registra en el historial el resultado de haber eliminado [product].
+  /// Registra en el historial (por-hogar) el resultado de haber eliminado
+  /// [product].
   Future<void> _logHistory(
+    String householdId,
     Product product, {
     required DateTime now,
-    required bool expired,
+    required ProductOutcome outcome,
   }) async {
     if (_historyRepository == null) return;
     try {
       await _historyRepository.logResolution(
+        householdId,
         ProductHistoryEntry(
           productId: product.id,
           name: product.name,
@@ -346,8 +351,7 @@ class ProductProvider extends ChangeNotifier {
           entryDate: product.entryDate,
           expirationDate: product.expirationDate,
           resolvedAt: now,
-          outcome:
-              expired ? ProductOutcome.expired : ProductOutcome.consumedOnTime,
+          outcome: outcome,
         ),
       );
     } catch (e) {

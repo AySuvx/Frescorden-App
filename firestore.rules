@@ -1,9 +1,24 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Panel Administrativo Global: UID único con acceso a métricas
+    // agregadas de toda la app (ver lib/config/app_config.dart kAdminUid —
+    // las reglas no pueden importar ese valor, se repite acá literal).
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid == 'YMpWzkKQFiMvCqJdYDYX9fZe5Ow2';
+    }
+
     // Permitir acceso a los documentos de la colección "usuarios"
     match /usuarios/{userId} {
       allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+
+      // Panel Administrativo Global: el UID admin puede LISTAR esta
+      // colección para calcular altas/usuarios activos recientes
+      // (createdAt/lastActiveAt — los únicos campos propios de este
+      // documento, ver UserModel) — nunca leer la cuenta de otro por su
+      // propia cuenta, que sigue exigiendo `request.auth.uid == userId`.
+      allow list: if isAdmin();
     }
 
     // Legacy (pre-Household): inventario por usuario individual. Se
@@ -34,6 +49,12 @@ service cloud.firestore {
     match /households/{householdId} {
       allow get: if request.auth != null;
       allow list: if false;
+
+      // Panel Administrativo Global: el UID admin puede LISTAR todos los
+      // hogares para calcular métricas agregadas de uso (total de hogares,
+      // miembros totales/promedio, códigos vencidos) — ver
+      // FirestoreAdminDataSource.getGlobalStats.
+      allow list: if isAdmin();
 
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.createdBy
@@ -74,6 +95,38 @@ service cloud.firestore {
           && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
         allow update, delete: if false;
       }
+
+      // Historial de Productos resueltos (consumidos o desperdiciados, ver
+      // ProductOutcome) — base de AnalyticsRepositoryImpl. Reemplaza la
+      // colección legacy usuarios/{uid}/historial: ahora vive por-hogar,
+      // igual que el inventario y el activity_log.
+      match /product_history/{entryId} {
+        allow read, create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+        allow update, delete: if false;
+      }
+
+      // Adopción del Asistente Culinario: un documento por consulta
+      // exitosa (append-only, mismo patrón que activity_log/product_history)
+      // — base de las métricas de uso del Panel Administrativo Global.
+      match /assistant_usage/{entryId} {
+        allow read, create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+        allow update, delete: if false;
+      }
+    }
+
+    // Panel Administrativo Global: consultas collectionGroup (cruzan TODOS
+    // los hogares) para las métricas agregadas de aprovechamiento y de
+    // adopción del asistente — ver FirestoreAdminDataSource.getGlobalStats.
+    // Las reglas por-hogar de arriba (`match /households/{id}/product_history`
+    // y `/assistant_usage`) siguen rigiendo cualquier lectura acotada a un
+    // solo hogar; esto SOLO habilita la query que cruza todos.
+    match /{path=**}/product_history/{entryId} {
+      allow list: if isAdmin();
+    }
+    match /{path=**}/assistant_usage/{entryId} {
+      allow list: if isAdmin();
     }
 
     // Lookup de código de invitación → householdId. Colección aparte (en
