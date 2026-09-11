@@ -23,6 +23,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../config/theme/app_spacing.dart';
 import '../domain/entities/food_category.dart';
@@ -84,6 +85,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         label: const Text('Todas'),
                         selected: _filtroCategoria == null,
                         onSelected: (_) {
+                          HapticFeedback.lightImpact();
                           setSheetState(() => _filtroCategoria = null);
                           setState(() {});
                         },
@@ -94,6 +96,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           label: Text(cat.label),
                           selected: _filtroCategoria == cat,
                           onSelected: (_) {
+                            HapticFeedback.lightImpact();
                             setSheetState(() => _filtroCategoria = cat);
                             setState(() {});
                           },
@@ -111,6 +114,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     ),
                     value: _soloStockBajo,
                     onChanged: (value) {
+                      HapticFeedback.lightImpact();
                       setSheetState(() => _soloStockBajo = value);
                       setState(() {});
                     },
@@ -248,9 +252,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     : ListView.builder(
                       itemCount: productosFiltrados.length,
                       itemBuilder:
-                          (context, index) => _buildProductoCard(
-                            context,
-                            productosFiltrados[index],
+                          (context, index) => _FadeSlideIn(
+                            index: index,
+                            child: _buildProductoCard(
+                              context,
+                              productosFiltrados[index],
+                            ),
                           ),
                     ),
           ),
@@ -388,11 +395,17 @@ class _ProductosScreenState extends State<ProductosScreen> {
           children: [
             IconButton(
               icon: Icon(Icons.edit, color: colorScheme.primary),
-              onPressed: () => widget.onEdit(producto),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                widget.onEdit(producto);
+              },
             ),
             IconButton(
               icon: Icon(Icons.delete, color: colorScheme.error),
-              onPressed: () => _eliminarProductoConConfirmacion(producto),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _eliminarProductoConConfirmacion(producto);
+              },
             ),
           ],
         ),
@@ -497,22 +510,24 @@ class _ProductosScreenState extends State<ProductosScreen> {
               child: const Text('Cancelar'),
             ),
             TextButton(
-              onPressed: () => _resolverProducto(
-                ctx,
-                productoId,
-                ProductOutcome.expired,
-              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _resolverProducto(ctx, productoId, ProductOutcome.expired);
+              },
               child: Text(
                 'Desperdiciado / Botado',
                 style: TextStyle(color: colorScheme.tertiary),
               ),
             ),
             TextButton(
-              onPressed: () => _resolverProducto(
-                ctx,
-                productoId,
-                ProductOutcome.consumedOnTime,
-              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _resolverProducto(
+                  ctx,
+                  productoId,
+                  ProductOutcome.consumedOnTime,
+                );
+              },
               child: Text(
                 'Consumido',
                 style: TextStyle(color: colorScheme.primary),
@@ -557,5 +572,65 @@ class _ProductosScreenState extends State<ProductosScreen> {
         const SnackBar(content: Text('Error al eliminar el producto')),
       );
     }
+  }
+}
+
+/// Entrada progresiva (fade + slide) para cada tarjeta de la lista —
+/// Fase 5, Módulo 2. El desfase por índice (40ms por ítem, tope en 300ms)
+/// da el efecto "stagger" sin animar decenas de tarjetas a la vez cuando el
+/// inventario es grande. Sin key explícita: en una reconstrucción trivial
+/// del stream (p. ej. otro miembro del hogar edita un producto) Flutter
+/// reutiliza el State existente en esa posición y NO vuelve a animar —
+/// solo se re-dispara cuando el ítem es realmente nuevo en el árbol.
+class _FadeSlideIn extends StatefulWidget {
+  const _FadeSlideIn({required this.index, required this.child});
+
+  final int index;
+  final Widget child;
+
+  @override
+  State<_FadeSlideIn> createState() => _FadeSlideInState();
+}
+
+class _FadeSlideInState extends State<_FadeSlideIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutCubic,
+    );
+    final delay = Duration(milliseconds: (widget.index * 40).clamp(0, 300));
+    Future.delayed(delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.08),
+          end: Offset.zero,
+        ).animate(_animation),
+        child: widget.child,
+      ),
+    );
   }
 }

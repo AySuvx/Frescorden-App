@@ -66,6 +66,21 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
+
+        <!-- Diagnóstico "pantalla en blanco" en AddProductScreen/CategoryPickerScreen
+             (registro a granel y por categoría): el logcat del dispositivo de
+             prueba (Xiaomi) muestra "Using the Impeller rendering backend
+             (Vulkan)" + errores recurrentes "AHardwareBuffer: GraphicBuffer
+             ... failed (Unknown error -5)" en TODAS las pantallas de hoy, sin
+             ninguna excepción Dart/Flutter — la app compila y corre bien, pero
+             el compositor gráfico falla en silencio en árboles de widgets más
+             cargados (bordes, ClipRRect, DropdownButton). Es un problema
+             conocido de Impeller con ciertos drivers Vulkan de Android, no del
+             código Dart. Se fuerza el backend Skia (OpenGL) como diagnóstico/
+             mitigación mientras se confirma en el dispositivo real. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false"/>
     </application>
 
     <queries>

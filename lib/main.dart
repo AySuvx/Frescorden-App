@@ -28,8 +28,7 @@ import 'package:provider/provider.dart';
 
 import 'config/theme/app_theme.dart';
 import 'config/theme/theme_provider.dart';
-import 'screens/login_screen.dart';
-import 'screens/inicio_screen.dart';
+import 'presentation/screens/splash/splash_screen.dart';
 
 // Capa de datos (instanciada aquí, no en las pantallas)
 import 'data/datasources/firestore_product_datasource.dart';
@@ -54,7 +53,6 @@ import 'data/datasources/firestore_assistant_usage_datasource.dart';
 import 'data/repositories/assistant_usage_repository_impl.dart';
 
 // Capa de dominio
-import 'domain/entities/app_user.dart';
 import 'domain/repositories/i_activity_log_repository.dart';
 import 'domain/repositories/i_assistant_usage_repository.dart';
 import 'domain/usecases/get_analytics_usecase.dart';
@@ -245,20 +243,14 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
-      home: StreamBuilder<AppUser?>(
-        stream: context.read<AuthProvider>().authStateChanges,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          } else if (snapshot.hasData) {
-            return const InicioScreen();
-          } else {
-            return const LoginScreen();
-          }
-        },
-      ),
+      // Fase 5, Módulo 2: la decisión inicial (Onboarding / Login / Inicio)
+      // ya no vive acá — SplashScreen la resuelve (esperando el primer
+      // estado de AuthProvider.authStateChanges + la bandera de
+      // SharedPreferences) mientras anima el logo de marca. login_screen.dart
+      // ya navega explícitamente a InicioScreen tras un login exitoso, así
+      // que no depender de este StreamBuilder para ese caso no es una
+      // regresión.
+      home: const SplashScreen(),
     );
   }
 }

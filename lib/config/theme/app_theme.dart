@@ -75,7 +75,19 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          minimumSize: const Size.fromHeight(AppSpacing.buttonHeight),
+          // Size(64, buttonHeight), NO Size.fromHeight(buttonHeight):
+          // fromHeight fija el ancho en double.infinity. Dentro de un
+          // contenedor con ancho acotado (Column, SizedBox) eso se recorta
+          // sin drama y el botón queda full-width — pero un ElevatedButton
+          // suelto dentro de un Row/Wrap SIN Expanded recibe del padre un
+          // ancho genuinamente no acotado en su eje principal: el mínimo
+          // infinito ya no tiene nada contra qué recortarse, la restricción
+          // de layout resultante es infinita y ese subárbol deja de
+          // pintarse por completo (sin excepción visible en consola) — así
+          // se rompían "Tomar Foto" en AddProductScreen y cualquier otro
+          // botón suelto en un Row. 64dp de ancho mínimo es el piso
+          // estándar de Material, sin ese riesgo.
+          minimumSize: const Size(64, AppSpacing.buttonHeight),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           shape: buttonShape,
         ),
@@ -85,7 +97,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: colorScheme.primary,
           side: BorderSide(color: colorScheme.outline),
-          minimumSize: const Size.fromHeight(AppSpacing.buttonHeight),
+          minimumSize: const Size(64, AppSpacing.buttonHeight),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           shape: buttonShape,
         ),

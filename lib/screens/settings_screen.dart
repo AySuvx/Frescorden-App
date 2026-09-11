@@ -10,6 +10,7 @@
 
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -270,6 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
             selected: {themeProvider.themeMode},
             onSelectionChanged: (selection) {
+              HapticFeedback.lightImpact();
               context.read<ThemeProvider>().setThemeMode(selection.first);
             },
           ),

@@ -13,6 +13,7 @@
 // WebViewScreen de web_view_screen.dart.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../config/theme/app_spacing.dart';
@@ -97,6 +98,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 fontWeight: FontWeight.w600,
               ),
               onSelected: (_) {
+                HapticFeedback.lightImpact();
                 shoppingProvider.selectTier(tier);
                 // Un chip es un preset completo (canasta + techo): si había
                 // un presupuesto manual escrito, se limpia para no dejar un
