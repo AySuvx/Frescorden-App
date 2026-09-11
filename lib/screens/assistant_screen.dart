@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/theme/app_spacing.dart';
 import '../domain/entities/chat_message.dart';
 import '../presentation/providers/assistant_provider.dart';
 import '../presentation/utils/quota_service.dart';
@@ -119,30 +120,41 @@ class _AssistantScreenState extends State<AssistantScreen> {
   }
 
   Widget _buildQuotaBadge(int remaining) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      color: Colors.green.shade50,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      color: colorScheme.primaryContainer,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       child: Text(
         'Consultas de hoy: $remaining/${QuotaService.dailyLimit}',
-        style: TextStyle(fontSize: 12, color: Colors.green.shade800),
+        style: TextStyle(fontSize: 12, color: colorScheme.onPrimaryContainer),
       ),
     );
   }
 
   Widget _buildOfflineBanner() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      color: Colors.orange.shade100,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: colorScheme.tertiaryContainer,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         children: [
-          Icon(Icons.wifi_off, size: 18, color: Colors.orange.shade800),
-          const SizedBox(width: 8),
+          Icon(Icons.wifi_off, size: 18, color: colorScheme.onTertiaryContainer),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               'Sin conexión — el chat con el asistente necesita internet.',
-              style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onTertiaryContainer,
+              ),
             ),
           ),
         ],
@@ -151,17 +163,18 @@ class _AssistantScreenState extends State<AssistantScreen> {
   }
 
   Widget _buildEmptyState(bool limitReached) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.restaurant_menu, size: 48, color: Colors.green),
-          const SizedBox(height: 12),
-          const Text(
+          Icon(Icons.restaurant_menu, size: 48, color: colorScheme.primary),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
             'Pregúntame sobre recetas, conservación de alimentos o cómo usar Frescorden.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
           if (!limitReached) ...[
             const SizedBox(height: 20),
@@ -184,29 +197,34 @@ class _AssistantScreenState extends State<AssistantScreen> {
   }
 
   Widget _buildLimitReachedCard(Duration timeUntilReset) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        0,
+        AppSpacing.sm,
+        AppSpacing.sm,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade200),
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
       ),
       child: Column(
         children: [
           Text(
             'Has alcanzado el límite diario. Tus consultas se renuevan en:',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.green.shade900),
+            style: TextStyle(color: colorScheme.onPrimaryContainer),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             _formatCountdown(timeUntilReset),
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.green.shade800,
+              color: colorScheme.onPrimaryContainer,
               letterSpacing: 2,
             ),
           ),
@@ -225,19 +243,23 @@ class _AssistantScreenState extends State<AssistantScreen> {
 
   Widget _buildBubble(ChatMessage message) {
     final isUser = message.role == ChatRole.user;
+    final colorScheme = Theme.of(context).colorScheme;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isUser ? Colors.green : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(14),
+          color: isUser ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppSpacing.md),
         ),
-        child: _buildMessageContent(message.text, isUser),
+        child: _buildMessageContent(message.text, isUser, colorScheme),
       ),
     );
   }
@@ -247,15 +269,17 @@ class _AssistantScreenState extends State<AssistantScreen> {
   /// subrayados y abren en la app nativa de YouTube o el navegador al
   /// tocarlos (ver _openLink). No es un renderer de Markdown completo:
   /// solo intercepta enlaces, que es todo lo que el asistente produce hoy.
-  Widget _buildMessageContent(String text, bool isUser) {
-    final baseStyle = TextStyle(color: isUser ? Colors.white : Colors.black87);
+  Widget _buildMessageContent(String text, bool isUser, ColorScheme colorScheme) {
+    final baseStyle = TextStyle(
+      color: isUser ? colorScheme.onPrimary : colorScheme.onSurface,
+    );
     final matches = _markdownLinkPattern.allMatches(text).toList();
     if (matches.isEmpty) {
       return Text(text, style: baseStyle);
     }
 
     final linkStyle = baseStyle.copyWith(
-      color: isUser ? Colors.white : Colors.blue.shade800,
+      color: isUser ? colorScheme.onPrimary : colorScheme.primary,
       decoration: TextDecoration.underline,
       fontWeight: FontWeight.w600,
     );
@@ -298,25 +322,32 @@ class _AssistantScreenState extends State<AssistantScreen> {
   }
 
   Widget _buildTypingIndicator() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(14),
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
-        child: const Row(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppSpacing.md),
+        ),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
               width: 14,
               height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
+              ),
             ),
-            SizedBox(width: 8),
-            Text('Escribiendo...'),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('Escribiendo...'),
           ],
         ),
       ),
@@ -341,11 +372,13 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 onSubmitted: (_) => _send(),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
+            // Sin backgroundColor explícito: IconButton.filled ya toma
+            // colorScheme.primary/onPrimary por defecto en Material3 — un
+            // override fijo aquí solo repetía lo que el tema ya resuelve.
             IconButton.filled(
               onPressed: disabled ? null : () => _send(),
               icon: const Icon(Icons.send),
-              style: IconButton.styleFrom(backgroundColor: Colors.green),
             ),
           ],
         ),

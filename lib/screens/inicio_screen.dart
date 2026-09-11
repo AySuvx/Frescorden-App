@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
+import '../config/theme/app_spacing.dart';
 import '../routes.dart';
 import '../presentation/providers/auth_provider.dart';
 import '../presentation/providers/product_provider.dart';
@@ -120,6 +121,7 @@ class _InicioScreenState extends State<InicioScreen> {
     // watch: reconstruye este widget cuando el provider notifica cambios
     final provider = context.watch<ProductProvider>();
     final productos = provider.productosMap;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Fresc(o)rden')),
@@ -127,22 +129,20 @@ class _InicioScreenState extends State<InicioScreen> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 175, 186, 245),
-              ),
+            DrawerHeader(
+              decoration: BoxDecoration(color: colorScheme.primaryContainer),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Fresc(o)rden',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: colorScheme.onPrimaryContainer,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(height: 10.0),
+                  const SizedBox(height: AppSpacing.sm),
                 ],
               ),
             ),
@@ -160,15 +160,15 @@ class _InicioScreenState extends State<InicioScreen> {
                   provider.lowStockCount > 0
                       ? Text(
                         '${provider.lowStockCount} con stock bajo',
-                        style: const TextStyle(
-                          color: Colors.red,
+                        style: TextStyle(
+                          color: colorScheme.error,
                           fontWeight: FontWeight.w600,
                         ),
                       )
                       : null,
               trailing:
                   provider.lowStockCount > 0
-                      ? const Icon(Icons.error_outline, color: Colors.red)
+                      ? Icon(Icons.error_outline, color: colorScheme.error)
                       : null,
               onTap: () {
                 // ProductosScreen ahora es reactiva (context.watch<ProductProvider>()

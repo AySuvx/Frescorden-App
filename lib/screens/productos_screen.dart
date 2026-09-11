@@ -24,10 +24,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/theme/app_spacing.dart';
 import '../domain/entities/food_category.dart';
 import '../domain/entities/product_history_entry.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/utils/food_category_ui.dart';
+import '../presentation/widgets/common/custom_card.dart';
+import '../presentation/widgets/common/status_badge.dart';
 
 enum _SortOption { expirationAsc, quantityDesc, quantityAsc }
 
@@ -245,8 +248,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     : ListView.builder(
                       itemCount: productosFiltrados.length,
                       itemBuilder:
-                          (context, index) =>
-                              _buildProductoCard(productosFiltrados[index]),
+                          (context, index) => _buildProductoCard(
+                            context,
+                            productosFiltrados[index],
+                          ),
                     ),
           ),
         ],
@@ -254,7 +259,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  Widget _buildProductoCard(Map<String, dynamic> producto) {
+  Widget _buildProductoCard(BuildContext context, Map<String, dynamic> producto) {
+    final colorScheme = Theme.of(context).colorScheme;
     final String dateStr = producto['expirationDate'] ?? '';
     // null = sin fecha de vencimiento registrada (frecuente en productos a
     // granel) — distinto de "vence hoy" (0), que antes se mostraba por error
@@ -274,8 +280,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final String? imagePath =
         producto['imagePath'] as String? ?? producto['image'] as String?;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+    return CustomCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: EdgeInsets.zero,
       child: ListTile(
         // FIX alineación: con el subtítulo de hasta 4 líneas (categoría +
         // cantidad + vencimiento + badge de trazabilidad a granel), el
@@ -285,7 +292,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
         // líneas tenga el subtítulo.
         titleAlignment: ListTileTitleAlignment.top,
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(AppSpacing.sm),
           child:
               (imagePath != null &&
                       imagePath.isNotEmpty &&
@@ -304,7 +311,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
             Expanded(
               child: Text(
                 producto['name']?.toString() ?? 'Sin nombre',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -312,7 +319,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
             Icon(
               FoodCategory.fromName(producto['category'] as String?).icon,
               size: 18,
-              color: Colors.blueGrey,
+              color: colorScheme.onSurfaceVariant,
             ),
           ],
         ),
@@ -321,7 +328,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
           children: [
             Text(
               FoodCategory.fromName(producto['category'] as String?).label,
-              style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             Row(
               children: [
@@ -337,41 +347,51 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 ),
                 // badge de stock bajo
                 if (_esStockBajo(producto)) ...[
-                  const SizedBox(width: 6),
-                  const Icon(Icons.error_outline, size: 14, color: Colors.red),
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(Icons.error_outline, size: 14, color: colorScheme.error),
                   const SizedBox(width: 2),
-                  const Text(
+                  Text(
                     'Stock bajo',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.red,
+                      color: colorScheme.error,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ],
             ),
-            Text(
-              daysRemaining == null
-                  ? 'Sin fecha de vencimiento'
-                  : daysRemaining < 0
-                      ? 'Estado: Vencido'
-                      : 'Expira en: $daysRemaining días',
-              style: TextStyle(color: _getExpirationColor(daysRemaining)),
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child:
+                  daysRemaining == null
+                      ? Text(
+                        'Sin fecha de vencimiento',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      )
+                      : StatusBadge(
+                        status: ProductFreshness.fromDaysRemaining(
+                          daysRemaining,
+                        ),
+                        label:
+                            daysRemaining < 0
+                                ? 'Vencido'
+                                : 'Expira en: $daysRemaining días',
+                      ),
             ),
             // trazabilidad de perecederos a granel
-            _buildStorageLabel(producto),
+            _buildStorageLabel(producto, colorScheme),
           ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.blue),
+              icon: Icon(Icons.edit, color: colorScheme.primary),
               onPressed: () => widget.onEdit(producto),
             ),
             IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: colorScheme.error),
               onPressed: () => _eliminarProductoConConfirmacion(producto),
             ),
           ],
@@ -386,7 +406,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
   /// obligatoria para TODOS los productos, así que gatear por isBulk evita
   /// mostrar "Almacenado hace 0 días" en cada producto empacado recién
   /// agregado (dato sin valor informativo fuera del caso de granel).
-  Widget _buildStorageLabel(Map<String, dynamic> producto) {
+  Widget _buildStorageLabel(
+    Map<String, dynamic> producto,
+    ColorScheme colorScheme,
+  ) {
     final isBulk = producto['isBulk'] as bool? ?? false;
     if (!isBulk) return const SizedBox.shrink();
 
@@ -399,17 +422,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
     final daysInStorage = DateTime.now().difference(entryDate).inDays;
     final isCritical = daysInStorage >= 5;
+    final color = isCritical ? colorScheme.tertiary : colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.only(top: 3),
       child: Row(
         children: [
-          Icon(
-            Icons.kitchen,
-            size: 12,
-            color: isCritical ? Colors.deepOrange : Colors.blueGrey,
-          ),
-          const SizedBox(width: 4),
+          Icon(Icons.kitchen, size: 12, color: color),
+          const SizedBox(width: AppSpacing.xs),
           // FIX overflow (hallado en prueba manual en dispositivo,
           // "RenderFlex overflowed by 14 pixels"): mismo patrón que la fila de
           // Cantidad — sin Flexible, el ancho acotado por leading+trailing
@@ -420,14 +440,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
-                color: isCritical ? Colors.deepOrange : Colors.blueGrey,
+                color: color,
                 fontWeight: isCritical ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ),
           if (isCritical) ...[
-            const SizedBox(width: 4),
-            const Icon(Icons.warning_amber, size: 12, color: Colors.deepOrange),
+            const SizedBox(width: AppSpacing.xs),
+            Icon(Icons.warning_amber, size: 12, color: color),
           ],
         ],
       ),
@@ -460,6 +480,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     }
 
     final nombre = producto['name']?.toString() ?? 'este producto';
+    final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
@@ -481,9 +502,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 productoId,
                 ProductOutcome.expired,
               ),
-              child: const Text(
+              child: Text(
                 'Desperdiciado / Botado',
-                style: TextStyle(color: Colors.deepOrange),
+                style: TextStyle(color: colorScheme.tertiary),
               ),
             ),
             TextButton(
@@ -492,9 +513,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 productoId,
                 ProductOutcome.consumedOnTime,
               ),
-              child: const Text(
+              child: Text(
                 'Consumido',
-                style: TextStyle(color: Colors.green),
+                style: TextStyle(color: colorScheme.primary),
               ),
             ),
           ],
@@ -536,12 +557,5 @@ class _ProductosScreenState extends State<ProductosScreen> {
         const SnackBar(content: Text('Error al eliminar el producto')),
       );
     }
-  }
-
-  Color _getExpirationColor(int? daysRemaining) {
-    if (daysRemaining == null) return Colors.blueGrey;
-    if (daysRemaining < 0) return Colors.red;
-    if (daysRemaining <= 3) return Colors.orange;
-    return Colors.green;
   }
 }

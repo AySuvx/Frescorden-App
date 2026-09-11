@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 // hide AuthProvider: colisiona con presentation/providers/auth_provider.dart;
 // solo se usa FirebaseAuthException de este paquete.
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../domain/repositories/i_auth_repository.dart';
 import '../routes.dart';
@@ -152,11 +151,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 curve: Curves.easeInOut,
                 child: Text(
                   _isLogin ? 'Bienvenido A Fresc(o)rden' : 'Crea tu Cuenta',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade600,
-                  ),
+                  // Antes: GoogleFonts.poppins() puntual + Colors.green.shade600
+                  // fijo — no seguía el tema (invisible en modo oscuro, y
+                  // competía con la tipografía Varela Round/Nunito Sans del
+                  // resto de la app; ver AppTheme._buildTextTheme).
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),

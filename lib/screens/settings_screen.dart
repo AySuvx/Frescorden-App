@@ -16,9 +16,9 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/theme/theme_provider.dart';
 import '../presentation/providers/auth_provider.dart';
 import '../routes.dart';
-import '../theme_provider.dart';
 import 'login_screen.dart';
 
 /// applicationId fijo del proyecto (ver android/app/build.gradle.kts) —
@@ -241,13 +241,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // Modo oscuro — BUG #5 fix original (ThemeProvider)
-          SwitchListTile(
-            title: const Text('Modo oscuro'),
-            subtitle: const Text('Activa o desactiva el tema oscuro'),
-            value: themeProvider.isDarkMode,
-            onChanged: (value) {
-              context.read<ThemeProvider>().toggleTheme(value);
+          // Tema — Fase 5, Módulo 1: ThemeProvider ahora persiste un
+          // ThemeMode completo (antes solo un booleano claro/oscuro), así
+          // que el control pasa de un Switch de 2 estados a un selector de
+          // 3.
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: Text('Tema', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(
+                value: ThemeMode.light,
+                icon: Icon(Icons.light_mode),
+                label: Text('Claro'),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                icon: Icon(Icons.dark_mode),
+                label: Text('Oscuro'),
+              ),
+              ButtonSegment(
+                value: ThemeMode.system,
+                icon: Icon(Icons.settings_suggest),
+                label: Text('Sistema'),
+              ),
+            ],
+            selected: {themeProvider.themeMode},
+            onSelectionChanged: (selection) {
+              context.read<ThemeProvider>().setThemeMode(selection.first);
             },
           ),
           const Divider(),

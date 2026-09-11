@@ -26,8 +26,8 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:provider/provider.dart';
 
-import 'app_theme.dart';
-import 'theme_provider.dart';
+import 'config/theme/app_theme.dart';
+import 'config/theme/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/inicio_screen.dart';
 
@@ -236,10 +236,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Frescorden',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(Brightness.light),
-      darkTheme: buildAppTheme(Brightness.dark),
-      themeMode:
-          themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProvider.themeMode,
       // Rutas nombradas (ver lib/routes.dart): cada Navigator.push de la
       // app pasa un RouteSettings.name explícito — el observer de Analytics
       // ya puede reportar qué pantalla se abrió en vez de "desconocida".
