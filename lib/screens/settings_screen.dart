@@ -17,6 +17,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../presentation/providers/auth_provider.dart';
+import '../routes.dart';
 import '../theme_provider.dart';
 import 'login_screen.dart';
 
@@ -375,7 +376,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+            settings: const RouteSettings(name: AppRoutes.login),
+          ),
           (route) => false,
         );
       }

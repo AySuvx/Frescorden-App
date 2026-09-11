@@ -38,10 +38,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final AnalyticsSummary summary = provider.summary;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Analíticas'),
-        backgroundColor: Colors.green,
-      ),
+      appBar: AppBar(title: const Text('Analíticas')),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : !summary.hasData

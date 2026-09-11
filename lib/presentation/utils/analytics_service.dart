@@ -6,14 +6,13 @@
 // presentación (no hay interfaz/DI: es infraestructura transversal, no
 // una regla de negocio del dominio).
 //
-// Deliberadamente NO se instrumenta screen_view automático (FirebaseAnalyticsObserver):
-// las pantallas navegan con MaterialPageRoute sin `RouteSettings.name`
-// en todos los call sites, así que el extractor por defecto no tendría
-// nombres que reportar. En vez de agregar nombres de ruta en cada
-// Navigator.push de la app (cambio grande, de bajo valor sin rediseñar la
-// navegación), se registran eventos de negocio puntuales en los puntos
-// donde ya vive la lógica (providers), que es justo lo que responde
-// "¿qué features usa la gente?" — la pregunta real detrás de esta métrica.
+// screen_view automático: ya lo cubre FirebaseAnalyticsObserver, registrado
+// en MaterialApp.navigatorObservers (ver main.dart) — funciona porque cada
+// Navigator.push de la app pasa un RouteSettings.name (ver lib/routes.dart).
+// Este servicio se enfoca en los eventos de negocio puntuales que un
+// screen_view no puede responder por sí solo: "¿qué features usa la
+// gente?" es más que "¿qué pantallas abrió?" — un usuario puede entrar al
+// asistente sin llegar a hacerle una consulta exitosa, por ejemplo.
 //
 // Todas las llamadas son best-effort: un fallo de Analytics nunca debe
 // afectar la acción real del usuario que ya se completó.

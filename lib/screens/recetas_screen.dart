@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/recipe.dart';
+import '../routes.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/providers/recipe_provider.dart';
 import 'detalle_receta_screen.dart';
@@ -73,7 +74,15 @@ class _RecetasScreenState extends State<RecetasScreen> {
                     final disponible = faltantes.isEmpty;
 
                     return Card(
-                      color: disponible ? Colors.white : Colors.grey[200],
+                      // Sin color fijo (Colors.white/grey[200] antes): con
+                      // modo oscuro el texto del ListTile ya se pinta claro
+                      // por el tema, así que un fondo claro forzado lo dejaba
+                      // casi ilegible. El color de tema se adapta solo a
+                      // ambos modos; "no disponible" se distingue con un
+                      // tono de superficie apenas distinto, no hardcodeado.
+                      color: disponible
+                          ? null
+                          : Theme.of(context).colorScheme.surfaceContainerHighest,
                       elevation: 2,
                       margin:
                           const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -101,6 +110,9 @@ class _RecetasScreenState extends State<RecetasScreen> {
                               builder: (context) => DetalleRecetaScreen(
                                 receta: receta,
                                 faltantes: faltantes,
+                              ),
+                              settings: const RouteSettings(
+                                name: AppRoutes.detalleReceta,
                               ),
                             ),
                           );

@@ -16,10 +16,7 @@ class CategoryPickerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Elige una categoría'),
-        backgroundColor: Colors.green,
-      ),
+      appBar: AppBar(title: const Text('Elige una categoría')),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

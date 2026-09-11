@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../domain/repositories/i_auth_repository.dart';
+import '../routes.dart';
 import '../presentation/providers/auth_provider.dart';
 import 'inicio_screen.dart';
 
@@ -36,7 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const InicioScreen()),
+            MaterialPageRoute(
+              builder: (_) => const InicioScreen(),
+              settings: const RouteSettings(name: AppRoutes.inicio),
+            ),
           );
         }
       } catch (e) {
@@ -81,7 +85,10 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted && _isLogin) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const InicioScreen()),
+            MaterialPageRoute(
+              builder: (_) => const InicioScreen(),
+              settings: const RouteSettings(name: AppRoutes.inicio),
+            ),
           );
         }
       } on FirebaseAuthException catch (e) {

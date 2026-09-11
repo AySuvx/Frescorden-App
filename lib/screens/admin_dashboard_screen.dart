@@ -26,10 +26,7 @@ class AdminDashboardScreen extends StatelessWidget {
     final isAdmin = FirebaseAuth.instance.currentUser?.uid == kAdminUid;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Panel Administrativo'),
-        backgroundColor: Colors.green,
-      ),
+      appBar: AppBar(title: const Text('Panel Administrativo')),
       body: isAdmin ? const _AdminStatsView() : const _AccessDenied(),
     );
   }

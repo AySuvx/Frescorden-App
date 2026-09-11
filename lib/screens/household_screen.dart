@@ -156,10 +156,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     final household = provider.household;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Hogar'),
-        backgroundColor: Colors.green,
-      ),
+      appBar: AppBar(title: const Text('Mi Hogar')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

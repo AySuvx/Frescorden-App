@@ -19,6 +19,7 @@ import '../domain/entities/budget_tier.dart';
 import '../domain/entities/nutrition_group.dart';
 import '../domain/entities/product.dart';
 import '../domain/entities/shopping_item.dart';
+import '../routes.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/providers/shopping_provider.dart';
 import '../presentation/utils/currency_format.dart';
@@ -62,17 +63,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(
-            title: Text(title),
-            backgroundColor: Colors.green,
-          ),
+          appBar: AppBar(title: Text(title)),
           body: _ShoppingWebView(url: url, title: title),
         ),
+        settings: const RouteSettings(name: AppRoutes.shoppingWebView),
       ),
     );
   }
 
   Widget _buildTierSelector(ShoppingProvider shoppingProvider) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -85,9 +85,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             child: ChoiceChip(
               label: Text('${tier.label} (${tier.budgetCap.asCop})'),
               selected: selected,
-              selectedColor: Colors.green,
+              selectedColor: colorScheme.primary,
+              // Antes: Colors.black87 fijo para "no seleccionado" —
+              // invisible sobre el fondo oscuro del chip en modo oscuro.
               labelStyle: TextStyle(
-                color: selected ? Colors.white : Colors.black87,
+                color: selected ? colorScheme.onPrimary : colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
               onSelected: (_) {
@@ -172,6 +174,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     List<Product> inventory,
   ) {
     final missingGroups = shoppingProvider.missingNutritionGroups(inventory);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -201,6 +204,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               runSpacing: 8,
               children: [
                 for (final group in NutritionGroup.values)
+                  // colorScheme.error/primaryContainer + su on*Container
+                  // correspondiente ya vienen balanceados para buen
+                  // contraste en claro Y oscuro (antes: Colors.red[50] /
+                  // green[50] fijos, con texto que en modo oscuro se
+                  // pintaba claro sobre un fondo también claro).
                   Chip(
                     avatar: Icon(
                       missingGroups.contains(group)
@@ -208,13 +216,20 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                           : Icons.check_circle,
                       size: 18,
                       color: missingGroups.contains(group)
-                          ? Colors.red
-                          : Colors.green,
+                          ? colorScheme.onErrorContainer
+                          : colorScheme.onPrimaryContainer,
                     ),
-                    label: Text(group.label),
+                    label: Text(
+                      group.label,
+                      style: TextStyle(
+                        color: missingGroups.contains(group)
+                            ? colorScheme.onErrorContainer
+                            : colorScheme.onPrimaryContainer,
+                      ),
+                    ),
                     backgroundColor: missingGroups.contains(group)
-                        ? Colors.red[50]
-                        : Colors.green[50],
+                        ? colorScheme.errorContainer
+                        : colorScheme.primaryContainer,
                   ),
               ],
             ),
@@ -257,9 +272,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final total = shoppingProvider.estimatedTotal(inventory);
     final cap = shoppingProvider.budgetCap;
     final over = total > cap;
+    final colorScheme = Theme.of(context).colorScheme;
+    // Antes: Colors.red[50]/green[50] fijos, con el primer renglón sin
+    // color explícito (heredaba el texto claro del tema oscuro sobre un
+    // fondo también claro — casi ilegible). *Container/on*Container se
+    // adaptan solos a ambos modos.
+    final onColor =
+        over ? colorScheme.onErrorContainer : colorScheme.onPrimaryContainer;
 
     return Card(
-      color: over ? Colors.red[50] : Colors.green[50],
+      color: over ? colorScheme.errorContainer : colorScheme.primaryContainer,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -267,7 +289,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           children: [
             Icon(
               over ? Icons.warning_amber : Icons.check_circle,
-              color: over ? Colors.red : Colors.green,
+              color: onColor,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -276,17 +298,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 children: [
                   Text(
                     'Estimado de lo que falta: ${total.asCop}',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: onColor,
+                    ),
                   ),
                   Text(
                     over
                         ? 'Superas el presupuesto de ${cap.asCop} por ${(total - cap).asCop}'
                         : 'Dentro del presupuesto de ${cap.asCop} (quedan ${(cap - total).asCop})',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: over ? Colors.red[700] : Colors.green[700],
-                    ),
+                    style: TextStyle(fontSize: 13, color: onColor),
                   ),
                 ],
               ),
@@ -304,10 +326,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final missing = shoppingProvider.missingItems(inventory);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lista de Compras'),
-        backgroundColor: Colors.green,
-      ),
+      appBar: AppBar(title: const Text('Lista de Compras')),
       // Lista única desplazable en vez de Column fija + Expanded: con la
       // tarjeta "Plato Equilibrado" (Fase 4.5, Módulo 4) el encabezado ya no
       // entra siempre en una pantalla de celular — un Expanded fijo para

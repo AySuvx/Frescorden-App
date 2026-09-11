@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
+import '../routes.dart';
 import '../presentation/providers/auth_provider.dart';
 import '../presentation/providers/product_provider.dart';
 import 'recetas_screen.dart';
@@ -43,7 +44,10 @@ class _InicioScreenState extends State<InicioScreen> {
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+          settings: const RouteSettings(name: AppRoutes.login),
+        ),
         (route) => false,
       );
     }
@@ -57,7 +61,10 @@ class _InicioScreenState extends State<InicioScreen> {
   Future<void> _navegarAgregarPorCategoria() async {
     final categoria = await Navigator.push<FoodCategory>(
       context,
-      MaterialPageRoute(builder: (_) => const CategoryPickerScreen()),
+      MaterialPageRoute(
+        builder: (_) => const CategoryPickerScreen(),
+        settings: const RouteSettings(name: AppRoutes.categoryPicker),
+      ),
     );
     if (categoria == null || !mounted) return;
 
@@ -70,6 +77,7 @@ class _InicioScreenState extends State<InicioScreen> {
               isManualAdd: true,
               initialCategory: categoria,
             ),
+        settings: const RouteSettings(name: AppRoutes.addProduct),
       ),
     );
   }
@@ -86,6 +94,7 @@ class _InicioScreenState extends State<InicioScreen> {
               isManualAdd: true,
               isBulkEntry: true,
             ),
+        settings: const RouteSettings(name: AppRoutes.addProduct),
       ),
     );
   }
@@ -101,6 +110,7 @@ class _InicioScreenState extends State<InicioScreen> {
               initialProduct: productoActual,
               onSave: (_) {},
             ),
+        settings: const RouteSettings(name: AppRoutes.addProduct),
       ),
     );
   }
@@ -172,6 +182,7 @@ class _InicioScreenState extends State<InicioScreen> {
                         (_) => ProductosScreen(
                           onEdit: _navegarEditarProducto,
                         ),
+                    settings: const RouteSettings(name: AppRoutes.productos),
                   ),
                 );
               },
@@ -183,7 +194,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const HouseholdScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const HouseholdScreen(),
+                    settings: const RouteSettings(name: AppRoutes.household),
+                  ),
                 );
               },
             ),
@@ -194,7 +208,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AssistantScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const AssistantScreen(),
+                    settings: const RouteSettings(name: AppRoutes.assistant),
+                  ),
                 );
               },
             ),
@@ -207,6 +224,7 @@ class _InicioScreenState extends State<InicioScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const RecetasScreen(),
+                    settings: const RouteSettings(name: AppRoutes.recetas),
                   ),
                 );
               },
@@ -218,7 +236,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ShoppingListScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const ShoppingListScreen(),
+                    settings: const RouteSettings(name: AppRoutes.shoppingList),
+                  ),
                 );
               },
             ),
@@ -229,7 +250,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const AnalyticsScreen(),
+                    settings: const RouteSettings(name: AppRoutes.analytics),
+                  ),
                 );
               },
             ),
@@ -240,7 +264,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const SettingsScreen(),
+                    settings: const RouteSettings(name: AppRoutes.settings),
+                  ),
                 );
               },
             ),
@@ -251,7 +278,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ContactScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const ContactScreen(),
+                    settings: const RouteSettings(name: AppRoutes.contact),
+                  ),
                 );
               },
             ),
@@ -262,7 +292,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const AboutScreen(),
+                    settings: const RouteSettings(name: AppRoutes.about),
+                  ),
                 );
               },
             ),
@@ -279,6 +312,7 @@ class _InicioScreenState extends State<InicioScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const AdminDashboardScreen(),
+                      settings: const RouteSettings(name: AppRoutes.adminDashboard),
                     ),
                   );
                 },

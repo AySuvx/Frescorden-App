@@ -20,11 +20,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:provider/provider.dart';
 
+import 'app_theme.dart';
 import 'theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/inicio_screen.dart';
@@ -234,16 +236,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Frescorden',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        primarySwatch: Colors.green,
-        brightness: Brightness.dark,
-      ),
+      theme: buildAppTheme(Brightness.light),
+      darkTheme: buildAppTheme(Brightness.dark),
       themeMode:
           themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      // Rutas nombradas (ver lib/routes.dart): cada Navigator.push de la
+      // app pasa un RouteSettings.name explícito — el observer de Analytics
+      // ya puede reportar qué pantalla se abrió en vez de "desconocida".
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       home: StreamBuilder<AppUser?>(
         stream: context.read<AuthProvider>().authStateChanges,
         builder: (context, snapshot) {

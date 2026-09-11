@@ -81,7 +81,6 @@ class _AssistantScreenState extends State<AssistantScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Asistente Culinario'),
-        backgroundColor: Colors.green,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
