@@ -1,18 +1,33 @@
 // lib/screens/recetas_screen.dart
 //
-// Módulo de Recetas:
-// Se elimina el mock (List<Map> hardcodeada + verificarIngredientes()) y
-// se conecta a RecipeProvider + ProductProvider. Ya no recibe el inventario
-// por parámetro (productosInventario): lo lee directamente del provider,
-// igual que ya hacía ShoppingListScreen.
+// Módulo de Recetas — conectado a RecipeProvider + ProductProvider.
+//
+// Fase 5, Módulo 3.6 — coincidencia flexible: ya no se oculta ninguna
+// receta por faltarle ingredientes (se eliminó el filtro "solo
+// disponibles"). El catálogo completo se muestra ordenado de mayor a
+// menor disponibilidad (`sortedByMatch`), con un chip que dice cuántos
+// ingredientes tiene el usuario. Cuando la mejor coincidencia del catálogo
+// es baja, se ofrece crear una receta colombiana a la medida con IA.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/theme/app_spacing.dart';
+import '../domain/entities/product.dart';
 import '../domain/entities/recipe.dart';
 import '../routes.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/providers/recipe_provider.dart';
+import '../presentation/widgets/common/custom_card.dart';
+import '../presentation/widgets/common/glass_card.dart';
+import '../presentation/widgets/common/pressable_scale.dart';
+import '../presentation/widgets/common/primary_button.dart';
+import '../presentation/widgets/common/skeleton_loader.dart';
+import '../presentation/widgets/common/status_badge.dart';
 import 'detalle_receta_screen.dart';
+
+/// Umbral de "coincidencia baja": si ni la mejor receta del catálogo llega
+/// a la mitad de sus ingredientes, se ofrece el fallback de IA.
+const _lowMatchThreshold = 0.5;
 
 class RecetasScreen extends StatefulWidget {
   const RecetasScreen({super.key});
@@ -22,8 +37,6 @@ class RecetasScreen extends StatefulWidget {
 }
 
 class _RecetasScreenState extends State<RecetasScreen> {
-  bool mostrarSoloDisponibles = false;
-
   @override
   void initState() {
     super.initState();
@@ -32,95 +45,246 @@ class _RecetasScreenState extends State<RecetasScreen> {
     });
   }
 
+  Future<void> _crearRecetaConIa(
+    RecipeProvider recipeProvider,
+    List<Product> inventory,
+  ) async {
+    final receta = await recipeProvider.generateAiRecipe(inventory);
+    if (receta == null || !mounted) return;
+    _abrirDetalle(receta, inventory);
+  }
+
+  void _abrirDetalle(Recipe receta, List<Product> inventory) {
+    final faltantes = context
+        .read<RecipeProvider>()
+        .missingIngredientsFor(receta, inventory);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetalleRecetaScreen(
+          receta: receta,
+          faltantes: faltantes,
+        ),
+        settings: const RouteSettings(name: AppRoutes.detalleReceta),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final recipeProvider = context.watch<RecipeProvider>();
     final inventory = context.watch<ProductProvider>().products;
-
-    final recetasFiltradas = mostrarSoloDisponibles
-        ? recipeProvider.availableRecipes(inventory)
-        : recipeProvider.recipes;
+    final recetas = recipeProvider.sortedByMatch(inventory);
+    final bestMatch = recipeProvider.bestMatchPercentage(inventory);
+    final showAiFallback = bestMatch < _lowMatchThreshold;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recetas Sugeridas'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              mostrarSoloDisponibles ? Icons.filter_alt : Icons.filter_alt_off,
-            ),
-            tooltip: mostrarSoloDisponibles
-                ? "Mostrar recetas con productos que no tienes"
-                : "Mostrar todas las recetas",
-            onPressed: () {
-              setState(() {
-                mostrarSoloDisponibles = !mostrarSoloDisponibles;
-              });
-            },
-          )
-        ],
-      ),
+      appBar: AppBar(title: const Text('Recetas Sugeridas')),
       body: recipeProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : recetasFiltradas.isEmpty
-              ? const Center(
-                  child: Text('No hay recetas disponibles con tus productos 😥'))
-              : ListView.builder(
-                  itemCount: recetasFiltradas.length,
-                  itemBuilder: (context, index) {
-                    final Recipe receta = recetasFiltradas[index];
-                    final faltantes =
-                        recipeProvider.missingIngredientsFor(receta, inventory);
-                    final disponible = faltantes.isEmpty;
-
-                    return Card(
-                      // Sin color fijo (Colors.white/grey[200] antes): con
-                      // modo oscuro el texto del ListTile ya se pinta claro
-                      // por el tema, así que un fondo claro forzado lo dejaba
-                      // casi ilegible. El color de tema se adapta solo a
-                      // ambos modos; "no disponible" se distingue con un
-                      // tono de superficie apenas distinto, no hardcodeado.
-                      color: disponible
-                          ? null
-                          : Theme.of(context).colorScheme.surfaceContainerHighest,
-                      elevation: 2,
-                      margin:
-                          const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      child: ListTile(
-                        leading: Image.asset(
-                          receta.imagePath,
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                        ),
-                        title: Text(receta.name),
-                        subtitle: Text(
-                          disponible
-                              ? 'Puedes preparar esta receta'
-                              : 'Faltan: ${faltantes.map((f) => f.name).join(', ')}',
-                        ),
-                        trailing: Icon(
-                          disponible ? Icons.check_circle : Icons.warning,
-                          color: disponible ? Colors.green : Colors.orange,
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DetalleRecetaScreen(
-                                receta: receta,
-                                faltantes: faltantes,
-                              ),
-                              settings: const RouteSettings(
-                                name: AppRoutes.detalleReceta,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
+          ? const SkeletonLoader()
+          : recetas.isEmpty
+              ? _buildEmptyState(context, recipeProvider, inventory)
+              : ListView(
+                  // Scroll elástico estilo iOS (Fase 5, Módulo 3.5/3.6).
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  children: [
+                    if (showAiFallback)
+                      _buildAiFallbackCard(context, recipeProvider, inventory),
+                    for (final receta in recetas)
+                      _buildRecetaCard(context, recipeProvider, receta, inventory),
+                  ],
                 ),
+    );
+  }
+
+  Widget _buildRecetaCard(
+    BuildContext context,
+    RecipeProvider recipeProvider,
+    Recipe receta,
+    List<Product> inventory,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final faltantes = recipeProvider.missingIngredientsFor(receta, inventory);
+    final total = receta.ingredients.length;
+    final have = total - faltantes.length;
+    final disponible = faltantes.isEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: PressableScale(
+        child: CustomCard(
+          onTap: () => _abrirDetalle(receta, inventory),
+          child: Row(
+            children: [
+              Hero(
+                tag: 'recipe-image-${receta.id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.sm),
+                  child: Image.asset(
+                    receta.imagePath,
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      receta.name,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${receta.prepTimeMinutes} min',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Icon(
+                          Icons.people_outline,
+                          size: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${receta.servings}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    // Coincidencia flexible (Fase 5, Módulo 3.6): reusa
+                    // StatusBadge con sus tonos verde ("fresh") y ámbar
+                    // ("expiringSoon") — no se oculta la receta, solo se
+                    // etiqueta qué tan cerca está de poder prepararse.
+                    StatusBadge(
+                      status: disponible
+                          ? ProductFreshness.fresh
+                          : ProductFreshness.expiringSoon,
+                      label: disponible
+                          ? '100% disponible'
+                          : 'Tienes $have de $total ingredientes',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiFallbackCard(
+    BuildContext context,
+    RecipeProvider recipeProvider,
+    List<Product> inventory,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: GlassCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          children: [
+            Icon(Icons.auto_awesome, size: 32, color: colorScheme.primary),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '¿No encuentras algo que te sirva?',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Crea una receta colombiana a tu medida con lo que ya '
+              'tienes en el inventario del hogar.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
+            ),
+            if (recipeProvider.aiError != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                recipeProvider.aiError!,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            PrimaryButton(
+              label: 'Crear Receta Colombiana con IA',
+              icon: Icons.auto_awesome,
+              isLoading: recipeProvider.isGeneratingAiRecipe,
+              onPressed: () => _crearRecetaConIa(recipeProvider, inventory),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(
+    BuildContext context,
+    RecipeProvider recipeProvider,
+    List<Product> inventory,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: GlassCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.restaurant_menu, size: 40, color: colorScheme.primary),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'No hay recetas disponibles por ahora',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              PrimaryButton(
+                label: 'Crear Receta Colombiana con IA',
+                icon: Icons.auto_awesome,
+                isLoading: recipeProvider.isGeneratingAiRecipe,
+                onPressed: () => _crearRecetaConIa(recipeProvider, inventory),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

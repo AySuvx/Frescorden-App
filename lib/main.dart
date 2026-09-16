@@ -165,10 +165,15 @@ void main() async {
         ),
 
         // RecipeProvider — catálogo de recetas (fuente local, ver
-        // RecipeLocalDataSource)
+        // RecipeLocalDataSource) + fallback de IA (Fase 5, Módulo 3.6):
+        // GeminiAssistantDataSource() propia, independiente de la del
+        // AssistantProvider de más abajo (esta no mantiene conversación).
         ChangeNotifierProvider<RecipeProvider>(
           create: (_) => RecipeProvider(
-            RecipeRepositoryImpl(RecipeLocalDataSource()),
+            RecipeRepositoryImpl(
+              RecipeLocalDataSource(),
+              GeminiAssistantDataSource(),
+            ),
           ),
         ),
 

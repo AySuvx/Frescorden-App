@@ -3,6 +3,7 @@
     "id": "arepa_con_queso",
     "nombre": "Arepa con queso",
     "personas": 2,
+    "tiempo_minutos": 10,
     "imagen": "assets/arepa.png",
     "ingredientes": [
       { "nombre": "arepa", "cantidad": 2, "unidad": "unidades" },
@@ -10,17 +11,18 @@
       { "nombre": "mantequilla", "cantidad": 20, "unidad": "gramos" }
     ],
     "pasos": [
-      "1. Calienta una sartén a fuego medio durante 2 minutos.",
-      "2. Coloca las arepas en la sartén y caliéntalas durante 3 minutos por cada lado hasta que estén doradas.",
-      "3. Mientras tanto, ralla el queso y tenlo listo.",
-      "4. Retira las arepas de la sartén, unta mantequilla al gusto y coloca el queso rallado encima.",
-      "5. Sirve inmediatamente mientras el queso está derretido. Tiempo total: 10 minutos."
+      "Calienta una sartén a fuego medio durante 2 minutos.",
+      "Coloca las arepas en la sartén y caliéntalas durante 3 minutos por cada lado hasta que estén doradas.",
+      "Mientras tanto, ralla el queso y tenlo listo.",
+      "Retira las arepas de la sartén, unta mantequilla al gusto y coloca el queso rallado encima.",
+      "Sirve inmediatamente mientras el queso está derretido."
     ]
   },
   {
     "id": "huevos_pericos",
     "nombre": "Huevos pericos",
     "personas": 2,
+    "tiempo_minutos": 15,
     "imagen": "assets/huevos_pericos.png",
     "ingredientes": [
       { "nombre": "huevos", "cantidad": 3, "unidad": "unidades" },
@@ -30,18 +32,19 @@
       { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
     ],
     "pasos": [
-      "1. Lava y pica finamente el tomate y la cebolla.",
-      "2. Calienta una sartén con 10 ml de aceite a fuego medio durante 1 minuto.",
-      "3. Sofríe el tomate y la cebolla durante 5 minutos, revolviendo ocasionalmente.",
-      "4. En un recipiente aparte, bate los huevos con una pizca de sal.",
-      "5. Vierte los huevos batidos en la sartén y cocina durante 3 minutos, revolviendo constantemente hasta que estén cocidos.",
-      "6. Sirve caliente acompañado de pan o arepas. Tiempo total: 15 minutos."
+      "Lava y pica finamente el tomate y la cebolla.",
+      "Calienta una sartén con 10 ml de aceite a fuego medio durante 1 minuto.",
+      "Sofríe el tomate y la cebolla durante 5 minutos, revolviendo ocasionalmente.",
+      "En un recipiente aparte, bate los huevos con una pizca de sal.",
+      "Vierte los huevos batidos en la sartén y cocina durante 3 minutos, revolviendo constantemente hasta que estén cocidos.",
+      "Sirve caliente acompañado de pan o arepas."
     ]
   },
   {
     "id": "caldo_de_papa",
     "nombre": "Caldo de papa",
     "personas": 4,
+    "tiempo_minutos": 30,
     "imagen": "assets/caldo_papa.png",
     "ingredientes": [
       { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
@@ -51,18 +54,19 @@
       { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
     ],
     "pasos": [
-      "1. Pela las papas y córtalas en trozos medianos.",
-      "2. Pica finamente la cebolla y los dientes de ajo.",
-      "3. En una olla grande, hierve 1 litro de agua con una pizca de sal.",
-      "4. Agrega las papas, la cebolla y el ajo al agua hirviendo.",
-      "5. Cocina a fuego medio durante 20 minutos o hasta que las papas estén blandas.",
-      "6. Sirve caliente y, si lo deseas, acompaña con cilantro fresco. Tiempo total: 30 minutos."
+      "Pela las papas y córtalas en trozos medianos.",
+      "Pica finamente la cebolla y los dientes de ajo.",
+      "En una olla grande, hierve 1 litro de agua con una pizca de sal.",
+      "Agrega las papas, la cebolla y el ajo al agua hirviendo.",
+      "Cocina a fuego medio durante 20 minutos o hasta que las papas estén blandas.",
+      "Sirve caliente y, si lo deseas, acompaña con cilantro fresco."
     ]
   },
   {
     "id": "arroz_con_pollo",
     "nombre": "Arroz con pollo",
     "personas": 4,
+    "tiempo_minutos": 35,
     "imagen": "assets/arroz_pollo.png",
     "ingredientes": [
       { "nombre": "arroz", "cantidad": 2, "unidad": "tazas" },
@@ -74,19 +78,20 @@
       { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
     ],
     "pasos": [
-      "1. Corta el pollo en trozos pequeños y sazónalo con sal al gusto.",
-      "2. Calienta una sartén grande con un poco de aceite y sofríe el pollo durante 5 minutos hasta que esté dorado.",
-      "3. Pica la zanahoria, la cebolla y el pimentón en trozos pequeños.",
-      "4. Agrega las verduras al pollo y cocina durante 5 minutos más, revolviendo ocasionalmente.",
-      "5. Añade el arroz, 4 tazas de agua y una pizca de sal. Mezcla bien.",
-      "6. Cocina a fuego medio durante 20 minutos o hasta que el arroz esté completamente cocido.",
-      "7. Sirve caliente y disfruta. Tiempo total: 35 minutos."
+      "Corta el pollo en trozos pequeños y sazónalo con sal al gusto.",
+      "Calienta una sartén grande con un poco de aceite y sofríe el pollo durante 5 minutos hasta que esté dorado.",
+      "Pica la zanahoria, la cebolla y el pimentón en trozos pequeños.",
+      "Agrega las verduras al pollo y cocina durante 5 minutos más, revolviendo ocasionalmente.",
+      "Añade el arroz, 4 tazas de agua y una pizca de sal. Mezcla bien.",
+      "Cocina a fuego medio durante 20 minutos o hasta que el arroz esté completamente cocido.",
+      "Sirve caliente y disfruta."
     ]
   },
   {
     "id": "changua",
     "nombre": "Changua",
     "personas": 2,
+    "tiempo_minutos": 15,
     "imagen": "assets/changua.png",
     "ingredientes": [
       { "nombre": "leche", "cantidad": 500, "unidad": "ml" },
@@ -97,11 +102,298 @@
       { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
     ],
     "pasos": [
-      "1. En una olla grande, mezcla 500 ml de agua y 500 ml de leche. Lleva a ebullición a fuego medio.",
-      "2. Pica finamente la cebolla y agrégala a la olla junto con una pizca de sal.",
-      "3. Rompe los huevos directamente en la mezcla y cocina durante 3 minutos sin revolver.",
-      "4. Sirve la changua caliente en un tazón y acompaña con rebanadas de pan tostado.",
-      "5. Opcional: añade cilantro fresco picado para decorar. Tiempo total: 15 minutos."
+      "En una olla grande, mezcla 500 ml de agua y 500 ml de leche. Lleva a ebullición a fuego medio.",
+      "Pica finamente la cebolla y agrégala a la olla junto con una pizca de sal.",
+      "Rompe los huevos directamente en la mezcla y cocina durante 3 minutos sin revolver.",
+      "Sirve la changua caliente en un tazón y acompaña con rebanadas de pan tostado.",
+      "Opcional: añade cilantro fresco picado para decorar."
+    ]
+  },
+  {
+    "id": "calentado_paisa",
+    "nombre": "Calentado paisa",
+    "personas": 2,
+    "tiempo_minutos": 15,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "arroz", "cantidad": 1, "unidad": "taza" },
+      { "nombre": "frijoles", "cantidad": 1, "unidad": "taza" },
+      { "nombre": "huevos", "cantidad": 2, "unidad": "unidades" },
+      { "nombre": "arepa", "cantidad": 2, "unidad": "unidades" },
+      { "nombre": "aceite", "cantidad": 10, "unidad": "ml" }
+    ],
+    "pasos": [
+      "Calienta una sartén con 10 ml de aceite a fuego medio.",
+      "Agrega el arroz y los frijoles del día anterior, mezclando bien.",
+      "Sofríe durante 8 minutos, revolviendo cada tanto para que no se pegue.",
+      "En otra sartén, fríe los huevos al gusto.",
+      "Calienta las arepas y sirve todo junto en un mismo plato."
+    ]
+  },
+  {
+    "id": "chocolate_santafereño",
+    "nombre": "Chocolate santafereño con queso",
+    "personas": 2,
+    "tiempo_minutos": 10,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "chocolate", "cantidad": 2, "unidad": "pastillas" },
+      { "nombre": "leche", "cantidad": 400, "unidad": "ml" },
+      { "nombre": "queso", "cantidad": 100, "unidad": "gramos" },
+      { "nombre": "pan", "cantidad": 2, "unidad": "unidades" }
+    ],
+    "pasos": [
+      "En una olla, calienta la leche a fuego medio sin dejar que hierva.",
+      "Agrega las pastillas de chocolate y bate con un molinillo o batidor hasta que se disuelvan por completo.",
+      "Corta el queso en trozos pequeños.",
+      "Sirve el chocolate bien caliente con trozos de queso para sumergir y pan al lado."
+    ]
+  },
+  {
+    "id": "sancocho_de_pollo",
+    "nombre": "Sancocho de pollo",
+    "personas": 4,
+    "tiempo_minutos": 50,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "pollo", "cantidad": 600, "unidad": "gramos" },
+      { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
+      { "nombre": "plátano", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "zanahoria", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "cilantro", "cantidad": 1, "unidad": "manojo" },
+      { "nombre": "agua", "cantidad": 2, "unidad": "litros" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "En una olla grande, hierve 2 litros de agua con el pollo y una pizca de sal durante 15 minutos.",
+      "Pela y corta en trozos grandes las papas, el plátano y la zanahoria.",
+      "Agrega las verduras a la olla y cocina 20 minutos más a fuego medio.",
+      "Pica finamente la cebolla y el cilantro, agrégalos en los últimos 5 minutos de cocción.",
+      "Verifica que el pollo y las verduras estén blandas antes de retirar del fuego.",
+      "Sirve caliente con arroz blanco aparte."
+    ]
+  },
+  {
+    "id": "lentejas_guisadas",
+    "nombre": "Lentejas guisadas",
+    "personas": 4,
+    "tiempo_minutos": 35,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "lentejas", "cantidad": 2, "unidad": "tazas" },
+      { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "tomate", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "zanahoria", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "ajo", "cantidad": 2, "unidad": "dientes" },
+      { "nombre": "agua", "cantidad": 4, "unidad": "tazas" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "Lava las lentejas y déjalas escurrir.",
+      "Pica finamente la cebolla, el tomate, la zanahoria y el ajo.",
+      "En una olla, sofríe la cebolla y el ajo durante 3 minutos.",
+      "Agrega el tomate y la zanahoria, cocina 3 minutos más.",
+      "Añade las lentejas, el agua y la sal. Cocina a fuego medio durante 25 minutos, revolviendo de vez en cuando.",
+      "Sirve caliente acompañado de arroz blanco."
+    ]
+  },
+  {
+    "id": "frijoles_colombianos",
+    "nombre": "Frijoles colombianos",
+    "personas": 4,
+    "tiempo_minutos": 45,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "frijoles", "cantidad": 2, "unidad": "tazas" },
+      { "nombre": "plátano", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "tomate", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "ajo", "cantidad": 2, "unidad": "dientes" },
+      { "nombre": "agua", "cantidad": 5, "unidad": "tazas" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "Si los frijoles no están remojados desde antes, cocínalos en agua durante 30 minutos hasta que ablanden.",
+      "Pica finamente la cebolla, el tomate y el ajo.",
+      "En una sartén aparte, sofríe la cebolla, el tomate y el ajo durante 5 minutos.",
+      "Agrega el sofrito a la olla de frijoles junto con el plátano en trozos y la sal.",
+      "Cocina 15 minutos más a fuego medio hasta que espese.",
+      "Sirve caliente con arroz y aguacate si tienes."
+    ]
+  },
+  {
+    "id": "pollo_guisado_con_papa",
+    "nombre": "Pollo guisado con papa",
+    "personas": 4,
+    "tiempo_minutos": 40,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "pollo", "cantidad": 500, "unidad": "gramos" },
+      { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
+      { "nombre": "tomate", "cantidad": 2, "unidad": "unidades" },
+      { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "ajo", "cantidad": 2, "unidad": "dientes" },
+      { "nombre": "aceite", "cantidad": 15, "unidad": "ml" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "Corta el pollo en presas y sazona con sal.",
+      "Calienta el aceite en una olla y dora el pollo durante 8 minutos por ambos lados.",
+      "Pica la cebolla, el tomate y el ajo, y agrégalos a la olla.",
+      "Cocina el sofrito con el pollo durante 5 minutos, revolviendo.",
+      "Agrega las papas peladas y en trozos, junto con agua hasta cubrir.",
+      "Cocina a fuego medio 20 minutos o hasta que las papas y el pollo estén bien cocidos.",
+      "Sirve caliente con arroz blanco."
+    ]
+  },
+  {
+    "id": "tortilla_de_papa_colombiana",
+    "nombre": "Tortilla de papa",
+    "personas": 3,
+    "tiempo_minutos": 25,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
+      { "nombre": "huevos", "cantidad": 4, "unidad": "unidades" },
+      { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "aceite", "cantidad": 30, "unidad": "ml" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "Pela las papas y córtalas en rodajas delgadas.",
+      "Calienta el aceite en una sartén y fríe las papas y la cebolla en rodajas durante 10 minutos hasta que ablanden.",
+      "Bate los huevos con una pizca de sal en un recipiente grande.",
+      "Escurre las papas y mézclalas con el huevo batido.",
+      "Vierte la mezcla en la sartén y cocina 4 minutos por lado a fuego medio hasta que cuaje.",
+      "Sirve tibia, cortada en porciones."
+    ]
+  },
+  {
+    "id": "sopa_de_verduras",
+    "nombre": "Sopa de verduras",
+    "personas": 4,
+    "tiempo_minutos": 30,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "zanahoria", "cantidad": 2, "unidad": "unidades" },
+      { "nombre": "papas", "cantidad": 2, "unidad": "unidades" },
+      { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "arveja", "cantidad": 1, "unidad": "taza" },
+      { "nombre": "agua", "cantidad": 1.5, "unidad": "litros" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "Pela y corta en trozos pequeños la zanahoria, las papas y la cebolla.",
+      "En una olla grande, hierve el agua con una pizca de sal.",
+      "Agrega todas las verduras picadas y la arveja.",
+      "Cocina a fuego medio durante 20 minutos o hasta que las verduras estén blandas.",
+      "Sirve caliente, opcionalmente con cilantro fresco picado encima."
+    ]
+  },
+  {
+    "id": "pasta_con_pollo",
+    "nombre": "Pasta con pollo",
+    "personas": 4,
+    "tiempo_minutos": 25,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "pasta", "cantidad": 300, "unidad": "gramos" },
+      { "nombre": "pollo", "cantidad": 400, "unidad": "gramos" },
+      { "nombre": "tomate", "cantidad": 2, "unidad": "unidades" },
+      { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "ajo", "cantidad": 2, "unidad": "dientes" },
+      { "nombre": "aceite", "cantidad": 15, "unidad": "ml" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "Pon a hervir agua con sal y cocina la pasta según las instrucciones del paquete.",
+      "Corta el pollo en tiras y sazona con sal.",
+      "Calienta el aceite en una sartén y cocina el pollo durante 6 minutos hasta dorar.",
+      "Agrega la cebolla, el ajo y el tomate picados, cocina 5 minutos más.",
+      "Escurre la pasta y mézclala directamente con el pollo y la salsa.",
+      "Sirve caliente, con queso rallado si tienes."
+    ]
+  },
+  {
+    "id": "arepa_de_choclo",
+    "nombre": "Arepa de choclo rellena",
+    "personas": 3,
+    "tiempo_minutos": 20,
+    "imagen": "assets/arepa.png",
+    "ingredientes": [
+      { "nombre": "mazorca", "cantidad": 3, "unidad": "unidades" },
+      { "nombre": "queso", "cantidad": 150, "unidad": "gramos" },
+      { "nombre": "mantequilla", "cantidad": 20, "unidad": "gramos" },
+      { "nombre": "sal", "cantidad": 1, "unidad": "pizca" }
+    ],
+    "pasos": [
+      "Desgrana las mazorcas y muele los granos hasta formar una masa espesa.",
+      "Mezcla la masa con una pizca de sal.",
+      "Forma arepas medianas y colócalas en una sartén caliente con un poco de mantequilla.",
+      "Cocina 5 minutos por cada lado hasta dorar.",
+      "Rellena con queso y dobla la arepa mientras aún está caliente para que se derrita."
+    ]
+  },
+  {
+    "id": "arroz_con_leche",
+    "nombre": "Arroz con leche",
+    "personas": 4,
+    "tiempo_minutos": 35,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "arroz", "cantidad": 1, "unidad": "taza" },
+      { "nombre": "leche", "cantidad": 1, "unidad": "litro" },
+      { "nombre": "azúcar", "cantidad": 0.5, "unidad": "taza" },
+      { "nombre": "canela", "cantidad": 1, "unidad": "astilla" }
+    ],
+    "pasos": [
+      "Cocina el arroz en agua durante 10 minutos hasta que ablande, luego escurre.",
+      "En una olla, calienta la leche con la canela a fuego medio.",
+      "Agrega el arroz ya cocido a la leche caliente.",
+      "Cocina 15 minutos a fuego bajo, revolviendo con frecuencia para que no se pegue.",
+      "Añade el azúcar y cocina 5 minutos más hasta que espese.",
+      "Sirve tibio o frío, con canela en polvo por encima."
+    ]
+  },
+  {
+    "id": "cocadas",
+    "nombre": "Cocadas",
+    "personas": 6,
+    "tiempo_minutos": 30,
+    "imagen": "assets/verduras.png",
+    "ingredientes": [
+      { "nombre": "coco", "cantidad": 2, "unidad": "tazas" },
+      { "nombre": "panela", "cantidad": 200, "unidad": "gramos" },
+      { "nombre": "leche", "cantidad": 200, "unidad": "ml" },
+      { "nombre": "canela", "cantidad": 1, "unidad": "astilla" }
+    ],
+    "pasos": [
+      "Ralla el coco fresco o usa coco rallado.",
+      "En una olla, derrite la panela con la leche y la canela a fuego medio durante 8 minutos.",
+      "Agrega el coco rallado y mezcla bien.",
+      "Cocina 12 minutos revolviendo constantemente hasta que espese y se despegue de la olla.",
+      "Retira la canela, forma pequeñas porciones sobre papel encerado y deja enfriar antes de servir."
+    ]
+  },
+  {
+    "id": "ensalada_de_frutas",
+    "nombre": "Ensalada de frutas",
+    "personas": 4,
+    "tiempo_minutos": 15,
+    "imagen": "assets/manzana.png",
+    "ingredientes": [
+      { "nombre": "manzana", "cantidad": 1, "unidad": "unidad" },
+      { "nombre": "banano", "cantidad": 2, "unidad": "unidades" },
+      { "nombre": "papaya", "cantidad": 1, "unidad": "taza" },
+      { "nombre": "uvas", "cantidad": 1, "unidad": "taza" }
+    ],
+    "pasos": [
+      "Lava toda la fruta cuidadosamente.",
+      "Pela y corta en cubos la manzana, el banano y la papaya.",
+      "Corta las uvas por la mitad.",
+      "Mezcla todas las frutas en un recipiente grande.",
+      "Sirve fría, opcionalmente con un poco de miel por encima."
     ]
   }
 ]

@@ -150,6 +150,33 @@ class ShoppingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Agrega ítems arbitrarios a la lista (Fase 5, Módulo 3.6 — botón
+  /// "Agregar faltantes a la Lista de Compras" en el detalle de una
+  /// receta). Mismo criterio anti-duplicado que `addBalancedPlateItems`:
+  /// no se agrega un ítem cuyo nombre ya está en la canasta o en lo ya
+  /// añadido antes.
+  ///
+  /// Se puede llamar sin haber visitado antes ShoppingListScreen (que es
+  /// quien normalmente dispara `loadBasket`), así que primero asegura la
+  /// canasta del nivel actual — si no, la deduplicación por nombre no ve
+  /// los ítems de la canasta base y puede agregar un duplicado.
+  Future<void> addItems(Iterable<ShoppingItem> items) async {
+    if (_basket.isEmpty) {
+      await loadBasket();
+    }
+    final existingNames = {
+      for (final item in [..._basket, ..._extraItems]) item.name.toLowerCase(),
+    };
+    var added = false;
+    for (final item in items) {
+      if (existingNames.add(item.name.toLowerCase())) {
+        _extraItems.add(item);
+        added = true;
+      }
+    }
+    if (added) notifyListeners();
+  }
+
   /// Escala cantidad y precio estimado de [item] según `personCount`,
   /// relativo a la línea base del catálogo (`_defaultPersonCount`). Sin
   /// cambios cuando personCount es la línea base, para no introducir ruido

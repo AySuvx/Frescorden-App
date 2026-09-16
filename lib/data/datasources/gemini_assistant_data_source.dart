@@ -2,6 +2,8 @@
 // reemplazo oficial es firebase_ai, que además reutiliza el proyecto
 // Firebase ya configurado en la app (sin API key propia del cliente).
 // Requiere habilitar "Gemini API" en la consola de Firebase del proyecto.
+import 'dart:convert';
+
 import 'package:firebase_ai/firebase_ai.dart';
 
 import '../../domain/entities/product.dart';
@@ -34,15 +36,82 @@ https://www.youtube.com/results?search_query=Receta+Arroz+con+Pollo).
 const _modelName = 'gemini-3.5-flash';
 const _maxInventoryItems = 20;
 
+// Fase 5, Módulo 3.6 — fallback dinámico de recetas: instrucción y esquema
+// separados del asistente conversacional de arriba. Este modelo NO
+// mantiene una conversación (una llamada = una receta) y fuerza salida
+// JSON estricta vía `responseSchema`, para poder parsearla directo a
+// [Recipe] sin depender de que el modelo "se acuerde" del formato pedido
+// en un prompt de texto libre (el criterio que sí usa el chat de arriba).
+const _recipeSystemInstruction = '''
+Eres un chef experto en cocina colombiana casera y sencilla, del día a día
+(no gourmet ni con ingredientes difíciles de conseguir en Colombia).
+Cuando te pidan una receta, responde con una receta colombiana realista,
+priorizando los ingredientes del inventario que te compartan — si falta
+algún ingrediente típico imprescindible, inclúyelo igual, el usuario podrá
+comprarlo. Los pasos deben ser breves, claros y numerados en el orden de
+preparación.
+''';
+
 class GeminiAssistantDataSource {
   final GenerativeModel _model;
   ChatSession? _chat;
+
+  late final GenerativeModel _recipeModel = FirebaseAI.googleAI().generativeModel(
+    model: _modelName,
+    systemInstruction: Content.system(_recipeSystemInstruction),
+    generationConfig: GenerationConfig(
+      responseMimeType: 'application/json',
+      responseSchema: Schema.object(
+        properties: {
+          'nombre': Schema.string(description: 'Nombre de la receta'),
+          'personas': Schema.integer(description: 'Porciones, típicamente entre 2 y 6'),
+          'tiempo_minutos': Schema.integer(
+            description: 'Tiempo total de preparación en minutos',
+          ),
+          'ingredientes': Schema.array(
+            items: Schema.object(
+              properties: {
+                'nombre': Schema.string(),
+                'cantidad': Schema.number(),
+                'unidad': Schema.string(
+                  description: 'Ej: gramos, ml, unidades, tazas, dientes',
+                ),
+              },
+            ),
+          ),
+          'pasos': Schema.array(
+            items: Schema.string(description: 'Un paso de preparación, breve'),
+          ),
+        },
+      ),
+    ),
+  );
 
   GeminiAssistantDataSource()
       : _model = FirebaseAI.googleAI().generativeModel(
           model: _modelName,
           systemInstruction: Content.system(_systemInstruction),
         );
+
+  /// Genera una receta colombiana estructurada priorizando [inventory].
+  /// Devuelve el JSON crudo con las mismas claves que
+  /// `assets/data/recetas.json` (sin `id` ni `imagen`: esos los asigna la
+  /// capa de datos, ver RecipeRepositoryImpl.generateAiRecipe).
+  Future<Map<String, dynamic>> generateColombianRecipe(
+    List<Product> inventory,
+  ) async {
+    final prompt =
+        'Crea una receta colombiana casera y sencilla usando '
+        'prioritariamente estos ingredientes disponibles en el hogar:\n'
+        '${_inventoryContext(inventory)}';
+
+    final response = await _recipeModel.generateContent([Content.text(prompt)]);
+    final text = response.text;
+    if (text == null || text.isEmpty) {
+      throw StateError('Gemini no devolvió una receta.');
+    }
+    return jsonDecode(text) as Map<String, dynamic>;
+  }
 
   Future<String> sendMessage({
     required String prompt,

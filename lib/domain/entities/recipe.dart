@@ -23,6 +23,17 @@ class Recipe {
   final String imagePath;
   final List<String> steps;
 
+  /// Tiempo aproximado de preparación, en minutos. Antes vivía como texto
+  /// suelto dentro del último paso ("... Tiempo total: 10 minutos") — se
+  /// separa a un campo estructurado para poder mostrarlo en un chip de
+  /// metadatos (Fase 5, Módulo 3.6) sin parsear prosa.
+  final int prepTimeMinutes;
+
+  /// `true` cuando esta receta fue generada dinámicamente por Gemini (no
+  /// viene del catálogo curado) — permite a la UI distinguirla si hace
+  /// falta (p. ej. no ofrecerla de nuevo en un "ver más" del catálogo).
+  final bool isAiGenerated;
+
   const Recipe({
     required this.id,
     required this.name,
@@ -30,6 +41,8 @@ class Recipe {
     required this.ingredients,
     required this.imagePath,
     required this.steps,
+    this.prepTimeMinutes = 20,
+    this.isAiGenerated = false,
   });
 
   /// Ingredientes que NO están presentes en [inventoryNames] (nombres de
@@ -43,6 +56,18 @@ class Recipe {
 
   bool isAvailable(Set<String> inventoryNames) =>
       missingIngredients(inventoryNames).isEmpty;
+
+  /// Porcentaje de ingredientes que el usuario YA tiene (0.0 a 1.0) — base
+  /// de la coincidencia flexible (Fase 5, Módulo 3.6): en vez de ocultar
+  /// una receta por faltarle algo, se usa esto para ordenar el catálogo de
+  /// mayor a menor disponibilidad. Una receta sin ingredientes declarados
+  /// (no debería pasar, pero por seguridad) cuenta como 100% disponible en
+  /// vez de dividir por cero.
+  double matchPercentage(Set<String> inventoryNames) {
+    if (ingredients.isEmpty) return 1;
+    final have = ingredients.length - missingIngredients(inventoryNames).length;
+    return have / ingredients.length;
+  }
 
   @override
   bool operator ==(Object other) =>

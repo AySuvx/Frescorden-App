@@ -26,6 +26,8 @@ class RecipeModel {
       steps: (json['pasos'] as List<dynamic>? ?? [])
           .map((p) => p.toString())
           .toList(),
+      prepTimeMinutes: (json['tiempo_minutos'] as num?)?.toInt() ?? 20,
+      isAiGenerated: json['ia_generada'] as bool? ?? false,
     );
   }
 }
