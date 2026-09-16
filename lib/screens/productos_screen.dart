@@ -31,6 +31,8 @@ import '../domain/entities/product_history_entry.dart';
 import '../presentation/providers/product_provider.dart';
 import '../presentation/utils/food_category_ui.dart';
 import '../presentation/widgets/common/custom_card.dart';
+import '../presentation/widgets/common/glass_dialog.dart';
+import '../presentation/widgets/common/skeleton_loader.dart';
 import '../presentation/widgets/common/status_badge.dart';
 
 enum _SortOption { expirationAsc, quantityDesc, quantityAsc }
@@ -219,7 +221,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
     // watch: reconstruye esta pantalla cuando el inventario del hogar
     // cambia — propio o de cualquier otro miembro, desde cualquier
     // dispositivo (ver ProductProvider.setActiveHousehold).
-    final productos = context.watch<ProductProvider>().productosMap;
+    final provider = context.watch<ProductProvider>();
+    final productos = provider.productosMap;
     final productosFiltrados = _filtrarYOrdenar(productos);
 
     return Scaffold(
@@ -247,9 +250,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
           ),
           Expanded(
             child:
-                productosFiltrados.isEmpty
+                provider.isLoading
+                    // Skeleton en vez de spinner: anticipa la forma real
+                    // de las tarjetas (Fase 5, Módulo 3) — evita además el
+                    // parpadeo de "No hay productos agregados" antes de
+                    // que llegue el primer snapshot de Firestore.
+                    ? const SkeletonLoader()
+                    : productosFiltrados.isEmpty
                     ? const Center(child: Text('No hay productos agregados'))
                     : ListView.builder(
+                      // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
                       itemCount: productosFiltrados.length,
                       itemBuilder:
                           (context, index) => _FadeSlideIn(
@@ -495,47 +508,43 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final nombre = producto['name']?.toString() ?? 'este producto';
     final colorScheme = Theme.of(context).colorScheme;
 
-    showDialog(
+    showGlassDialog(
       context: context,
-      builder: (BuildContext ctx) {
-        return AlertDialog(
-          title: const Text('Retirar producto'),
-          content: Text(
-            '¿Qué pasó con "$nombre"? Esto queda registrado en tu '
-            'historial y en las analíticas del hogar.',
+      title: 'Retirar producto',
+      content: Text(
+        '¿Qué pasó con "$nombre"? Esto queda registrado en tu '
+        'historial y en las analíticas del hogar.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            _resolverProducto(context, productoId, ProductOutcome.expired);
+          },
+          child: Text(
+            'Desperdiciado / Botado',
+            style: TextStyle(color: colorScheme.tertiary),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                _resolverProducto(ctx, productoId, ProductOutcome.expired);
-              },
-              child: Text(
-                'Desperdiciado / Botado',
-                style: TextStyle(color: colorScheme.tertiary),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                _resolverProducto(
-                  ctx,
-                  productoId,
-                  ProductOutcome.consumedOnTime,
-                );
-              },
-              child: Text(
-                'Consumido',
-                style: TextStyle(color: colorScheme.primary),
-              ),
-            ),
-          ],
-        );
-      },
+        ),
+        TextButton(
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            _resolverProducto(
+              context,
+              productoId,
+              ProductOutcome.consumedOnTime,
+            );
+          },
+          child: Text(
+            'Consumido',
+            style: TextStyle(color: colorScheme.primary),
+          ),
+        ),
+      ],
     );
   }
 

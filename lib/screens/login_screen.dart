@@ -54,6 +54,28 @@ class _LoginScreenState extends State<LoginScreen> {
   // Registro / Login con correo y contraseña
     Future<void> submitEmailPassword() async {
       final auth = context.read<AuthProvider>();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      // BUG CORREGIDO (hallado en prueba manual en dispositivo): sin esta
+      // validación, tocar "Iniciar Sesión" con los campos vacíos llegaba
+      // directo a FirebaseAuth.signInWithEmailAndPassword, que en el lado
+      // nativo (Android) lanza IllegalArgumentException("Given String is
+      // empty or null") — una excepción que no es FirebaseAuthException ni
+      // AuthException, así que ninguno de los catch de abajo la atrapaba
+      // con un mensaje amigable: el usuario veía el nombre crudo del canal
+      // de plataforma ("dev.flutter.pigeon...signInWithEmailAndPassword")
+      // en el SnackBar. Cortar acá antes de tocar Firebase evita ese
+      // error de plataforma por completo, para login Y registro.
+      if (email.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ingresa tu correo y contraseña.'),
+          ),
+        );
+        return;
+      }
+
       try {
         if (!_isLogin) {
           // Validar los requisitos de la contraseña
@@ -66,9 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
             return;
           }
         }
-
-        final email = _emailController.text.trim();
-        final password = _passwordController.text;
 
         if (_isLogin) {
           await auth.signInWithEmail(email, password);
@@ -135,8 +154,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    // Antes: Scaffold.backgroundColor fijo en Colors.grey.shade100 y los
+    // campos/botones en Colors.white — la pantalla entera ignoraba el
+    // tema (modo oscuro incluido) y el botón "Iniciar Sesión" quedaba con
+    // texto blanco (heredado de onPrimary) sobre un fondo también blanco
+    // forzado — invisible en ambos modos. Se resuelve consumiendo
+    // colorScheme en vez de literales (Fase 5, Módulo 3).
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -175,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: colorScheme.surfaceContainerHighest,
                 ),
               ),
 
@@ -210,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: colorScheme.surfaceContainerHighest,
                 ),
               ),
 
@@ -227,7 +252,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Icon(
                           entry.value ? Icons.check_circle : Icons.cancel,
-                          color: entry.value ? Colors.green : Colors.red,
+                          color: entry.value
+                              ? colorScheme.primary
+                              : colorScheme.error,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -246,29 +273,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: resetPassword,
-                    child: const Text(
+                    child: Text(
                       '¿Olvidaste tu contraseña?',
-                      style: TextStyle(color: Colors.green),
+                      style: TextStyle(color: colorScheme.primary),
                     ),
                   ),
                 ),
 
               const SizedBox(height: 20),
 
-              // Botón de login/registro
+              // Botón de login/registro — sin `style` propio: hereda
+              // colorScheme.primary/onPrimary de ElevatedButtonThemeData
+              // (ver AppTheme), el mismo verde que cualquier otro CTA
+              // principal de la app. Antes forzaba fondo blanco mientras
+              // el texto heredaba onPrimary (blanco en modo claro) —
+              // texto blanco sobre fondo blanco, invisible.
               ElevatedButton(
                 onPressed: submitEmailPassword,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  _isLogin ? 'Iniciar Sesión' : 'Registrarse',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                ),
+                child: Text(_isLogin ? 'Iniciar Sesión' : 'Registrarse'),
               ),
 
               const SizedBox(height: 20),
@@ -291,19 +313,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   _isLogin
                       ? '¿No tienes cuenta? Regístrate aquí'
                       : '¿Ya tienes cuenta? Inicia sesión',
-                  style: const TextStyle(color: Colors.green),
+                  style: TextStyle(color: colorScheme.primary),
                 ),
               ),
 
               const Divider(height: 32),
 
-              // Google Sign-in
+              // Google Sign-in — fondo blanco fijo a propósito (marca de
+              // Google, independiente del tema de la app), pero con
+              // foreground explícito: antes lo heredaba de onPrimary
+              // (blanco en claro), quedando igual de invisible que el
+              // botón de arriba.
               ElevatedButton.icon(
                 icon: const Icon(Icons.g_mobiledata),
                 label: const Text('Ingresar con Google'),
                 onPressed: signInWithGoogle,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
+                  foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

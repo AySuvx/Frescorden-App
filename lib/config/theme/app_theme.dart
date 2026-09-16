@@ -27,6 +27,42 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
 
+/// Transición global de navegación — Fase 5, Módulo 3: desvanecimiento +
+/// deslizamiento sutil con `Curves.fastOutSlowIn`, en vez del "slide desde
+/// la derecha" por defecto de Android. Se aplica una sola vez acá (vía
+/// `PageTransitionsTheme`) y cubre automáticamente cualquier
+/// `MaterialPageRoute` de la app — no hace falta tocar cada
+/// `Navigator.push`. No se usa el paquete `animations` (SharedAxis/Fade
+/// ThroughTransition): esta curva + fade simple ya da el efecto pedido sin
+/// sumar una dependencia nueva.
+class _FadeSlidePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadeSlidePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.fastOutSlowIn,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.06, 0),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
 class AppTheme {
   AppTheme._();
 
@@ -108,6 +144,34 @@ class AppTheme {
         labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
         side: BorderSide.none,
         shape: const StadiumBorder(),
+      ),
+
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _FadeSlidePageTransitionsBuilder(),
+          TargetPlatform.iOS: _FadeSlidePageTransitionsBuilder(),
+          TargetPlatform.macOS: _FadeSlidePageTransitionsBuilder(),
+          TargetPlatform.windows: _FadeSlidePageTransitionsBuilder(),
+          TargetPlatform.linux: _FadeSlidePageTransitionsBuilder(),
+        },
+      ),
+
+      // Estandariza TODOS los AlertDialog de la app (expulsar miembro,
+      // salir del hogar, eliminar cuenta, permisos, etc.) desde un único
+      // lugar — AlertDialog hereda shape/backgroundColor/elevación de acá
+      // salvo que una instancia puntual los pise explícitamente (ninguna
+      // lo hace hoy).
+      dialogTheme: DialogThemeData(
+        backgroundColor: cardColor,
+        surfaceTintColor: Colors.transparent,
+        elevation: isDark ? 4 : 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
+        ),
       ),
     );
   }

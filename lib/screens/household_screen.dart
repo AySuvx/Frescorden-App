@@ -19,6 +19,8 @@ import '../domain/entities/household.dart';
 import '../domain/repositories/i_activity_log_repository.dart';
 import '../domain/repositories/i_household_repository.dart';
 import '../presentation/providers/household_provider.dart';
+import '../presentation/widgets/common/glass_card.dart';
+import '../presentation/widgets/common/glass_dialog.dart';
 
 class HouseholdScreen extends StatefulWidget {
   const HouseholdScreen({super.key});
@@ -70,22 +72,21 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   }
 
   Future<void> _confirmRemoveMember(String memberUid, String memberLabel) async {
-    final confirm = await showDialog<bool>(
+    final colorScheme = Theme.of(context).colorScheme;
+    final confirm = await showGlassDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Expulsar miembro'),
-        content: Text('¿Quitar a "$memberLabel" del hogar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Expulsar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Expulsar miembro',
+      content: Text('¿Quitar a "$memberLabel" del hogar?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text('Expulsar', style: TextStyle(color: colorScheme.error)),
+        ),
+      ],
     );
     if (confirm != true || !mounted) return;
 
@@ -98,25 +99,24 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   }
 
   Future<void> _confirmLeaveHousehold() async {
-    final confirm = await showDialog<bool>(
+    final colorScheme = Theme.of(context).colorScheme;
+    final confirm = await showGlassDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Salir del hogar'),
-        content: const Text(
-          '¿Salir de este hogar? Dejarás de ver su inventario compartido; '
-          'se te asignará uno personal.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Salir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      title: 'Salir del hogar',
+      content: const Text(
+        '¿Salir de este hogar? Dejarás de ver su inventario compartido; '
+        'se te asignará uno personal.',
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text('Salir', style: TextStyle(color: colorScheme.error)),
+        ),
+      ],
     );
     if (confirm != true || !mounted) return;
 
@@ -237,8 +237,11 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
           style: const TextStyle(color: Colors.grey),
         ),
         const SizedBox(height: 12),
-        Card(
-          margin: EdgeInsets.zero,
+        // Tarjeta resumen del hogar con acabado de cristal (Fase 5,
+        // Módulo 3.5): es la superficie que más "flota" sobre el resto de
+        // la pantalla (lista de miembros, foco visual principal).
+        GlassCard(
+          padding: EdgeInsets.zero,
           child: Column(
             children: [
               for (final uid in household.members)

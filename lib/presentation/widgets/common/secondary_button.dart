@@ -4,9 +4,12 @@
 // Acción secundaria (menor énfasis visual que PrimaryButton): mismo
 // contrato y misma retroalimentación táctil, apoyado en
 // OutlinedButtonThemeData (ver AppTheme) en vez de ElevatedButtonThemeData.
+//
+// Fase 5, Módulo 3.5: escalado + háptico vía [PressableScale] (ver nota
+// en primary_button.dart) — ya no vibra por su cuenta en `onPressed`.
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/theme/app_spacing.dart';
+import 'pressable_scale.dart';
 
 class SecondaryButton extends StatelessWidget {
   const SecondaryButton({
@@ -29,13 +32,7 @@ class SecondaryButton extends StatelessWidget {
     final disabled = isLoading || onPressed == null;
 
     final button = OutlinedButton(
-      onPressed:
-          disabled
-              ? null
-              : () {
-                HapticFeedback.lightImpact();
-                onPressed!();
-              },
+      onPressed: disabled ? null : onPressed,
       child: _ButtonContent(
         label: label,
         icon: icon,
@@ -44,7 +41,8 @@ class SecondaryButton extends StatelessWidget {
       ),
     );
 
-    return expand ? SizedBox(width: double.infinity, child: button) : button;
+    final sized = expand ? SizedBox(width: double.infinity, child: button) : button;
+    return PressableScale(enabled: !disabled, child: sized);
   }
 }
 

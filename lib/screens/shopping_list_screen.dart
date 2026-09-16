@@ -28,6 +28,7 @@ import '../presentation/utils/currency_format.dart';
 import '../presentation/widgets/common/custom_card.dart';
 import '../presentation/widgets/common/primary_button.dart';
 import '../presentation/widgets/common/secondary_button.dart';
+import '../presentation/widgets/common/skeleton_loader.dart';
 
 /// Enlaces a supermercados colombianos, ofrecidos junto a la lista para que
 /// el usuario compare precios. No es contenido de dominio (no afecta la
@@ -337,6 +338,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       // solo ListView, cada sección ocupa el alto que necesita y el usuario
       // simplemente se desplaza; nada compite por espacio fijo.
       body: ListView(
+        // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         padding: const EdgeInsets.only(bottom: 16),
         children: [
           _buildTierSelector(shoppingProvider),
@@ -356,9 +361,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
           const SizedBox(height: 4),
           if (shoppingProvider.isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(child: CircularProgressIndicator()),
+            // Skeleton en vez de spinner (Fase 5, Módulo 3): sin imagen
+            // por ítem — la lista real tampoco la tiene — y sin padding
+            // propio, porque ya vive dentro del ListView general de la
+            // pantalla (ver nota en SkeletonLoader sobre anidar scrolls).
+            const SkeletonLoader(
+              itemCount: 3,
+              showLeading: false,
+              padding: EdgeInsets.symmetric(horizontal: 16),
             )
           else if (missing.isEmpty)
             const Padding(

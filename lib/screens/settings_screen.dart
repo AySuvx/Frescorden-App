@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/theme/theme_provider.dart';
 import '../presentation/providers/auth_provider.dart';
+import '../presentation/widgets/common/glass_dialog.dart';
 import '../routes.dart';
 import 'login_screen.dart';
 
@@ -366,28 +367,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showConfirmationDialog() async {
-    final bool? confirmed = await showDialog<bool>(
+    final colorScheme = Theme.of(context).colorScheme;
+    final bool? confirmed = await showGlassDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Eliminar cuenta'),
-          content: const Text(
-            '¿Estás seguro de que deseas eliminar tu cuenta? '
-            'Esta acción no se puede deshacer y todos tus datos serán eliminados.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar',
-                  style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
+      title: 'Eliminar cuenta',
+      content: const Text(
+        '¿Estás seguro de que deseas eliminar tu cuenta? '
+        'Esta acción no se puede deshacer y todos tus datos serán eliminados.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text('Eliminar', style: TextStyle(color: colorScheme.error)),
+        ),
+      ],
     );
 
     if (confirmed == true) {

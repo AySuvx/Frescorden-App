@@ -10,6 +10,7 @@ import '../config/theme/app_spacing.dart';
 import '../domain/entities/chat_message.dart';
 import '../presentation/providers/assistant_provider.dart';
 import '../presentation/utils/quota_service.dart';
+import '../presentation/widgets/common/glass_card.dart';
 
 /// Enlaces de Video para Recetas (Fase 4.5, Módulo 4): detecta enlaces
 /// Markdown `[texto](url)` en la respuesta del asistente — hoy solo los usa
@@ -101,6 +102,10 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 ? _buildEmptyState(provider.isLimitReached)
                 : ListView.builder(
                     controller: _scrollController,
+                    // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
                     padding: const EdgeInsets.all(12),
                     itemCount: provider.messages.length + (provider.isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
@@ -119,18 +124,35 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
   }
 
+  // Barra superior con acabado de cristal (Fase 5, Módulo 3.5) — es la
+  // única franja que "flota" sobre el chat en esta pantalla, así que es
+  // la candidata natural para el efecto glass sin volverlo omnipresente.
   Widget _buildQuotaBadge(int remaining) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      color: colorScheme.primaryContainer,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        0,
       ),
-      child: Text(
-        'Consultas de hoy: $remaining/${QuotaService.dailyLimit}',
-        style: TextStyle(fontSize: 12, color: colorScheme.onPrimaryContainer),
+      child: GlassCard(
+        borderRadius: AppSpacing.sm,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.smart_toy_outlined, size: 14, color: colorScheme.primary),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Consultas de hoy: $remaining/${QuotaService.dailyLimit}',
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+            ),
+          ],
+        ),
       ),
     );
   }

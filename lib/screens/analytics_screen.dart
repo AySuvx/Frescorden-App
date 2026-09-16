@@ -23,6 +23,7 @@ import '../presentation/utils/food_category_ui.dart';
 import '../presentation/widgets/analytics/waste_vs_consumed_bar_chart.dart';
 import '../presentation/widgets/analytics/waste_category_pie_chart.dart';
 import '../presentation/utils/currency_format.dart';
+import '../presentation/widgets/common/skeleton_loader.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -40,12 +41,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Analíticas')),
       body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildLoadingSkeleton()
           : !summary.hasData
               ? _buildEmptyState()
               : RefreshIndicator(
                   onRefresh: () => provider.loadSummary(),
                   child: ListView(
+                    // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
                     padding: const EdgeInsets.all(16),
                     children: [
                       Text(
@@ -129,6 +134,57 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ],
                   ),
                 ),
+    );
+  }
+
+  /// Skeleton a medida (no el genérico [SkeletonLoader]): esta pantalla
+  /// mezcla tarjetas KPI (avatar + 2 líneas) con bloques grandes de
+  /// gráfico, una forma que el skeleton de lista no representa bien.
+  Widget _buildLoadingSkeleton() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      // BouncingScrollPhysics, no NeverScrollable: en pantallas chicas o
+      // con letra grande, las 4 tarjetas KPI + 2 bloques de gráfico del
+      // skeleton pueden no entrar completas — bloquear el scroll acá las
+      // dejaría inalcanzables (hallazgo propio al revisar este módulo).
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      children: [
+        SkeletonBox(height: 12, width: 220),
+        const SizedBox(height: 16),
+        for (var i = 0; i < 4; i++)
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const SkeletonBox(width: 52, height: 52, borderRadius: 26),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SkeletonBox(height: 13, width: 160),
+                        const SizedBox(height: 8),
+                        SkeletonBox(height: 20, width: 90),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+        const SkeletonBox(height: 16, width: 120),
+        const SizedBox(height: 12),
+        const SkeletonBox(height: 96),
+        const SizedBox(height: 20),
+        const SkeletonBox(height: 16, width: 160),
+        const SizedBox(height: 12),
+        const SkeletonBox(height: 220),
+      ],
     );
   }
 

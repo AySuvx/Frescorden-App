@@ -12,6 +12,7 @@
 // "presupuesto superado") y un onTap opcional.
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_spacing.dart';
+import 'pressable_scale.dart';
 
 class CustomCard extends StatelessWidget {
   const CustomCard({
@@ -35,16 +36,22 @@ class CustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: margin,
-      color: color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(padding: padding, child: child),
+    // PressableScale solo observa presionar/soltar (no reclama el tap):
+    // el InkWell de abajo sigue siendo el único dueño del gesto y del
+    // ripple — ver la nota de diseño en pressable_scale.dart.
+    return PressableScale(
+      enabled: onTap != null,
+      child: Card(
+        margin: margin,
+        color: color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(padding: padding, child: child),
+        ),
       ),
     );
   }

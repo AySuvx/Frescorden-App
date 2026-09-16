@@ -130,14 +130,28 @@ class _InicioScreenState extends State<InicioScreen> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: colorScheme.primaryContainer),
+              // Degradado suave dentro de la propia paleta orgánica
+              // (Fase 5, Módulo 3): primary → una mezcla hacia tertiary
+              // (Ámbar), no primary→primaryContainer — ese salto es
+              // demasiado grande en luminosidad y dejaría "onPrimary" sin
+              // contraste garantizado en el extremo claro del degradado.
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary,
+                    Color.lerp(colorScheme.primary, colorScheme.tertiary, 0.35)!,
+                  ],
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Fresc(o)rden',
                     style: TextStyle(
-                      color: colorScheme.onPrimaryContainer,
+                      color: colorScheme.onPrimary,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                     ),
