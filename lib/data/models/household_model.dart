@@ -69,19 +69,4 @@ class HouseholdModel extends Household {
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
-
-  /// Convierte cualquier [Household] (entidad) a [HouseholdModel].
-  static HouseholdModel fromEntity(Household entity) {
-    if (entity is HouseholdModel) return entity;
-    return HouseholdModel(
-      id: entity.id,
-      name: entity.name,
-      createdBy: entity.createdBy,
-      members: entity.members,
-      memberEmails: entity.memberEmails,
-      inviteCode: entity.inviteCode,
-      codeExpiresAt: entity.codeExpiresAt,
-      createdAt: entity.createdAt,
-    );
-  }
 }
