@@ -8,7 +8,7 @@
 // directamente: solo consume `recipes`, `missingIngredientsFor()` e
 // `isAvailable()`.
 //
-// Fase 5, Módulo 3.6 — coincidencia flexible: ya no se OCULTAN recetas por
+// Coincidencia flexible: ya no se OCULTAN recetas por
 // insumos faltantes (ver `sortedByMatch`, que devuelve TODO el catálogo
 // ordenado de mayor a menor disponibilidad) y se agrega el fallback de IA
 // (`generateAiRecipe`), sujeto a la misma cuota diaria que el asistente

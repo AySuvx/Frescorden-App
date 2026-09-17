@@ -39,7 +39,7 @@ class ProductProvider extends ChangeNotifier {
   // romper ningún test/uso existente que construya ProductProvider sin él.
   final IProductHistoryRepository? _historyRepository;
 
-  // Registro de Actividad del hogar (Fase 4.5, Módulo 2): CREADO/EDITADO/
+  // Registro de Actividad del hogar: CREADO/EDITADO/
   // CONSUMIDO/ELIMINADO por producto. Opcional por el mismo motivo que
   // _historyRepository.
   final IActivityLogRepository? _activityLogRepository;
@@ -281,7 +281,7 @@ class ProductProvider extends ChangeNotifier {
 
   /// Elimina el producto con el [id] indicado.
   ///
-  /// Trazabilidad de Desperdicio vs. Consumo (Fase 4.5, Módulo 3): quien
+  /// Trazabilidad de Desperdicio vs. Consumo: quien
   /// retira un producto del inventario declara explícitamente si lo
   /// aprovechó ([ProductOutcome.consumedOnTime]) o si lo desperdició
   /// ([ProductOutcome.expired]) — ya NO se infiere comparando la fecha de

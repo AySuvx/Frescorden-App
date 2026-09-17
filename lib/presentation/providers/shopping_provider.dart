@@ -38,7 +38,7 @@ class ShoppingProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  /// 'Plato Equilibrado' (Fase 4.5, Módulo 4): ítems agregados con un solo
+  /// 'Plato Equilibrado': ítems agregados con un solo
   /// toque para cubrir grupos nutricionales que faltan en el inventario —
   /// se suman por encima de la canasta del nivel elegido (ver
   /// addBalancedPlateItems / missingItems).
@@ -114,7 +114,7 @@ class ShoppingProvider extends ChangeNotifier {
         .toList();
   }
 
-  // ─── 'Plato Equilibrado' (Fase 4.5, Módulo 4) ──────────────────────────
+  // ─── 'Plato Equilibrado' ────────────────────────────────────────────────
 
   /// Grupos nutricionales esenciales sin cobertura en el inventario actual
   /// del hogar — ninguno de sus productos cae en las categorías de ese
@@ -150,7 +150,7 @@ class ShoppingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Agrega ítems arbitrarios a la lista (Fase 5, Módulo 3.6 — botón
+  /// Agrega ítems arbitrarios a la lista (botón
   /// "Agregar faltantes a la Lista de Compras" en el detalle de una
   /// receta). Mismo criterio anti-duplicado que `addBalancedPlateItems`:
   /// no se agrega un ítem cuyo nombre ya está en la canasta o en lo ya

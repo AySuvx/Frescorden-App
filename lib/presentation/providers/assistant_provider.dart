@@ -13,7 +13,7 @@ class AssistantProvider extends ChangeNotifier {
   final IAssistantRepository _repository;
   final ProductProvider _productProvider;
 
-  // Adopción del asistente (Fase 4.5, Módulo 3 — Panel Administrativo).
+  // Adopción del asistente (Panel Administrativo).
   // Opcional para no romper ningún uso/test existente que construya
   // AssistantProvider sin él (mismo criterio que ProductProvider).
   final IAssistantUsageRepository? _usageRepository;

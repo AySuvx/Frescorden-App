@@ -3,7 +3,7 @@
 // Proveedor de estado para la pantalla de Analíticas. Delega el
 // cálculo a GetAnalyticsUseCase (no llama al repositorio directo).
 //
-// Household-aware (Fase 4.5, Módulo 3): las analíticas son del hogar
+// Household-aware: las analíticas son del hogar
 // activo, no del usuario individual — mismo patrón reactivo que
 // ProductProvider.setActiveHousehold, registrado en main.dart vía
 // ChangeNotifierProxyProvider<HouseholdProvider, AnalyticsProvider>.
