@@ -1,6 +1,6 @@
 // lib/config/theme/app_colors.dart
 //
-// Fase 5, Módulo 1 — Sistema de Diseño Unificado.
+// Sistema de Diseño Unificado.
 //
 // Paleta orgánica de marca: tokens de color literales, fuente única de
 // verdad para AppTheme (ver app_theme.dart). Ninguna pantalla debe declarar

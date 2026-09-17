@@ -1,6 +1,6 @@
 // lib/config/theme/app_spacing.dart
 //
-// Fase 5, Módulo 1 — grilla de espaciado estricta de 8dp. Todo Padding,
+// Grilla de espaciado estricta de 8dp. Todo Padding,
 // SizedBox y BorderRadius de los componentes atómicos nuevos (ver
 // lib/presentation/widgets/common/) y del código tocado en este módulo usa
 // estos tokens en vez de números mágicos, para que el ritmo visual quede

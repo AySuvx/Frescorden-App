@@ -1,6 +1,6 @@
 // lib/config/theme/app_theme.dart
 //
-// Fase 5, Módulo 1 — Sistema de Diseño Unificado.
+// Sistema de Diseño Unificado.
 // Reemplaza al antiguo lib/app_theme.dart (ver su cabecera: solo tematizaba
 // AppBar/ElevatedButton con un seed genérico Colors.green). Esta versión:
 //
@@ -27,7 +27,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
 
-/// Transición global de navegación — Fase 5, Módulo 3: desvanecimiento +
+/// Transición global de navegación: desvanecimiento +
 /// deslizamiento sutil con `Curves.fastOutSlowIn`, en vez del "slide desde
 /// la derecha" por defecto de Android. Se aplica una sola vez acá (vía
 /// `PageTransitionsTheme`) y cubre automáticamente cualquier

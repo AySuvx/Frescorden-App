@@ -1,6 +1,6 @@
 // lib/config/app_config.dart
 //
-// Panel Administrativo Global (Fase 4.5, Módulo 3):
+// Panel Administrativo Global:
 // UID de Firebase Authentication con acceso al panel de administración
 // (lib/screens/admin_dashboard_screen.dart). Se compara contra
 // FirebaseAuth.instance.currentUser?.uid — cualquier otro usuario ve un

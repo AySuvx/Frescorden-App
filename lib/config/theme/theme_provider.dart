@@ -1,6 +1,6 @@
 // lib/config/theme/theme_provider.dart
 //
-// Fase 5, Módulo 1 — reemplaza a lib/theme_provider.dart (booleano
+// Reemplaza a lib/theme_provider.dart (booleano
 // `isDarkMode`, clave SharedPreferences 'isDarkMode'). Ahora persiste un
 // [ThemeMode] completo bajo la clave 'theme_mode', habilitando la tercera
 // opción "Sistema" — MaterialApp delega en MediaQuery.platformBrightness
