@@ -1,6 +1,6 @@
 // lib/presentation/widgets/common/glass_dialog.dart
 //
-// Fase 5, Módulo 3.5 (Polish Premium) — diálogo de confirmación con
+// (Polish Premium) — diálogo de confirmación con
 // acabado de cristal: el contenido detrás se difumina (`BackdropFilter`
 // animado con la transición) y la propia tarjeta deja entrever ese blur a
 // través de su relleno translúcido (ver [GlassCard]).

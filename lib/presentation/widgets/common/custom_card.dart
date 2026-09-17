@@ -1,6 +1,6 @@
 // lib/presentation/widgets/common/custom_card.dart
 //
-// Fase 5, Módulo 1 — Componentización Atómica.
+// Componentización Atómica.
 // Tarjeta base del sistema de diseño. Envuelve un [Card] normal y delega
 // color/elevación/forma en CardThemeData (ver AppTheme) para que quede
 // adaptable a claro/oscuro sin que cada pantalla repita esos valores —

@@ -1,6 +1,6 @@
 // lib/presentation/widgets/common/pressable_scale.dart
 //
-// Fase 5, Módulo 3.5 (Polish Premium) — física de resortes sutil para
+// (Polish Premium) — física de resortes sutil para
 // cualquier elemento tocable: se encoge levemente al presionar y vuelve a
 // su tamaño con una curva suave, además de un golpecito háptico.
 //

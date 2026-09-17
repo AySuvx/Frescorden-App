@@ -1,6 +1,6 @@
 // lib/presentation/widgets/common/status_badge.dart
 //
-// Fase 5, Módulo 1 — Componentización Atómica.
+// Componentización Atómica.
 // Chip semántico de estado de vencimiento. Reemplaza los `Text` sueltos con
 // color hardcodeado según días restantes (ver
 // ProductosScreen._getExpirationColor: Colors.red/orange/green fijos, sin

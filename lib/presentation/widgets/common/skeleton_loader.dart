@@ -1,6 +1,6 @@
 // lib/presentation/widgets/common/skeleton_loader.dart
 //
-// Fase 5, Módulo 3 — reemplaza los `CircularProgressIndicator` centrados
+// Reemplaza los `CircularProgressIndicator` centrados
 // mientras se leen datos de Firestore (ProductosScreen, ShoppingListScreen,
 // AnalyticsScreen) por placeholders con forma de contenido real y efecto
 // shimmer. Un spinner solo dice "espera"; un skeleton además anticipa el

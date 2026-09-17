@@ -1,11 +1,11 @@
 // lib/presentation/widgets/common/secondary_button.dart
 //
-// Fase 5, Módulo 1 — Componentización Atómica.
+// Componentización Atómica.
 // Acción secundaria (menor énfasis visual que PrimaryButton): mismo
 // contrato y misma retroalimentación táctil, apoyado en
 // OutlinedButtonThemeData (ver AppTheme) en vez de ElevatedButtonThemeData.
 //
-// Fase 5, Módulo 3.5: escalado + háptico vía [PressableScale] (ver nota
+// Escalado + háptico vía [PressableScale] (ver nota
 // en primary_button.dart) — ya no vibra por su cuenta en `onPressed`.
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_spacing.dart';
