@@ -180,7 +180,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
-  /// 'Plato Equilibrado' (Fase 4.5, Módulo 4): muestra qué grupos
+  /// 'Plato Equilibrado': muestra qué grupos
   /// nutricionales cubre hoy el inventario real del hogar (chips verdes) y
   /// cuáles faltan (chips rojos), con un botón para agregar a la lista de
   /// compras los insumos sugeridos de los grupos faltantes en un solo toque.
@@ -332,13 +332,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Lista de Compras')),
       // Lista única desplazable en vez de Column fija + Expanded: con la
-      // tarjeta "Plato Equilibrado" (Fase 4.5, Módulo 4) el encabezado ya no
+      // tarjeta "Plato Equilibrado" el encabezado ya no
       // entra siempre en una pantalla de celular — un Expanded fijo para
       // "Por comprar" quedaba aplastado a una franja mínima. Con todo en un
       // solo ListView, cada sección ocupa el alto que necesita y el usuario
       // simplemente se desplaza; nada compite por espacio fijo.
       body: ListView(
-        // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+        // Scroll elástico estilo iOS.
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
@@ -361,7 +361,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
           const SizedBox(height: 4),
           if (shoppingProvider.isLoading)
-            // Skeleton en vez de spinner (Fase 5, Módulo 3): sin imagen
+            // Skeleton en vez de spinner: sin imagen
             // por ítem — la lista real tampoco la tiene — y sin padding
             // propio, porque ya vive dentro del ListView general de la
             // pantalla (ver nota en SkeletonLoader sobre anidar scrolls).

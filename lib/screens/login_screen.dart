@@ -160,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // tema (modo oscuro incluido) y el botón "Iniciar Sesión" quedaba con
     // texto blanco (heredado de onPrimary) sobre un fondo también blanco
     // forzado — invisible en ambos modos. Se resuelve consumiendo
-    // colorScheme en vez de literales (Fase 5, Módulo 3).
+    // colorScheme en vez de literales.
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(

@@ -63,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Clave SharedPreferences para persistir el estado de notificaciones
   static const _kNotifEnabled = 'notifications_enabled';
 
-  // Ocultamiento Persistente de Alerta MIUI (Fase 4.5, Módulo 4): una vez
+  // Ocultamiento Persistente de Alerta MIUI: una vez
   // que el usuario tocó "Configurar" o "Entendido, ocultar" en la tarjeta,
   // no se le vuelve a mostrar en esta o futuras aperturas de la pantalla —
   // ni siquiera si el fabricante sigue calificando como ROM agresiva.
@@ -243,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // Tema — Fase 5, Módulo 1: ThemeProvider ahora persiste un
+          // Tema — ThemeProvider ahora persiste un
           // ThemeMode completo (antes solo un booleano claro/oscuro), así
           // que el control pasa de un Switch de 2 estados a un selector de
           // 3.

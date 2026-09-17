@@ -6,7 +6,7 @@
 //   FIX: Se lee 'imagePath' con fallback a 'image' para retrocompatibilidad
 //   con documentos existentes en Firestore que puedan tener el campo viejo.
 //
-// Reactividad en tiempo real (Fase 4 — Household):
+// Reactividad en tiempo real (Household):
 // Antes, esta pantalla recibía `productos` como snapshot fijo por
 // constructor (copiado a un campo local `_productos` en initState) y solo
 // se refrescaba manualmente al volver de una sub-pantalla
@@ -252,14 +252,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
             child:
                 provider.isLoading
                     // Skeleton en vez de spinner: anticipa la forma real
-                    // de las tarjetas (Fase 5, Módulo 3) — evita además el
-                    // parpadeo de "No hay productos agregados" antes de
-                    // que llegue el primer snapshot de Firestore.
+                    // de las tarjetas — evita además el parpadeo de "No hay
+                    // productos agregados" antes de que llegue el primer
+                    // snapshot de Firestore.
                     ? const SkeletonLoader()
                     : productosFiltrados.isEmpty
                     ? const Center(child: Text('No hay productos agregados'))
                     : ListView.builder(
-                      // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+                      // Scroll elástico estilo iOS.
                       physics: const BouncingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
@@ -489,7 +489,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  /// Trazabilidad de Desperdicio vs. Consumo (Fase 4.5, Módulo 3): al
+  /// Trazabilidad de Desperdicio vs. Consumo: al
   /// retirar un producto del inventario, quien lo hace declara
   /// explícitamente si lo aprovechó o lo desperdició — ya no se infiere en
   /// silencio comparando la fecha de vencimiento. Esa elección viaja como
@@ -584,8 +584,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 }
 
-/// Entrada progresiva (fade + slide) para cada tarjeta de la lista —
-/// Fase 5, Módulo 2. El desfase por índice (40ms por ítem, tope en 300ms)
+/// Entrada progresiva (fade + slide) para cada tarjeta de la lista.
+/// El desfase por índice (40ms por ítem, tope en 300ms)
 /// da el efecto "stagger" sin animar decenas de tarjetas a la vez cuando el
 /// inventario es grande. Sin key explícita: en una reconstrucción trivial
 /// del stream (p. ej. otro miembro del hogar edita un producto) Flutter

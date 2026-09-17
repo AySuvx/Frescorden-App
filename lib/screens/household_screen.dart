@@ -237,9 +237,9 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
           style: const TextStyle(color: Colors.grey),
         ),
         const SizedBox(height: 12),
-        // Tarjeta resumen del hogar con acabado de cristal (Fase 5,
-        // Módulo 3.5): es la superficie que más "flota" sobre el resto de
-        // la pantalla (lista de miembros, foco visual principal).
+        // Tarjeta resumen del hogar con acabado de cristal: es la
+        // superficie que más "flota" sobre el resto de la pantalla (lista
+        // de miembros, foco visual principal).
         GlassCard(
           padding: EdgeInsets.zero,
           child: Column(
@@ -259,8 +259,9 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     String uid,
   ) {
     final isYou = uid == provider.currentUid;
-    final isAdmin = uid == household.createdBy;
-    final iAmAdmin = provider.currentUid == household.createdBy;
+    final isAdmin = household.isAdmin(uid);
+    final iAmAdmin =
+        provider.currentUid != null && household.isAdmin(provider.currentUid!);
     // Fallback al uid si todavía no se conoce el email (p. ej. hogares
     // creados antes de que memberEmails existiera) — mejor mostrar algo
     // que ocultar al miembro.

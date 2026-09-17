@@ -113,8 +113,8 @@ void main() async {
           ),
         ),
 
-        // IActivityLogRepository — log de auditoría del inventario
-        // (Fase 4.5, Módulo 2). Provider simple (no ChangeNotifier: solo
+        // IActivityLogRepository — log de auditoría del inventario.
+        // Provider simple (no ChangeNotifier: solo
         // envuelve llamadas a Firestore, sin estado propio). Se registra
         // antes que ProductProvider para poder inyectarlo ahí, y también
         // lo leen las pantallas directamente (ver HouseholdScreen) para
@@ -125,8 +125,8 @@ void main() async {
           ),
         ),
 
-        // IAssistantUsageRepository — adopción del asistente culinario
-        // (Fase 4.5, Módulo 3). Mismo criterio que IActivityLogRepository:
+        // IAssistantUsageRepository — adopción del asistente culinario.
+        // Mismo criterio que IActivityLogRepository:
         // provider simple, se registra antes que AssistantProvider para
         // poder inyectarlo ahí.
         Provider<IAssistantUsageRepository>(
@@ -165,7 +165,7 @@ void main() async {
         ),
 
         // RecipeProvider — catálogo de recetas (fuente local, ver
-        // RecipeLocalDataSource) + fallback de IA (Fase 5, Módulo 3.6):
+        // RecipeLocalDataSource) + fallback de IA:
         // GeminiAssistantDataSource() propia, independiente de la del
         // AssistantProvider de más abajo (esta no mantiene conversación).
         ChangeNotifierProvider<RecipeProvider>(
@@ -211,7 +211,7 @@ void main() async {
           ),
         ),
 
-        // AdminProvider — Panel Administrativo Global (Fase 4.5, Módulo 3).
+        // AdminProvider — Panel Administrativo Global.
         // `lazy` por defecto en Provider: no consulta Firestore hasta que
         // AdminDashboardScreen lo lea (y esa pantalla ya filtró por
         // kAdminUid antes de hacerlo) — ningún costo para el resto de
@@ -248,7 +248,7 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
-      // Fase 5, Módulo 2: la decisión inicial (Onboarding / Login / Inicio)
+      // La decisión inicial (Onboarding / Login / Inicio)
       // ya no vive acá — SplashScreen la resuelve (esperando el primer
       // estado de AuthProvider.authStateChanges + la bandera de
       // SharedPreferences) mientras anima el logo de marca. login_screen.dart

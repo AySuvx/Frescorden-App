@@ -130,9 +130,9 @@ class _InicioScreenState extends State<InicioScreen> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              // Degradado suave dentro de la propia paleta orgánica
-              // (Fase 5, Módulo 3): primary → una mezcla hacia tertiary
-              // (Ámbar), no primary→primaryContainer — ese salto es
+              // Degradado suave dentro de la propia paleta orgánica:
+              // primary → una mezcla hacia tertiary (Ámbar), no
+              // primary→primaryContainer — ese salto es
               // demasiado grande en luminosidad y dejaría "onPrimary" sin
               // contraste garantizado en el extremo claro del degradado.
               decoration: BoxDecoration(
@@ -313,7 +313,7 @@ class _InicioScreenState extends State<InicioScreen> {
                 );
               },
             ),
-            // Panel Administrativo Global (Fase 4.5, Módulo 3): entrada
+            // Panel Administrativo Global: entrada
             // visible únicamente si el usuario autenticado es el admin
             // (ver kAdminUid) — para cualquier otro no aparece en el drawer.
             if (FirebaseAuth.instance.currentUser?.uid == kAdminUid)

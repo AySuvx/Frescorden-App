@@ -3,7 +3,6 @@
 // Módulo de Recetas — recibe la entidad Recipe (y sus RecipeIngredient
 // faltantes) en vez de Map<String,dynamic>.
 //
-// Fase 5, Módulo 3.6:
 //  - Hero compartido con la tarjeta de RecetasScreen (misma imagen
 //    "volando" entre pantallas).
 //  - GlassCard con los metadatos (⏱️ tiempo, 👥 porciones).
@@ -38,9 +37,9 @@ class DetalleRecetaScreen extends StatefulWidget {
 }
 
 class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
-  /// Índices de pasos marcados como completados — "Modo Cocina" (Fase 5,
-  /// Módulo 3.6). Vive solo en esta pantalla: no se persiste ni se manda
-  /// a Firestore, es una ayuda mientras se cocina, no un dato del negocio.
+  /// Índices de pasos marcados como completados — "Modo Cocina". Vive solo
+  /// en esta pantalla: no se persiste ni se manda a Firestore, es una ayuda
+  /// mientras se cocina, no un dato del negocio.
   final Set<int> _pasosCompletados = {};
 
   bool _yaAgregoFaltantes = false;
@@ -88,7 +87,7 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(receta.name)),
       body: ListView(
-        // Scroll elástico estilo iOS (Fase 5, Módulo 3.5/3.6).
+        // Scroll elástico estilo iOS.
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
@@ -110,7 +109,7 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Metadatos con acabado de cristal (Fase 5, Módulo 3.5).
+          // Metadatos con acabado de cristal.
           GlassCard(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
@@ -184,7 +183,7 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
 
           const SizedBox(height: AppSpacing.lg),
 
-          // "Modo Cocina" (Fase 5, Módulo 3.6): pasos interactivos con
+          // "Modo Cocina": pasos interactivos con
           // checkbox y háptico — no una lista de texto pasiva.
           Row(
             children: [

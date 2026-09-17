@@ -2,7 +2,7 @@
 //
 // Módulo de Recetas — conectado a RecipeProvider + ProductProvider.
 //
-// Fase 5, Módulo 3.6 — coincidencia flexible: ya no se oculta ninguna
+// Coincidencia flexible: ya no se oculta ninguna
 // receta por faltarle ingredientes (se eliminó el filtro "solo
 // disponibles"). El catálogo completo se muestra ordenado de mayor a
 // menor disponibilidad (`sortedByMatch`), con un chip que dice cuántos
@@ -85,7 +85,7 @@ class _RecetasScreenState extends State<RecetasScreen> {
           : recetas.isEmpty
               ? _buildEmptyState(context, recipeProvider, inventory)
               : ListView(
-                  // Scroll elástico estilo iOS (Fase 5, Módulo 3.5/3.6).
+                  // Scroll elástico estilo iOS.
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
@@ -179,7 +179,7 @@ class _RecetasScreenState extends State<RecetasScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    // Coincidencia flexible (Fase 5, Módulo 3.6): reusa
+                    // Coincidencia flexible: reusa
                     // StatusBadge con sus tonos verde ("fresh") y ámbar
                     // ("expiringSoon") — no se oculta la receta, solo se
                     // etiqueta qué tan cerca está de poder prepararse.
