@@ -1,6 +1,6 @@
 // lib/presentation/screens/onboarding/onboarding_screen.dart
 //
-// Fase 5, Módulo 2 — tutorial interactivo de 3 tarjetas para usuarios
+// Tutorial interactivo de 3 tarjetas para usuarios
 // nuevos. Solo lo ve quien todavía no tiene la bandera persistente
 // `onboarding_completed` en SharedPreferences (ver SplashScreen, que decide
 // si esta pantalla se muestra) — al terminar u omitir, la guarda en `true`

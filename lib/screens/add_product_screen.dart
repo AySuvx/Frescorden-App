@@ -489,7 +489,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ── Categoría del alimento ────────────────────────────────
             const Text(
               'Categoría',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -531,7 +530,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ── Alerta de Stock mínimo (opcional) ─────────────────────
             const Text(
               'Stock mínimo (opcional)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -570,7 +568,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
             _buildExpiryDatePicker(),
             const SizedBox(height: 16),
 
-            // ── Fecha de almacenamiento ──────────────────────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

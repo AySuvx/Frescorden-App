@@ -1,6 +1,6 @@
 // lib/presentation/screens/splash/splash_screen.dart
 //
-// Fase 5, Módulo 2 — pantalla de entrada. Antes, la decisión inicial
+// Pantalla de entrada. Antes, la decisión inicial
 // (Login vs. Inicio) vivía en un StreamBuilder<AppUser?> directo en
 // MyApp.home (ver main.dart): apenas resolvía el primer estado de
 // autenticación, mostraba una pantalla u otra sin transición. Ahora esa

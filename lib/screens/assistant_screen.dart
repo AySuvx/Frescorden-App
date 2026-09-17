@@ -12,7 +12,7 @@ import '../presentation/providers/assistant_provider.dart';
 import '../presentation/utils/quota_service.dart';
 import '../presentation/widgets/common/glass_card.dart';
 
-/// Enlaces de Video para Recetas (Fase 4.5, Módulo 4): detecta enlaces
+/// Enlaces de Video para Recetas: detecta enlaces
 /// Markdown `[texto](url)` en la respuesta del asistente — hoy solo los usa
 /// el enlace de YouTube que GeminiAssistantDataSource agrega al final de
 /// cada receta, pero funciona para cualquier enlace con ese formato.
@@ -102,7 +102,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 ? _buildEmptyState(provider.isLimitReached)
                 : ListView.builder(
                     controller: _scrollController,
-                    // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+                    // Scroll elástico estilo iOS.
                     physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
@@ -124,7 +124,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
   }
 
-  // Barra superior con acabado de cristal (Fase 5, Módulo 3.5) — es la
+  // Barra superior con acabado de cristal — es la
   // única franja que "flota" sobre el chat en esta pantalla, así que es
   // la candidata natural para el efecto glass sin volverlo omnipresente.
   Widget _buildQuotaBadge(int remaining) {

@@ -1,6 +1,6 @@
 // lib/screens/admin_dashboard_screen.dart
 //
-// Panel Administrativo Global (Fase 4.5, Módulo 3):
+// Panel Administrativo Global:
 // Acceso restringido al UID declarado en kAdminUid (lib/config/app_config.dart)
 // — cualquier otro usuario autenticado ve un aviso de acceso denegado, sin
 // llegar a consultar AdminProvider (y por lo tanto sin disparar ninguna

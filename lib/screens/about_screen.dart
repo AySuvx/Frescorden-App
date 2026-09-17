@@ -14,17 +14,15 @@ class AboutScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Logo de la aplicación
             Center(
               child: Image.asset(
-                'assets/verduras.png', // Asegúrate de tener un logo en esta ruta
+                'assets/verduras.png',
                 width: 120,
                 height: 120,
               ),
             ),
             const SizedBox(height: 16),
 
-            // Título y versión
             const Text(
               'Fresc(o)rden',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -36,7 +34,6 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Descripción del propósito
             const Text(
               'Fresc(o)rden tiene como objetivo reducir la pérdida de alimentos en los hogares '
               'al incentivar a las personas a llevar un registro de sus productos y consumirlos '
@@ -46,7 +43,6 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Futuras características
             const Text(
               '¡Estamos trabajando en nuevas características que llegarán pronto! Estas incluirán '
               'recomendaciones personalizadas, integración con IA para sugerir recetas, y mucho más.',
@@ -55,7 +51,6 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Mensaje de agradecimiento
             const Text(
               'Gracias por ser parte de Fresc(o)rden. Juntos podemos hacer un cambio positivo '
               'en la forma en que gestionamos nuestros alimentos.',

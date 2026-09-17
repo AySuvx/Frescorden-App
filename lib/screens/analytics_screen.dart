@@ -47,7 +47,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               : RefreshIndicator(
                   onRefresh: () => provider.loadSummary(),
                   child: ListView(
-                    // Scroll elástico estilo iOS (Fase 5, Módulo 3.5).
+                    // Scroll elástico estilo iOS.
                     physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
