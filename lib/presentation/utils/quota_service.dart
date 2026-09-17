@@ -1,6 +1,7 @@
 // lib/presentation/utils/quota_service.dart
 //
-// Cuota diaria de consultas al Asistente Gemini: 5 por dispositivo, en
+// Cuota diaria de consultas a Gemini: 20 por dispositivo, compartida entre
+// el Asistente Culinario y el fallback de IA de Recetas, en
 // shared_preferences. Nudge de producto (freemium), NO una protección real
 // contra abuso — se resetea desinstalando la app o usando otro dispositivo.
 // La protección real de cuota compartida vive del lado de Firebase AI

@@ -1,10 +1,10 @@
 // lib/presentation/utils/analytics_service.dart
 //
-// Firebase Analytics (Fase 4.5, Módulo 3): eventos de adopción de las
-// funciones clave de la app — mismo estilo singleton que
-// NotificationService/QuotaService, llamado directo desde los providers de
-// presentación (no hay interfaz/DI: es infraestructura transversal, no
-// una regla de negocio del dominio).
+// Firebase Analytics: eventos de adopción de las funciones clave de la
+// app — mismo estilo singleton que NotificationService/QuotaService,
+// llamado directo desde los providers de presentación (no hay
+// interfaz/DI: es infraestructura transversal, no una regla de negocio
+// del dominio).
 //
 // screen_view automático: ya lo cubre FirebaseAnalyticsObserver, registrado
 // en MaterialApp.navigatorObservers (ver main.dart) — funciona porque cada
