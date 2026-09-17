@@ -36,6 +36,11 @@ https://www.youtube.com/results?search_query=Receta+Arroz+con+Pollo).
 const _modelName = 'gemini-3.5-flash';
 const _maxInventoryItems = 20;
 
+// Saneamiento de entrada (auditoría de seguridad, Fase 6 Módulo 2): límite
+// generoso para una consulta de chat real, pero acota el costo/tokens de
+// un payload abusivo (pegar un texto enorme) sin afectar el uso normal.
+const _maxPromptLength = 4000;
+
 // Fallback dinámico de recetas: instrucción y esquema
 // separados del asistente conversacional de arriba. Este modelo NO
 // mantiene una conversación (una llamada = una receta) y fuerza salida
@@ -110,16 +115,49 @@ class GeminiAssistantDataSource {
     if (text == null || text.isEmpty) {
       throw StateError('Gemini no devolvió una receta.');
     }
-    return jsonDecode(text) as Map<String, dynamic>;
+
+    // Deserialización defensiva (auditoría de seguridad, Fase 6 Módulo 2):
+    // `responseSchema` fuerza el formato en la mayoría de los casos, pero
+    // no lo garantiza — una respuesta truncada o con texto extra alrededor
+    // del JSON no debe propagar un FormatException/TypeError crudo hacia
+    // arriba. RecipeProvider.generateAiRecipe ya envuelve esta llamada en
+    // try/catch, pero el mensaje de error debe ser claro desde acá, no un
+    // cast fallido genérico.
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(text);
+    } on FormatException catch (e) {
+      throw FormatException(
+        'Gemini devolvió una receta que no es JSON válido: ${e.message}',
+      );
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Gemini devolvió una receta con formato inesperado (no es un objeto JSON).',
+      );
+    }
+    return decoded;
   }
 
   Future<String> sendMessage({
     required String prompt,
     List<Product>? currentInventory,
   }) async {
+    // Saneamiento de entrada (auditoría de seguridad, Fase 6 Módulo 2):
+    // AssistantProvider ya recorta y descarta vacíos antes de llamar acá,
+    // pero esta capa no debe confiar únicamente en el llamador — es la
+    // última línea antes de salir hacia Gemini. El límite de longitud
+    // evita que un payload desproporcionado consuma cuota/tokens de más;
+    // no intenta "filtrar" intentos de jailbreak del `_systemInstruction`
+    // (eso es una limitación inherente de los LLM, no algo que un recorte
+    // de texto resuelva).
+    final sanitizedPrompt = prompt.trim().length > _maxPromptLength
+        ? prompt.trim().substring(0, _maxPromptLength)
+        : prompt.trim();
+
     final fullPrompt = currentInventory == null
-        ? prompt
-        : '${_inventoryContext(currentInventory)}\n\nConsulta: $prompt';
+        ? sanitizedPrompt
+        : '${_inventoryContext(currentInventory)}\n\nConsulta: $sanitizedPrompt';
 
     // Se deja propagar cualquier excepción (antes se atrapaba acá y se
     // devolvía un mensaje amigable como si fuera una respuesta real —

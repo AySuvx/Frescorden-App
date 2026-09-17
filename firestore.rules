@@ -30,7 +30,7 @@ service cloud.firestore {
     }
 
     // Permitir acceso al historial dentro de cada usuario
-    // FASE 3 — Historial de Productos: registro de consumo a tiempo vs.
+    // Historial de Productos: registro de consumo a tiempo vs.
     // vencido, usado por AnalyticsRepositoryImpl para calcular los KPIs.
     match /usuarios/{userId}/historial/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -47,6 +47,17 @@ service cloud.firestore {
     // (queries) sobre la colección completa SÍ se deniega: la app nunca
     // necesita listar todos los hogares, solo leer uno por ID conocido.
     match /households/{householdId} {
+      // Auditoría de seguridad (Fase 6, Módulo 2): decisión de diseño
+      // aceptada, no un hallazgo pendiente. `get` puntual por ID conocido
+      // se mantiene abierto a cualquier autenticado — es el único modo en
+      // que alguien uniéndose a un hogar (todavía no-miembro) puede leerlo.
+      // Restringirlo a "solo miembros" exigiría separar los datos públicos
+      // de invitación (nombre, conteo de miembros) del documento completo
+      // en una colección aparte — cambio de arquitectura fuera de alcance
+      // de esta auditoría. `list` (enumerar TODOS los hogares) sí queda
+      // denegado por defecto: la superficie de ataque real (enumeración
+      // masiva) está cerrada; solo "quien ya tiene el ID/enlace" puede
+      // leer un hogar puntual, igual que el patrón de `inviteCodes` abajo.
       allow get: if request.auth != null;
       allow list: if false;
 

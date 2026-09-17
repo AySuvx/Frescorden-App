@@ -29,7 +29,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Versión 1.13.0+17',
+              'Versión 1.14.0+18',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 16),
@@ -44,8 +44,7 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             const Text(
-              '¡Estamos trabajando en nuevas características que llegarán pronto! Estas incluirán '
-              'recomendaciones personalizadas, integración con IA para sugerir recetas, y mucho más.',
+              '¡Estamos trabajando en nuevas características que llegarán pronto!',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
             ),

@@ -45,6 +45,18 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+
+            // Ofuscación/minificación (auditoría de seguridad, Fase 6 Módulo 2):
+            // dificulta la ingeniería inversa del APK de release y reduce su
+            // tamaño. `--obfuscate --split-debug-info=...` en el comando de
+            // build es lo que efectivamente ofusca nombres de símbolos Dart;
+            // esto habilita R8 para el código/recursos nativos y de plugins.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

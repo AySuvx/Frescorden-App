@@ -64,3 +64,7 @@ secrets.json
 # graphify: salida generada localmente por el skill de knowledge-graph,
 # no es código fuente del proyecto.
 graphify-out/
+
+# Config local de Claude Code (permisos/preferencias de esta máquina, ej.
+# worktree.baseRef) — nunca compartida entre desarrolladores.
+.claude/settings.local.json
