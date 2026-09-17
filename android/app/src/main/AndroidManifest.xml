@@ -67,13 +67,11 @@
             android:name="flutterEmbedding"
             android:value="2"/>
 
-        <!-- EnableImpeller:false existió aquí (añadido 2026-09-11) como mitigación
-             para un supuesto bug de renderizado en blanco en AddProductScreen/
-             CategoryPickerScreen en un Xiaomi de prueba. Removido y verificado en
-             ese mismo dispositivo real (commit de esta línea): ambas pantallas
-             renderizan correctamente con Impeller/Vulkan activo, y los errores
-             AHardwareBuffer/GraphicBuffer del logcat son una ráfaga aislada al
-             bootstrap del motor, no correlacionada con la navegación. Si el bug
+        <!-- EnableImpeller:false (2026-09-11) mitigaba un supuesto bug de pantalla
+             en blanco en AddProductScreen/CategoryPickerScreen (Xiaomi de prueba).
+             Removido y verificado en ese dispositivo (commit ea53187): ambas
+             pantallas renderizan bien con Impeller/Vulkan; los AHardwareBuffer/
+             GraphicBuffer del logcat son ruido de bootstrap, no el bug. Si
              reaparece, ver docs/superpowers/plans/2026-09-16-fase6-modulo1-clean-code-audit.md. -->
     </application>
 
