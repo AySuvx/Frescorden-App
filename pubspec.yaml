@@ -2,7 +2,7 @@ name: frescorden
 description: "Gestión integral de alimentos en el hogar."
 publish_to: 'none'
 
-version: 1.12.0+16
+version: 1.13.0+17
 
 environment:
   sdk: ^3.7.0
