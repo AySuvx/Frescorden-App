@@ -1,6 +1,6 @@
 // lib/domain/entities/admin_stats.dart
 //
-// Panel Administrativo Global (Fase 4.5, Módulo 3):
+// Panel Administrativo Global:
 // Métricas agregadas de toda la app — no de un hogar en particular.
 // Calculado por AdminRepositoryImpl a partir de las colecciones raíz
 // `usuarios`/`households` y de los collectionGroup `product_history` /

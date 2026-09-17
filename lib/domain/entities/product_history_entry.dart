@@ -8,7 +8,7 @@
 //
 // Se crea en ProductProvider.deleteProduct() (ver ese archivo) con el
 // `outcome` que la pantalla recibe del diálogo de confirmación
-// "Consumido" / "Desperdiciado" (Fase 4.5, Módulo 3) — explícito, ya no
+// "Consumido" / "Desperdiciado" — explícito, ya no
 // inferido comparando la fecha de eliminación contra `expirationDate`.
 
 import 'food_category.dart';

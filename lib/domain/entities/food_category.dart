@@ -20,7 +20,7 @@ enum FoodCategory {
   enlatadosYConservas,
   otros,
 
-  /// Catálogo ampliado (Fase 4.5): `frutasYVerduras` combinaba ambas.
+  /// Catálogo ampliado: `frutasYVerduras` combinaba ambas.
   /// Se agregan por separado para el selector nuevo — `frutasYVerduras` se
   /// conserva (no se borra ni renombra) para que los productos ya
   /// guardados con esa categoría sigan resolviendo bien con [fromName];

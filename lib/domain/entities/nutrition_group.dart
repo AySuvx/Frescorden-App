@@ -1,6 +1,6 @@
 // lib/domain/entities/nutrition_group.dart
 //
-// 'Plato Equilibrado' (Fase 4.5, Módulo 4):
+// 'Plato Equilibrado':
 // Agrupa las categorías de FoodCategory en los 4 grupos nutricionales
 // esenciales de una dieta balanceada. ShoppingProvider cruza esto contra
 // el inventario real del hogar activo para detectar qué grupos NO están

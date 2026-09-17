@@ -3,8 +3,8 @@
 // Capa de Dominio de Analíticas:
 // Resumen agregado de KPIs, calculado por AnalyticsRepositoryImpl a partir
 // del historial de productos resueltos del hogar activo (ProductHistoryEntry,
-// ver getSummary). Fase 4.5, Módulo 3: todo el resumen queda acotado al
-// último mes (últimos 30 días) — "Analítica Avanzada" es, en esencia, un
+// ver getSummary). Todo el resumen queda acotado al último mes (últimos 30
+// días) — "Analítica Avanzada" es, en esencia, un
 // reporte mensual del hogar. Ver ese archivo para el detalle de cómo se
 // calcula cada campo.
 

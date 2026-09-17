@@ -83,7 +83,7 @@ class Product {
   /// Solo relevante para productos a granel (`isBulk`); un producto
   /// empacado normal no dispara esta alerta aunque lleve muchos días.
   ///
-  /// TODO(Roadmap Fase 4): hoy `isStorageCritical` solo alimenta el badge
+  /// TODO(Roadmap): hoy `isStorageCritical` solo alimenta el badge
   /// visual en la tarjeta de inventario (productos_screen.dart). No dispara
   /// ninguna notificación push cuando un producto a granel lleva
   /// `storageCriticalDays` o más almacenado — a diferencia de

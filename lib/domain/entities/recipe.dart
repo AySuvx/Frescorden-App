@@ -26,7 +26,7 @@ class Recipe {
   /// Tiempo aproximado de preparación, en minutos. Antes vivía como texto
   /// suelto dentro del último paso ("... Tiempo total: 10 minutos") — se
   /// separa a un campo estructurado para poder mostrarlo en un chip de
-  /// metadatos (Fase 5, Módulo 3.6) sin parsear prosa.
+  /// metadatos sin parsear prosa.
   final int prepTimeMinutes;
 
   /// `true` cuando esta receta fue generada dinámicamente por Gemini (no
@@ -58,7 +58,7 @@ class Recipe {
       missingIngredients(inventoryNames).isEmpty;
 
   /// Porcentaje de ingredientes que el usuario YA tiene (0.0 a 1.0) — base
-  /// de la coincidencia flexible (Fase 5, Módulo 3.6): en vez de ocultar
+  /// de la coincidencia flexible: en vez de ocultar
   /// una receta por faltarle algo, se usa esto para ordenar el catálogo de
   /// mayor a menor disponibilidad. Una receta sin ingredientes declarados
   /// (no debería pasar, pero por seguridad) cuenta como 100% disponible en
