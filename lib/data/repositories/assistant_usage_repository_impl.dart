@@ -1,7 +1,3 @@
-// lib/data/repositories/assistant_usage_repository_impl.dart
-//
-// Implementación de IAssistantUsageRepository. Delega al DataSource.
-
 import '../../domain/repositories/i_assistant_usage_repository.dart';
 import '../datasources/firestore_assistant_usage_datasource.dart';
 

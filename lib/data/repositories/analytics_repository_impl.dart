@@ -2,10 +2,10 @@
 //
 // Implementación de IAnalyticsRepository. Lee el historial del hogar activo
 // (FirestoreProductHistoryDataSource.getAll(householdId)), lo acota al
-// último mes (Fase 4.5, Módulo 3: "Analítica Avanzada" es un reporte
-// mensual del hogar) y calcula los KPIs de AnalyticsSummary sobre esa
-// ventana. Sin historial en el último mes, retorna AnalyticsSummary.empty()
-// — la UI decide cómo mostrar ese estado (ver AnalyticsScreen).
+// último mes ("Analítica Avanzada" es un reporte mensual del hogar) y
+// calcula los KPIs de AnalyticsSummary sobre esa ventana. Sin historial en
+// el último mes, retorna AnalyticsSummary.empty() — la UI decide cómo
+// mostrar ese estado (ver AnalyticsScreen).
 
 import '../../domain/entities/analytics_summary.dart';
 import '../../domain/entities/category_waste_stats.dart';

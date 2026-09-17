@@ -1,10 +1,10 @@
 // lib/data/repositories/recipe_repository_impl.dart
 //
 // Implementación concreta de IRecipeRepository. El catálogo curado sigue
-// viniendo del datasource local; el fallback de IA (Fase 5, Módulo 3.6)
-// reutiliza GeminiAssistantDataSource — la misma clase que ya habla con
-// Gemini para el asistente conversacional, con una instancia propia (ver
-// su constructor: un modelo aparte, sin conversación) para no acoplar el
+// viniendo del datasource local; el fallback de IA reutiliza
+// GeminiAssistantDataSource — la misma clase que ya habla con Gemini para
+// el asistente conversacional, con una instancia propia (ver su
+// constructor: un modelo aparte, sin conversación) para no acoplar el
 // módulo de recetas al estado de la conversación del asistente.
 
 import '../../domain/entities/product.dart';
