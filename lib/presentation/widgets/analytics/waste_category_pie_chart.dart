@@ -44,7 +44,7 @@ class WasteCategoryPieChart extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            if (wasteData.isEmpty)
+            if (!summary.hasWasteData)
               const ChartEmptyState(
                 message: '¡Sin desperdicio registrado todavía! 🎉\n'
                     'Este gráfico se llenará si algún producto vence.',
