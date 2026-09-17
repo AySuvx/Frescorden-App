@@ -69,10 +69,12 @@
 
         <!-- EnableImpeller:false (2026-09-11) mitigaba un supuesto bug de pantalla
              en blanco en AddProductScreen/CategoryPickerScreen (Xiaomi de prueba).
-             Removido y verificado en ese dispositivo (commit ea53187): ambas
-             pantallas renderizan bien con Impeller/Vulkan; los AHardwareBuffer/
-             GraphicBuffer del logcat son ruido de bootstrap, no el bug. Si
-             reaparece, ver el mensaje del commit ea53187 (`git show ea53187`). -->
+             Removido y verificado en dispositivo real (Xiaomi d7effa11) el
+             2026-09-16, en dos sesiones independientes: ambas pantallas renderizan
+             bien con Impeller/Vulkan; los AHardwareBuffer/GraphicBuffer del logcat
+             son ruido de bootstrap del motor, no el bug original. Si reaparece,
+             repetir esta verificación en dispositivo real antes de reintroducir
+             la bandera. -->
     </application>
 
     <queries>
