@@ -94,7 +94,7 @@ class FirestoreHouseholdDataSource {
     return _userDoc(uid).update({'activeHouseholdId': FieldValue.delete()});
   }
 
-  /// Actividad de usuario (Fase 4.5, Módulo 3 — Panel Administrativo):
+  /// Actividad de usuario (Panel Administrativo):
   /// marca `lastActiveAt` en cada resolución de sesión (login o restauración
   /// silenciosa, ver HouseholdProvider.setUid) y fija `createdAt` una sola
   /// vez, la primera vez que se ve a este uid. Transacción para que ambos

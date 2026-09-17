@@ -11,7 +11,7 @@
 //    (ver UserModel) — no hay contenido personal que este cambio exponga.
 //  - `households`: igual que antes, completa para sumar `members`.
 //  - collectionGroup('product_history'): historial de TODOS los hogares,
-//    para el aprovechamiento global (Módulo 3).
+//    para el aprovechamiento global.
 //  - collectionGroup('assistant_usage'): adopción del asistente culinario.
 //
 // Ambos collectionGroup se leen sin filtro de fecha (Firestore exige un

@@ -36,7 +36,7 @@ https://www.youtube.com/results?search_query=Receta+Arroz+con+Pollo).
 const _modelName = 'gemini-3.5-flash';
 const _maxInventoryItems = 20;
 
-// Fase 5, Módulo 3.6 — fallback dinámico de recetas: instrucción y esquema
+// Fallback dinámico de recetas: instrucción y esquema
 // separados del asistente conversacional de arriba. Este modelo NO
 // mantiene una conversación (una llamada = una receta) y fuerza salida
 // JSON estricta vía `responseSchema`, para poder parsearla directo a
