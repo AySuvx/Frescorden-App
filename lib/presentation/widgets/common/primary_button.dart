@@ -84,13 +84,21 @@ class _ButtonContent extends StatelessWidget {
         child: CircularProgressIndicator(strokeWidth: 2.5, color: color),
       );
     }
-    if (icon == null) return Text(label);
+    if (icon == null) {
+      return Text(label, overflow: TextOverflow.ellipsis, maxLines: 1);
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 20),
         const SizedBox(width: AppSpacing.sm),
-        Text(label),
+        // Fase 6, Módulo 3: un label largo (ej. "Crear Receta Colombiana
+        // con IA") desbordaba el Row en pantallas angostas — el Text no
+        // tenía Flexible, así que tomaba su ancho natural sin ajustarse al
+        // espacio disponible dentro del botón.
+        Flexible(
+          child: Text(label, overflow: TextOverflow.ellipsis, maxLines: 1),
+        ),
       ],
     );
   }

@@ -1,0 +1,174 @@
+// test/support/fake_repositories.dart
+//
+// Dobles de prueba en memoria para los repositorios de dominio (I*Repository)
+// que consumen ProductProvider/ShoppingProvider/RecipeProvider/HouseholdProvider.
+// No tocan Firebase: permiten probar la lógica de negocio real de los
+// providers de forma aislada y determinística (BDD Given/When/Then).
+
+import 'dart:async';
+
+import 'package:frescorden/domain/entities/budget_tier.dart';
+import 'package:frescorden/domain/entities/household.dart';
+import 'package:frescorden/domain/entities/product.dart';
+import 'package:frescorden/domain/entities/recipe.dart';
+import 'package:frescorden/domain/entities/shopping_item.dart';
+import 'package:frescorden/domain/repositories/i_household_repository.dart';
+import 'package:frescorden/domain/repositories/i_product_repository.dart';
+import 'package:frescorden/domain/repositories/i_recipe_repository.dart';
+import 'package:frescorden/domain/repositories/i_shopping_repository.dart';
+
+/// Fake de [IProductRepository]: `watchProducts` es un stream controlable
+/// a mano ([emit]) para simular snapshots sucesivos de Firestore.
+class FakeProductRepository implements IProductRepository {
+  final _controllers = <String, StreamController<List<Product>>>{};
+  final List<Product> added = [];
+
+  StreamController<List<Product>> _controllerFor(String householdId) =>
+      _controllers.putIfAbsent(
+        householdId,
+        () => StreamController<List<Product>>.broadcast(),
+      );
+
+  /// Simula un snapshot nuevo del stream de productos para [householdId].
+  void emit(String householdId, List<Product> products) {
+    _controllerFor(householdId).add(products);
+  }
+
+  /// Simula un error del stream (p. ej. pérdida de conexión).
+  void emitError(String householdId, Object error) {
+    _controllerFor(householdId).addError(error);
+  }
+
+  @override
+  Stream<List<Product>> watchProducts(String householdId) =>
+      _controllerFor(householdId).stream;
+
+  @override
+  Future<Product> addProduct(String householdId, Product product) async {
+    added.add(product);
+    return product;
+  }
+
+  @override
+  Future<void> updateProduct(String householdId, Product product) async {}
+
+  @override
+  Future<void> deleteProduct(String householdId, String id) async {}
+
+  @override
+  Future<Product?> findByBarcode(String householdId, String barcode) async =>
+      null;
+
+  @override
+  Future<Product?> findByName(String householdId, String name) async => null;
+
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.close();
+    }
+  }
+}
+
+/// Fake de [IShoppingRepository]: la canasta devuelta por [getBasket] se
+/// configura por adelantado con [basketsByTier].
+class FakeShoppingRepository implements IShoppingRepository {
+  FakeShoppingRepository(this.basketsByTier);
+
+  final Map<BudgetTier, List<ShoppingItem>> basketsByTier;
+
+  @override
+  Future<List<ShoppingItem>> getBasket(BudgetTier tier) async =>
+      basketsByTier[tier] ?? [];
+}
+
+/// Fake de [IRecipeRepository]: el catálogo devuelto por [getRecipes] se
+/// configura por adelantado; [generateAiRecipe] es controlable con
+/// [aiRecipeToReturn]/[aiRecipeError] para simular éxito o fallo del
+/// fallback de IA.
+class FakeRecipeRepository implements IRecipeRepository {
+  FakeRecipeRepository(this.catalog);
+
+  final List<Recipe> catalog;
+  Recipe? aiRecipeToReturn;
+  Object? aiRecipeError;
+
+  @override
+  Future<List<Recipe>> getRecipes() async => catalog;
+
+  @override
+  Future<Recipe> generateAiRecipe(List<Product> inventory) async {
+    if (aiRecipeError != null) throw aiRecipeError!;
+    return aiRecipeToReturn ??
+        (throw StateError('FakeRecipeRepository: configura aiRecipeToReturn'));
+  }
+}
+
+/// Fake de [IHouseholdRepository]: `watchActiveHouseholdId`/`watchHousehold`
+/// son streams controlables a mano ([emitActiveId]/[emitHousehold]) para
+/// simular la cadena reactiva real de HouseholdProvider. Las acciones
+/// (removeMember, clearActiveHousehold, etc.) solo registran haber sido
+/// llamadas — HouseholdProvider ya valida los permisos antes de invocarlas.
+class FakeHouseholdRepository implements IHouseholdRepository {
+  final _activeIdController = StreamController<String?>.broadcast();
+  final _householdController = StreamController<Household?>.broadcast();
+
+  final List<String> removedMemberUids = [];
+  final List<String> clearedActiveHouseholdUids = [];
+  final List<String> recordedActivityUids = [];
+
+  void emitActiveId(String? householdId) => _activeIdController.add(householdId);
+  void emitHousehold(Household? household) => _householdController.add(household);
+
+  @override
+  Stream<String?> watchActiveHouseholdId(String uid) => _activeIdController.stream;
+
+  @override
+  Stream<Household?> watchHousehold(String householdId) => _householdController.stream;
+
+  @override
+  Future<Household> createHousehold({
+    required String name,
+    required String creatorUid,
+    String? creatorEmail,
+  }) async {
+    throw UnimplementedError('No usado en estos escenarios.');
+  }
+
+  @override
+  Future<Household> joinHouseholdByCode({
+    required String code,
+    required String uid,
+    String? email,
+  }) async {
+    throw UnimplementedError('No usado en estos escenarios.');
+  }
+
+  @override
+  Future<String> generateNewInviteCode(String householdId) async => 'ABC123';
+
+  @override
+  Future<void> bootstrapPersonalHousehold(String uid, {String? email}) async {}
+
+  @override
+  Future<void> removeMember({
+    required String householdId,
+    required String memberUid,
+  }) async {
+    removedMemberUids.add(memberUid);
+  }
+
+  @override
+  Future<void> clearActiveHousehold(String uid) async {
+    clearedActiveHouseholdUids.add(uid);
+  }
+
+  @override
+  Future<void> recordUserActivity(String uid) async {
+    recordedActivityUids.add(uid);
+  }
+
+  void dispose() {
+    unawaited(_activeIdController.close());
+    unawaited(_householdController.close());
+  }
+}

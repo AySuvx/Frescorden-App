@@ -71,12 +71,20 @@ class StatusBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: fg),
           const SizedBox(width: AppSpacing.xs),
-          Text(
-            label ?? defaultLabel,
-            style: TextStyle(
-              color: fg,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          // Fase 6, Módulo 3: un label largo (ej. "Tienes 1 de 4
+          // ingredientes") desbordaba el Row en pantallas angostas cuando
+          // el badge comparte espacio con otro contenido (ej. la miniatura
+          // de una receta) — mismo bug que PrimaryButton, mismo fix.
+          Flexible(
+            child: Text(
+              label ?? defaultLabel,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: TextStyle(
+                color: fg,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
