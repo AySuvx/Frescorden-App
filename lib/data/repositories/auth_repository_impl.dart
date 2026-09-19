@@ -1,8 +1,5 @@
-// lib/data/repositories/auth_repository_impl.dart
-//
 // Implementación concreta de IAuthRepository usando FirebaseAuth y
-// GoogleSignIn. Replica 1:1 el comportamiento que antes vivía embebido en
-// login_screen.dart y settings_screen.dart:
+// GoogleSignIn:
 //  - signInWithEmail exige correo verificado (cierra la sesión si no lo está).
 //  - registerWithEmail envía el correo de verificación y cierra la sesión.
 //  - signInWithGoogle cierra la sesión de Google previa antes de elegir cuenta.

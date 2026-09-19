@@ -1,7 +1,4 @@
-// lib/presentation/screens/detalle_receta_screen.dart
-//
-// Módulo de Recetas — recibe la entidad Recipe (y sus RecipeIngredient
-// faltantes) en vez de Map<String,dynamic>.
+// Recibe la entidad Recipe (y sus RecipeIngredient faltantes).
 //
 //  - Hero compartido con la tarjeta de RecetasScreen (misma imagen
 //    "volando" entre pantallas).

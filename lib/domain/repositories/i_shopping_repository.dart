@@ -1,5 +1,3 @@
-// lib/domain/repositories/i_shopping_repository.dart
-//
 // Contrato (interfaz) que define QUÉ canasta básica corresponde a cada
 // nivel de presupuesto, sin especificar CÓMO se obtiene. Regla de
 // dependencias de Clean Architecture: domain ← data.

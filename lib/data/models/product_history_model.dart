@@ -1,5 +1,3 @@
-// lib/data/models/product_history_model.dart
-//
 // Traduce entre Firestore y la entidad ProductHistoryEntry. Mismo rol que
 // ProductModel para Product.
 

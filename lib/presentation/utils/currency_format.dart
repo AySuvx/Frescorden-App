@@ -1,12 +1,9 @@
-// lib/presentation/utils/currency_format.dart
-//
 // Formateo de montos en pesos colombianos, centralizado para que toda la
 // app muestre el mismo formato (separador de miles con punto, sin
-// decimales — ej. $ 65.000 COP) en vez de interpolar el número crudo como
-// hacían ShoppingListScreen y AnalyticsScreen antes.
+// decimales — ej. $ 65.000 COP).
 //
-// FIX (hallado en prueba visual en dispositivo): NumberFormat.currency con
-// locale 'es_CO' ubica el símbolo AL FINAL del monto ("65.000 $ COP"),
+// NumberFormat.currency con locale 'es_CO' ubica el símbolo AL FINAL del
+// monto ("65.000 $ COP"),
 // siguiendo el patrón ICU de esa configuración regional — el parámetro
 // `symbol` solo define qué símbolo usar, no dónde va. Para forzar
 // "$ 65.000 COP" (símbolo al inicio, como se pidió explícitamente) se usa

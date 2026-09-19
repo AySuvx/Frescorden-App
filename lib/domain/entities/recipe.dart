@@ -1,17 +1,10 @@
-// lib/domain/entities/recipe.dart
+// Entidad de dominio para una receta. El contenido real (recetas
+// colombianas) se carga desde assets/data/recetas.json vía
+// RecipeLocalDataSource — contenido estático curado, no embebido en un widget.
 //
-// Módulo de Recetas:
-// Entidad de dominio que reemplaza el List<Map<String,dynamic>> hardcodeado
-// que antes vivía dentro de RecetasScreen y el switch de pasos de
-// DetalleRecetaScreen. El contenido real (5 recetas colombianas) ahora se
-// carga desde assets/data/recetas.json vía RecipeLocalDataSource — sigue
-// siendo contenido estático curado, pero ya no vive embebido en un widget.
-//
-// La lógica de "¿qué me falta para preparar esta receta?" (antes
-// verificarIngredientes() en RecetasScreen) se mueve aquí como comportamiento
-// de la entidad: compara por nombre de ingrediente contra el inventario real
-// (Product), igual que el criterio original (no valida cantidades, solo
-// presencia — mismo comportamiento funcional que el mock que reemplaza).
+// La lógica de "¿qué me falta para preparar esta receta?" vive aquí como
+// comportamiento de la entidad: compara por nombre de ingrediente contra
+// el inventario real (Product), sin validar cantidades, solo presencia.
 
 import 'recipe_ingredient.dart';
 

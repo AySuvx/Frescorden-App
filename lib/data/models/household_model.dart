@@ -1,5 +1,3 @@
-// lib/data/models/household_model.dart
-//
 // Extiende la entidad Household añadiendo la lógica de serialización/
 // deserialización hacia y desde Firestore (fromJson/toJson). Las pantallas
 // y el dominio nunca deben importar este archivo directamente; solo la

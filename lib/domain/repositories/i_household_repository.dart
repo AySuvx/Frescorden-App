@@ -1,5 +1,3 @@
-// lib/domain/repositories/i_household_repository.dart
-//
 // Contrato (interfaz) que define QUÉ puede hacerse con hogares (Household),
 // sin especificar CÓMO. El dominio depende de esta abstracción; la
 // implementación real (Firestore) vive en lib/data/.

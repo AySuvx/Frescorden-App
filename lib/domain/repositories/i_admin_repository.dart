@@ -1,5 +1,3 @@
-// lib/domain/repositories/i_admin_repository.dart
-//
 // Contrato del Panel Administrativo Global. Regla de dependencias de Clean
 // Architecture: domain ← data.
 

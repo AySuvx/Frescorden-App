@@ -1,12 +1,7 @@
-// lib/presentation/screens/splash/splash_screen.dart
-//
-// Pantalla de entrada. Antes, la decisión inicial
-// (Login vs. Inicio) vivía en un StreamBuilder<AppUser?> directo en
-// MyApp.home (ver main.dart): apenas resolvía el primer estado de
-// autenticación, mostraba una pantalla u otra sin transición. Ahora esa
-// decisión se amplía a 3 destinos (Onboarding / Login / Inicio) y vive acá,
-// con una animación de marca mientras se resuelven en paralelo las dos
-// fuentes de verdad que la deciden.
+// Pantalla de entrada: decide entre 3 destinos (Onboarding / Login /
+// Inicio) con una animación de marca mientras se resuelven en paralelo
+// las dos fuentes de verdad que la deciden (bandera de onboarding y
+// estado de autenticación).
 //
 // El fondo de este Scaffold no fija un color propio: hereda
 // `scaffoldBackgroundColor` de AppTheme (`colorScheme.surface`, que ya es

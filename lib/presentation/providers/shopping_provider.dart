@@ -1,8 +1,4 @@
-// lib/presentation/providers/shopping_provider.dart
-//
-// Proveedor de estado para la lista de compras. Implementa ChangeNotifier
-// (mismo patrón que ProductProvider/RecipeProvider). Reemplaza las 3
-// canastas fijas que antes vivían hardcodeadas en ShoppingListScreen.
+// Proveedor de estado para la lista de compras.
 //
 // Responsabilidades:
 //  1. Mantener el BudgetTier seleccionado por el usuario.

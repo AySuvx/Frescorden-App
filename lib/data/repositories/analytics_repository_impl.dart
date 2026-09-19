@@ -1,5 +1,3 @@
-// lib/data/repositories/analytics_repository_impl.dart
-//
 // Implementación de IAnalyticsRepository. Lee el historial del hogar activo
 // (FirestoreProductHistoryDataSource.getAll(householdId)), lo acota al
 // último mes ("Analítica Avanzada" es un reporte mensual del hogar) y

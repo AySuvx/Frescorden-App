@@ -1,10 +1,7 @@
-// lib/presentation/screens/recetas_screen.dart
+// Conectada a RecipeProvider + ProductProvider.
 //
-// Módulo de Recetas — conectado a RecipeProvider + ProductProvider.
-//
-// Coincidencia flexible: ya no se oculta ninguna
-// receta por faltarle ingredientes (se eliminó el filtro "solo
-// disponibles"). El catálogo completo se muestra ordenado de mayor a
+// Coincidencia flexible: ninguna receta se oculta por faltarle
+// ingredientes. El catálogo completo se muestra ordenado de mayor a
 // menor disponibilidad (`sortedByMatch`), con un chip que dice cuántos
 // ingredientes tiene el usuario. Cuando la mejor coincidencia del catálogo
 // es baja, se ofrece crear una receta colombiana a la medida con IA.

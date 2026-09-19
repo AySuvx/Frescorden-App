@@ -1,11 +1,7 @@
-// lib/presentation/utils/notification_service.dart
-//
-// Antes, AddProductScreen programaba la notificación de vencimiento con un
-// ID aleatorio (DateTime.now().millisecondsSinceEpoch...), lo que hacía
-// imposible cancelarla después (nada asociaba ese ID al producto). Se
-// centraliza aquí con IDs deterministas por producto (hash de su id de
-// Firestore), para poder cancelar/reprogramar desde cualquier punto del
-// ciclo de vida (guardar, editar, eliminar) sin guardar el ID aparte.
+// IDs deterministas por producto (hash de su id de Firestore), para poder
+// cancelar/reprogramar la notificación de vencimiento desde cualquier
+// punto del ciclo de vida (guardar, editar, eliminar) sin guardar el ID
+// aparte.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';

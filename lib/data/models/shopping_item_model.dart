@@ -1,5 +1,3 @@
-// lib/data/models/shopping_item_model.dart
-//
 // Modelo de datos: traduce entre el JSON de assets/data/canastas.json y la
 // entidad de dominio [ShoppingItem].
 

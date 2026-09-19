@@ -1,5 +1,3 @@
-// lib/domain/repositories/i_product_repository.dart
-//
 // Contrato (interfaz) que define QUÉ puede hacerse con productos,
 // sin especificar CÓMO. El dominio depende de esta abstracción;
 // la implementación real (Firestore, local, mock) vive en lib/data/.
@@ -7,11 +5,9 @@
 // Regla de dependencias de Clean Architecture:
 //   domain ← data (data implementa domain, no al revés)
 //
-// Módulo de Grupos Familiares (Household): el inventario pasó de ser
-// por-usuario a ser por-hogar. Todos los métodos reciben [householdId]
-// explícito en vez de resolver el usuario internamente (como hacía la
-// versión anterior con FirebaseAuth.instance.currentUser) — el dominio no
-// debe saber CÓMO se determina el hogar activo, solo QUE se le pasa uno.
+// Todos los métodos reciben [householdId] explícito en vez de resolver el
+// usuario internamente — el dominio no debe saber CÓMO se determina el
+// hogar activo, solo QUE se le pasa uno.
 
 import '../entities/product.dart';
 

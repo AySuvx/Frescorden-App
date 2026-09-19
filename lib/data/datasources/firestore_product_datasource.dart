@@ -1,16 +1,12 @@
-// lib/data/datasources/firestore_product_datasource.dart
-//
 // Única clase que habla directamente con Cloud Firestore para operaciones
-// de productos. El resto de la app no toca FirebaseFirestore.instance salvo
-// esta clase y FirestoreService (mantenido por retrocompatibilidad).
+// de productos. El resto de la app no toca FirebaseFirestore.instance
+// salvo esta clase.
 //
-// Módulo de Grupos Familiares (Household): la ruta pasó de
-// 'usuarios/{uid}/productos' (por usuario) a
-// 'households/{householdId}/productos' (compartida por todo el hogar) —
-// así todos los miembros ven y editan el mismo inventario en tiempo real
-// (ver watchAll). El [householdId] llega explícito desde arriba
-// (ProductRepositoryImpl ← ProductProvider ← HouseholdProvider); esta
-// clase ya no resuelve el usuario actual internamente.
+// Ruta: 'households/{householdId}/productos' — compartida por todo el
+// hogar, así todos los miembros ven y editan el mismo inventario en
+// tiempo real (ver watchAll). El [householdId] llega explícito desde
+// arriba (ProductRepositoryImpl ← ProductProvider ← HouseholdProvider);
+// esta clase no resuelve el usuario actual internamente.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product_model.dart';

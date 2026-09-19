@@ -1,17 +1,10 @@
-// lib/config/theme/app_spacing.dart
+// Grilla de espaciado de 8dp: todo Padding/SizedBox/BorderRadius de los
+// componentes usa estos tokens en vez de números mágicos, para que una
+// corrección de espaciado se haga en un solo lugar.
 //
-// Grilla de espaciado estricta de 8dp. Todo Padding,
-// SizedBox y BorderRadius de los componentes atómicos nuevos (ver
-// lib/presentation/widgets/common/) y del código tocado en este módulo usa
-// estos tokens en vez de números mágicos, para que el ritmo visual quede
-// consistente y una futura corrección de espaciado se haga en un solo
-// lugar.
-//
-// Única excepción deliberada: [xs] (4dp, medio paso) para separaciones
-// puntuales dentro de un mismo componente compacto (ícono↔texto en un chip,
-// por ejemplo) donde 8dp completos se ven desproporcionados. El resto de la
-// grilla (paddings de pantalla, márgenes entre tarjetas, radios) respeta
-// múltiplos de 8 sin excepción.
+// Única excepción: [xs] (4dp, medio paso) para separaciones puntuales
+// dentro de un componente compacto (ícono↔texto en un chip) donde 8dp
+// completos se ven desproporcionados. El resto respeta múltiplos de 8.
 class AppSpacing {
   AppSpacing._();
 

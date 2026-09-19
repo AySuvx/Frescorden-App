@@ -1,5 +1,3 @@
-// lib/presentation/screens/category_picker_screen.dart
-//
 // Paso previo del flujo "Por Categoría" del FAB: antes de abrir el
 // formulario de producto, el usuario elige la categoría en un solo toque.
 // Devuelve la [FoodCategory] elegida vía Navigator.pop, o null si canceló

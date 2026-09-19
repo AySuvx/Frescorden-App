@@ -1,5 +1,3 @@
-// lib/presentation/providers/household_provider.dart
-//
 // Proveedor de estado para el hogar familiar (Household). Implementa
 // ChangeNotifier (mismo patrón que AuthProvider/ProductProvider).
 //

@@ -1,6 +1,4 @@
-// lib/presentation/screens/household_screen.dart
-//
-// Módulo de Grupos Familiares (Household) — pantalla "Mi Hogar":
+// Pantalla "Mi Hogar":
 //  a) Nombre del hogar y lista de miembros (email si se conoce, uid si no
 //     — ver Household.memberEmails).
 //  b) Código de invitación de 6 caracteres: copiar y renovar si expiró.

@@ -1,5 +1,3 @@
-// lib/data/repositories/shopping_repository_impl.dart
-//
 // Implementación concreta de IShoppingRepository usando el datasource
 // local. Si el origen del catálogo cambia (ej. remoto, con precios
 // actualizados por región), solo esta clase cambia.

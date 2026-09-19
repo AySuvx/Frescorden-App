@@ -1,5 +1,3 @@
-// lib/data/datasources/firestore_household_datasource.dart
-//
 // Única clase que habla directamente con Cloud Firestore para operaciones
 // de Household. Encapsula:
 //  - La colección '/households'

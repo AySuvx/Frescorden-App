@@ -1,6 +1,3 @@
-// lib/presentation/widgets/common/primary_button.dart
-//
-// Componentización Atómica.
 // Botón de acción principal. Se apoya en ElevatedButtonThemeData (ver
 // AppTheme) para color/forma/alto mínimo táctil, y añade lo que el tema no
 // puede resolver por sí solo: `HapticFeedback.lightImpact()` en cada toque
@@ -12,11 +9,10 @@
 // hover/pressed/disabled y foco — reimplementarlo a mano con
 // GestureDetector+InkWell perdería ese comportamiento sin ganar nada.
 //
-// El escalado sutil al presionar y su háptico ahora
-// los da [PressableScale] (en el press-down, más inmediato que esperar a
-// que el tap se complete) — se quita el `HapticFeedback.lightImpact()`
-// que este botón disparaba antes en `onPressed` para no vibrar dos veces
-// por el mismo toque.
+// El escalado sutil al presionar y su háptico los da [PressableScale] (en
+// el press-down, más inmediato que esperar a que el tap se complete) —
+// este botón no dispara su propio `HapticFeedback` en `onPressed`, para
+// no vibrar dos veces por el mismo toque.
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_spacing.dart';
 import 'pressable_scale.dart';

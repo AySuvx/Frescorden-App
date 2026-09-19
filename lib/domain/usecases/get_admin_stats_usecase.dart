@@ -1,5 +1,3 @@
-// lib/domain/usecases/get_admin_stats_usecase.dart
-//
 // Mismo rol que GetAnalyticsUseCase: punto de extensión si "obtener
 // métricas globales" necesita orquestar más de un repositorio más adelante.
 // Hoy solo delega.

@@ -1,12 +1,5 @@
-// lib/presentation/screens/settings_screen.dart
-//
-// BUG #5 CORREGIDO (original): el toggle de modo oscuro usaba setState local.
-//   FIX original: ThemeProvider via Provider (ya estaba aplicado en el ZIP).
-//
-// BUG #8 CORREGIDO: notificationsEnabled se reiniciaba a true en cada apertura
-//   de la pantalla porque era una variable local sin persistencia.
-//   FIX: Se guarda y carga con SharedPreferences bajo la clave
-//   'notifications_enabled'. El valor se lee en initState de forma asíncrona.
+// El estado de notificaciones se guarda y carga con SharedPreferences bajo
+// la clave 'notifications_enabled', leída en initState de forma asíncrona.
 
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
@@ -51,7 +44,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // BUG #8 FIX: valor inicial neutro; se sobreescribe desde SharedPreferences
   bool _notificationsEnabled = true;
   String _selectedLanguage = 'Español';
 
@@ -102,7 +94,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _showBackgroundAlertsCard = false);
   }
 
-  // BUG #8 FIX: carga el valor guardado al abrir la pantalla
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -116,7 +107,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // BUG #8 FIX: guarda el valor cada vez que el usuario lo cambia
   Future<void> _setNotificationsEnabled(bool value) async {
     if (value) {
       await _requestNotificationPermission();
@@ -278,7 +268,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(),
 
-          // Notificaciones — BUG #8 fix
           SwitchListTile(
             title: const Text('Notificaciones'),
             subtitle: const Text('Recibe recordatorios y alertas'),

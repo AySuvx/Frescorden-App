@@ -1,5 +1,3 @@
-// lib/data/repositories/household_repository_impl.dart
-//
 // Implementación concreta de IHouseholdRepository usando Firestore.
 // Delega todas las operaciones al DataSource — la traducción entre la
 // entidad de dominio (Household) y el modelo de datos (HouseholdModel)

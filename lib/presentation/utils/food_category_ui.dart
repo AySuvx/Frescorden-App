@@ -1,6 +1,3 @@
-// lib/presentation/utils/food_category_ui.dart
-//
-// Categorización de Alimentos (#1):
 // Mapeo de FoodCategory -> IconData. Vive en `presentation` (y no en
 // `domain`) porque IconData es un detalle de Flutter/UI, no una regla
 // de negocio. Las pantallas importan esta extensión en vez de repetir

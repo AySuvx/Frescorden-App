@@ -1,5 +1,3 @@
-// lib/data/models/product_model.dart
-//
 // Extiende la entidad Product añadiendo la lógica de serialización/
 // deserialización hacia y desde Firestore y Map<String,dynamic>.
 // Las pantallas y el dominio nunca deben importar este archivo directamente;

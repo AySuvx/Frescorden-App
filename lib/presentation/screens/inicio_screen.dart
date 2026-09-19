@@ -167,8 +167,8 @@ class _InicioScreenState extends State<InicioScreen> {
             ListTile(
               leading: const Icon(Icons.shopping_basket),
               title: Text('Productos (${productos.length})'),
-              // Alertas de Stock mínimo (#2): aviso visible en el
-              // drawer cuando hay productos que llegaron a su cantidad mínima.
+              // Aviso visible en el drawer cuando hay productos que
+              // llegaron a su cantidad mínima.
               subtitle:
                   provider.lowStockCount > 0
                       ? Text(
@@ -312,9 +312,8 @@ class _InicioScreenState extends State<InicioScreen> {
                 );
               },
             ),
-            // Panel Administrativo Global: entrada
-            // visible únicamente si el usuario autenticado es el admin
-            // (ver kAdminUid) — para cualquier otro no aparece en el drawer.
+            // Entrada al Panel Administrativo, visible únicamente si el
+            // usuario autenticado es el admin (ver kAdminUid).
             if (context.watch<AuthProvider>().currentUser?.uid == kAdminUid)
               ListTile(
                 leading: const Icon(Icons.admin_panel_settings),

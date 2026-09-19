@@ -1,7 +1,5 @@
-// lib/presentation/screens/analytics_screen.dart
-//
-// Capa de Presentación: KPIs numéricos + gráficos (fl_chart).
-// Consume AnalyticsProvider, que a su vez llama a GetAnalyticsUseCase.
+// KPIs numéricos + gráficos (fl_chart). Consume AnalyticsProvider, que a
+// su vez llama a GetAnalyticsUseCase.
 // Household-aware: la carga inicial la dispara AnalyticsProvider solo, al
 // enterarse del hogar activo (ver ChangeNotifierProxyProvider en main.dart)
 // — esta pantalla solo dispara loadSummary() en el pull-to-refresh.

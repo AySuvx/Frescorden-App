@@ -1,6 +1,3 @@
-// lib/domain/entities/household.dart
-//
-// Módulo de Grupos Familiares (Household):
 // Entidad de dominio que representa un hogar/grupo familiar compartido.
 // El inventario (Product) pasa a vivir bajo el hogar activo del usuario
 // (households/{id}/productos) en vez de por usuario individual — así todos
