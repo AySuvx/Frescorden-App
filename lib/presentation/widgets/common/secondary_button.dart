@@ -1,12 +1,8 @@
-// lib/presentation/widgets/common/secondary_button.dart
-//
-// Componentización Atómica.
 // Acción secundaria (menor énfasis visual que PrimaryButton): mismo
 // contrato y misma retroalimentación táctil, apoyado en
 // OutlinedButtonThemeData (ver AppTheme) en vez de ElevatedButtonThemeData.
 //
-// Escalado + háptico vía [PressableScale] (ver nota
-// en primary_button.dart) — ya no vibra por su cuenta en `onPressed`.
+// Escalado + háptico vía [PressableScale] (ver nota en primary_button.dart).
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_spacing.dart';
 import 'pressable_scale.dart';

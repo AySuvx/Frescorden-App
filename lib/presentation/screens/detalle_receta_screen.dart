@@ -1,7 +1,4 @@
-// lib/screens/detalle_receta_screen.dart
-//
-// Módulo de Recetas — recibe la entidad Recipe (y sus RecipeIngredient
-// faltantes) en vez de Map<String,dynamic>.
+// Recibe la entidad Recipe (y sus RecipeIngredient faltantes).
 //
 //  - Hero compartido con la tarjeta de RecetasScreen (misma imagen
 //    "volando" entre pantallas).
@@ -14,13 +11,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../config/theme/app_spacing.dart';
-import '../domain/entities/recipe.dart';
-import '../domain/entities/recipe_ingredient.dart';
-import '../domain/entities/shopping_item.dart';
-import '../presentation/providers/shopping_provider.dart';
-import '../presentation/widgets/common/glass_card.dart';
-import '../presentation/widgets/common/primary_button.dart';
+import '../../config/theme/app_spacing.dart';
+import '../../domain/entities/recipe.dart';
+import '../../domain/entities/recipe_ingredient.dart';
+import '../../domain/entities/shopping_item.dart';
+import '../providers/shopping_provider.dart';
+import '../widgets/common/glass_card.dart';
+import '../widgets/common/primary_button.dart';
 
 class DetalleRecetaScreen extends StatefulWidget {
   final Recipe receta;

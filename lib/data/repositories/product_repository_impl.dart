@@ -1,12 +1,6 @@
-// lib/data/repositories/product_repository_impl.dart
-//
 // Implementación concreta de IProductRepository usando Firestore.
 // Traduce entre la entidad de dominio (Product) y el modelo de datos
 // (ProductModel), y delega todas las operaciones al DataSource.
-//
-// Si en el futuro se necesita un repositorio de pruebas (mock) o uno
-// local (SQLite), basta con crear otra clase que implemente IProductRepository
-// sin tocar ninguna pantalla ni proveedor.
 
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/i_product_repository.dart';

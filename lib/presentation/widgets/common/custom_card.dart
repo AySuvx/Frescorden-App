@@ -1,12 +1,6 @@
-// lib/presentation/widgets/common/custom_card.dart
-//
-// Componentización Atómica.
 // Tarjeta base del sistema de diseño. Envuelve un [Card] normal y delega
 // color/elevación/forma en CardThemeData (ver AppTheme) para que quede
-// adaptable a claro/oscuro sin que cada pantalla repita esos valores —
-// exactamente el patrón que antes producía tarjetas con `Colors.white`,
-// `Colors.grey[200]`, etc. hardcodeados (ver recetas_screen.dart,
-// shopping_list_screen.dart antes del fix de contraste de modo oscuro).
+// adaptable a claro/oscuro sin que cada pantalla repita esos valores.
 // Solo expone lo que legítimamente varía tarjeta a tarjeta: contenido,
 // padding, margen, un color semántico puntual (p. ej. errorContainer para
 // "presupuesto superado") y un onTap opcional.

@@ -1,7 +1,5 @@
-// lib/data/repositories/product_history_repository_impl.dart
-//
 // Implementación de IProductHistoryRepository. Antes de persistir, resuelve
-// `estimatedPrice` cuando el entry no lo trae — Opción A aprobada: busca el
+// `estimatedPrice` cuando el entry no lo trae: busca el
 // nombre del producto (case-insensitive) en el catálogo local de canastas
 // (mismo catálogo que usa el módulo de Compras — ver ShoppingLocalDataSource)
 // y usa el precio de la primera coincidencia. Si no hay coincidencia, el

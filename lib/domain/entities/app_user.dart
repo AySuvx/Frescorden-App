@@ -1,5 +1,3 @@
-// lib/domain/entities/app_user.dart
-//
 // Entidad de dominio para el usuario autenticado. Sin dependencias de
 // Firebase: la capa de datos (AuthRepositoryImpl) es la única que sabe
 // convertir un firebase_auth.User a este tipo.

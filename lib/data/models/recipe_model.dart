@@ -1,5 +1,3 @@
-// lib/data/models/recipe_model.dart
-//
 // Modelo de datos: traduce entre el JSON de assets/data/recetas.json y la
 // entidad de dominio [Recipe]. Mismo rol que ProductModel para Product.
 

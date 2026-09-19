@@ -1,5 +1,3 @@
-// lib/data/repositories/admin_repository_impl.dart
-//
 // Implementación de IAdminRepository. Delega el cálculo a
 // FirestoreAdminDataSource — ver ese archivo para el detalle de cómo se
 // obtiene cada métrica.

@@ -1,21 +1,9 @@
-// lib/Widgets/button_plus.dart
-//
-// Limpieza de escáner:
-// Se elimina por completo la opción "Agregar con código" (mobile_scanner).
-// El proyecto ya no depende de ningún paquete de escaneo (regla #4: sin
-// lógica de escaneo manual ni por cámara).
-//
-// El Speed Dial se mantiene con dos acciones, cada una con su propio flujo
-// de navegación (ver inicio_screen.dart):
+// Speed Dial con dos acciones, cada una con su propio flujo de navegación:
 //   - "Agregar por Categoría": abre primero CategoryPickerScreen (grid de
 //     categorías) y luego AddProductScreen con esa categoría preseleccionada.
 //   - "Registro a Granel": va directo al mismo formulario, pre-configurado
 //     para perecederos comprados a granel (plaza/mercado) — sin paso de
 //     selección de categoría — ver AddProductScreen(isBulkEntry: true).
-//
-// FIX #C2 (se conserva): guard `if (!mounted) return;` antes de tocar
-// estado tras un await, aunque ya no queda ningún await de por medio en
-// los botones (dejó de haber navegación a una pantalla de escaneo).
 
 import 'package:flutter/material.dart';
 

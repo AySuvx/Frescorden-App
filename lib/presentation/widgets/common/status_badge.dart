@@ -1,28 +1,9 @@
-// lib/presentation/widgets/common/status_badge.dart
-//
-// Componentización Atómica.
-// Chip semántico de estado de vencimiento. Reemplaza los `Text` sueltos con
-// color hardcodeado según días restantes (ver
-// ProductosScreen._getExpirationColor: Colors.red/orange/green fijos, sin
-// distinguir claro/oscuro) por un único componente que resuelve color +
-// ícono + contraste AA para los 3 estados, en ambos modos, vía los roles
-// container/onContainer del ColorScheme (ver AppTheme).
+// Chip semántico de estado de vencimiento: un único componente que
+// resuelve color + ícono + contraste AA para los 3 estados, en ambos
+// modos, vía los roles container/onContainer del ColorScheme (ver AppTheme).
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_spacing.dart';
-
-enum ProductFreshness {
-  fresh,
-  expiringSoon,
-  expired;
-
-  /// Deriva el estado a partir de los días restantes para el vencimiento.
-  /// Mismo umbral que usaba el código anterior (<=3 días = "por vencer").
-  static ProductFreshness fromDaysRemaining(int daysRemaining) {
-    if (daysRemaining < 0) return ProductFreshness.expired;
-    if (daysRemaining <= 3) return ProductFreshness.expiringSoon;
-    return ProductFreshness.fresh;
-  }
-}
+import '../../../domain/entities/product_freshness.dart';
 
 class StatusBadge extends StatelessWidget {
   const StatusBadge({super.key, required this.status, this.label});

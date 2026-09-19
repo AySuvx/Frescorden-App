@@ -1,16 +1,12 @@
-// lib/domain/entities/admin_stats.dart
-//
-// Panel Administrativo Global:
 // Métricas agregadas de toda la app — no de un hogar en particular.
 // Calculado por AdminRepositoryImpl a partir de las colecciones raíz
 // `usuarios`/`households` y de los collectionGroup `product_history` /
 // `assistant_usage` de todos los hogares.
 //
-// `newUsersLast7Days`/`activeUsers*`: dependen de `createdAt`/`lastActiveAt`
-// en `usuarios/{uid}`, escritos recién a partir de este módulo (ver
-// HouseholdProvider.setUid) — cuentas que no vuelvan a iniciar sesión no
-// tendrán esos campos todavía y no se contarán como activas hasta que lo
-// hagan. Es una limitación esperada de partir de cero, no un error de
+// `newUsersLast7Days`/`activeUsers*` dependen de `createdAt`/`lastActiveAt`
+// en `usuarios/{uid}` (ver HouseholdProvider.setUid) — cuentas que no
+// vuelvan a iniciar sesión no tendrán esos campos y no se contarán como
+// activas hasta que lo hagan. Es una limitación esperada, no un error de
 // cálculo.
 
 class AdminStats {

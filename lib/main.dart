@@ -1,9 +1,5 @@
-// lib/main.dart
-//
-// Clean Architecture:
-// Se reemplaza el ChangeNotifierProvider único por MultiProvider y se
-// registran ProductProvider y AuthProvider con su cadena de dependencias
-// inyectadas:
+// MultiProvider registra ProductProvider y AuthProvider con su cadena de
+// dependencias inyectadas:
 //
 //   ProductProvider
 //     └─ ProductRepositoryImpl
@@ -101,8 +97,8 @@ void main() async {
           create: (_) => AuthProvider(AuthRepositoryImpl()),
         ),
 
-        // HouseholdProvider — Módulo de Grupos Familiares. Escucha
-        // directo authStateChanges (no ChangeNotifierProxyProvider: ver
+        // HouseholdProvider escucha directo authStateChanges (no
+        // ChangeNotifierProxyProvider: ver
         // nota de diseño en household_provider.dart) para saber qué hogar
         // activo mostrar apenas resuelve la sesión. Debe registrarse antes
         // que ProductProvider: este último lo lee vía ProxyProvider.

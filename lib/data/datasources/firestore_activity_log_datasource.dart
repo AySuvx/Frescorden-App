@@ -1,5 +1,3 @@
-// lib/data/datasources/firestore_activity_log_datasource.dart
-//
 // Colección '/households/{householdId}/activity_log' — log de auditoría
 // de solo escritura (append-only, ver firestore.rules: update/delete
 // deniegan siempre). El usuario que registra cada evento se resuelve acá

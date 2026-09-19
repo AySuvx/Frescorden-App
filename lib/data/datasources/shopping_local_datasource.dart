@@ -1,5 +1,3 @@
-// lib/data/datasources/shopping_local_datasource.dart
-//
 // Única clase que sabe DÓNDE vive el catálogo de canastas básicas por nivel
 // de presupuesto: un asset JSON local (assets/data/canastas.json), clave
 // por BudgetTier.name. Mismo criterio que RecipeLocalDataSource: contenido

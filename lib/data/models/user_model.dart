@@ -1,15 +1,9 @@
-// lib/data/models/user_model.dart
-//
-// Modelo del documento de perfil del usuario en Firestore
-// (`usuarios/{uid}` — mismo nombre de colección que ya usan
-// FirestoreProductDataSource y FirestoreProductHistoryDataSource; no se
-// crea una colección `users` nueva para no fragmentar los datos).
-//
-// Hoy ese documento solo existe implícitamente como padre de las
-// subcolecciones `productos`/`historial` (nunca se le habían escrito campos
-// propios). `activeHouseholdId` es el primer campo real que persiste aquí:
-// el hogar familiar (Household) que el usuario tiene seleccionado en este
-// momento — el inventario que ve es el de ese hogar.
+// Modelo del documento de perfil del usuario en Firestore (`usuarios/{uid}`
+// — mismo nombre de colección que usan FirestoreProductDataSource y
+// FirestoreProductHistoryDataSource; no se crea una colección `users`
+// nueva para no fragmentar los datos). `activeHouseholdId` es el hogar
+// familiar que el usuario tiene seleccionado — el inventario que ve es el
+// de ese hogar.
 
 class UserModel {
   final String uid;

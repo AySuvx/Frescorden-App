@@ -1,7 +1,5 @@
-// lib/presentation/widgets/common/glass_dialog.dart
-//
-// (Polish Premium) — diálogo de confirmación con
-// acabado de cristal: el contenido detrás se difumina (`BackdropFilter`
+// Diálogo de confirmación con acabado de cristal: el contenido detrás se
+// difumina (`BackdropFilter`
 // animado con la transición) y la propia tarjeta deja entrever ese blur a
 // través de su relleno translúcido (ver [GlassCard]).
 //

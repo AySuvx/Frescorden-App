@@ -1,7 +1,5 @@
-// lib/screens/analytics_screen.dart
-//
-// Capa de Presentación: KPIs numéricos + gráficos (fl_chart).
-// Consume AnalyticsProvider, que a su vez llama a GetAnalyticsUseCase.
+// KPIs numéricos + gráficos (fl_chart). Consume AnalyticsProvider, que a
+// su vez llama a GetAnalyticsUseCase.
 // Household-aware: la carga inicial la dispara AnalyticsProvider solo, al
 // enterarse del hogar activo (ver ChangeNotifierProxyProvider en main.dart)
 // — esta pantalla solo dispara loadSummary() en el pull-to-refresh.
@@ -16,14 +14,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../domain/entities/analytics_summary.dart';
-import '../domain/entities/product_history_entry.dart';
-import '../presentation/providers/analytics_provider.dart';
-import '../presentation/utils/food_category_ui.dart';
-import '../presentation/widgets/analytics/waste_vs_consumed_bar_chart.dart';
-import '../presentation/widgets/analytics/waste_category_pie_chart.dart';
-import '../presentation/utils/currency_format.dart';
-import '../presentation/widgets/common/skeleton_loader.dart';
+import '../../domain/entities/analytics_summary.dart';
+import '../../domain/entities/product_history_entry.dart';
+import '../providers/analytics_provider.dart';
+import '../utils/food_category_ui.dart';
+import '../widgets/analytics/waste_vs_consumed_bar_chart.dart';
+import '../widgets/analytics/waste_category_pie_chart.dart';
+import '../utils/currency_format.dart';
+import '../widgets/common/skeleton_loader.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});

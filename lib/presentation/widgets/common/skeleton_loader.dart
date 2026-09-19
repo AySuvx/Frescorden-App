@@ -1,9 +1,6 @@
-// lib/presentation/widgets/common/skeleton_loader.dart
-//
-// Reemplaza los `CircularProgressIndicator` centrados
+// Placeholder con forma de contenido real y efecto shimmer, usado
 // mientras se leen datos de Firestore (ProductosScreen, ShoppingListScreen,
-// AnalyticsScreen) por placeholders con forma de contenido real y efecto
-// shimmer. Un spinner solo dice "espera"; un skeleton además anticipa el
+// AnalyticsScreen). Un spinner solo dice "espera"; un skeleton además anticipa el
 // layout final, así la pantalla no "salta" cuando llegan los datos.
 //
 // Sin el paquete `shimmer`: la animación es un único `AnimationController`

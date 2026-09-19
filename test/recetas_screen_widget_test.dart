@@ -18,7 +18,7 @@ import 'package:frescorden/presentation/providers/product_provider.dart';
 import 'package:frescorden/presentation/providers/recipe_provider.dart';
 import 'package:frescorden/presentation/widgets/common/glass_card.dart';
 import 'package:frescorden/presentation/widgets/common/pressable_scale.dart';
-import 'package:frescorden/screens/recetas_screen.dart';
+import 'package:frescorden/presentation/screens/recetas_screen.dart';
 
 import 'support/fake_repositories.dart';
 

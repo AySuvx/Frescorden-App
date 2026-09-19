@@ -1,19 +1,12 @@
-// lib/presentation/providers/recipe_provider.dart
+// Proveedor de estado para recetas. La pantalla no conoce el formato del
+// JSON ni compara ingredientes directamente: solo consume `recipes`,
+// `missingIngredientsFor()` e `isAvailable()`.
 //
-// Proveedor de estado para recetas. Implementa ChangeNotifier (mismo patrón
-// que ProductProvider). Reemplaza la lista hardcodeada y el método
-// verificarIngredientes() que antes vivían dentro de RecetasScreen.
-//
-// La pantalla ya NO conoce el formato del JSON ni compara ingredientes
-// directamente: solo consume `recipes`, `missingIngredientsFor()` e
-// `isAvailable()`.
-//
-// Coincidencia flexible: ya no se OCULTAN recetas por
-// insumos faltantes (ver `sortedByMatch`, que devuelve TODO el catálogo
-// ordenado de mayor a menor disponibilidad) y se agrega el fallback de IA
-// (`generateAiRecipe`), sujeto a la misma cuota diaria que el asistente
-// conversacional — es el mismo costo de Gemini, así que comparte el
-// contador (ver QuotaService).
+// Coincidencia flexible: ninguna receta se oculta por insumos faltantes
+// (ver `sortedByMatch`, que devuelve todo el catálogo ordenado de mayor a
+// menor disponibilidad) y se ofrece el fallback de IA (`generateAiRecipe`),
+// sujeto a la misma cuota diaria que el asistente conversacional — es el
+// mismo costo de Gemini, así que comparte el contador (ver QuotaService).
 
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/product.dart';

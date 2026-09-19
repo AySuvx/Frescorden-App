@@ -1,5 +1,3 @@
-// lib/domain/repositories/i_product_history_repository.dart
-//
 // Contrato para registrar productos resueltos (consumidos o desperdiciados,
 // ver ProductOutcome). Lo consume ProductProvider.deleteProduct() al
 // eliminar un producto. El historial vive por-hogar (households/{id}/

@@ -1,10 +1,6 @@
-// lib/screens/contact_screen.dart
-//
-// LINT FIX use_build_context_synchronously:
-// _launchEmail usaba ScaffoldMessenger.of(context) después de awaits
-// (canLaunchUrl / launchUrl), lo que es inseguro porque el widget puede
-// haberse desmontado durante la espera.
-// FIX: se captura el messenger en una variable local ANTES del primer await.
+// _launchEmail captura el ScaffoldMessenger en una variable local ANTES
+// del primer await (canLaunchUrl / launchUrl): usarlo después sería
+// inseguro porque el widget puede haberse desmontado durante la espera.
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';

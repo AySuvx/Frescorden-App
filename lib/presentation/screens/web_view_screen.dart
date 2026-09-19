@@ -1,12 +1,7 @@
-// lib/screens/web_view_screen.dart
-//
-// BUG #10 CORREGIDO: El WebViewController se creaba dentro del método build(),
-//   lo que provoca que se reinicialice (y la página se recargue desde cero) en
-//   cada rebuild del widget — por ejemplo, al rotar la pantalla, mostrar el
-//   teclado o cuando un widget padre llama a setState.
-//   FIX: Se convierte a StatefulWidget y el controller se inicializa una sola
-//   vez en initState, idéntico al patrón ya correcto en _ShoppingWebView
-//   de shopping_list_screen.dart.
+// El WebViewController se inicializa una sola vez en initState, no en
+// build(): crearlo en build() lo reinicializaría (recargando la página
+// desde cero) en cada rebuild del widget — por ejemplo al rotar la
+// pantalla o mostrar el teclado.
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -26,7 +21,6 @@ class WebViewScreen extends StatefulWidget {
 }
 
 class _WebViewScreenState extends State<WebViewScreen> {
-  // BUG #10 FIX: controller inicializado en initState, no en build
   late final WebViewController _controller;
 
   @override

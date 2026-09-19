@@ -1,5 +1,3 @@
-// lib/domain/utils/invite_code_generator.dart
-//
 // Utilidad pura (sin dependencias de Firestore) para generar el código de
 // invitación de un Household: 6 caracteres alfanuméricos en mayúsculas,
 // excluyendo los que se confunden fácilmente a simple vista (O/0, I/1, S/5),

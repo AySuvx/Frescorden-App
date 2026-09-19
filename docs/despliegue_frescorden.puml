@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Deployment>
+
+title Diagrama de Despliegue - Frescorden (Modelo C4)
+
+Deployment_Node(mobile, "Dispositivo Móvil", "Android OS"){
+  Container(app, "Frescorden App", "Flutter / Dart, R8 + ProGuard ofuscado", "Cliente móvil instalado por el usuario")
+}
+
+Deployment_Node(gcloud, "Google Cloud Platform", "Infraestructura Cloud"){
+  Deployment_Node(firebase, "Firebase Platform", "BaaS"){
+    System(auth, "Firebase Auth", "Autenticación de usuarios")
+    SystemDb(firestore, "Cloud Firestore", "Base de datos NoSQL - inventario, hogares")
+  }
+  System_Ext(gemini, "Google Gemini API", "IA Generativa - recetas y asistente")
+}
+
+Rel(app, auth, "Autentica", "HTTPS/TLS")
+Rel(app, firestore, "Lee/Escribe en tiempo real", "HTTPS/TLS, Streams")
+Rel(app, gemini, "Solicita generación de recetas", "HTTPS/TLS, REST")
+
+@enduml

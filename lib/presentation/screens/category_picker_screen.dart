@@ -1,5 +1,3 @@
-// lib/screens/category_picker_screen.dart
-//
 // Paso previo del flujo "Por Categoría" del FAB: antes de abrir el
 // formulario de producto, el usuario elige la categoría en un solo toque.
 // Devuelve la [FoodCategory] elegida vía Navigator.pop, o null si canceló
@@ -7,8 +5,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../domain/entities/food_category.dart';
-import '../presentation/utils/food_category_ui.dart';
+import '../../domain/entities/food_category.dart';
+import '../utils/food_category_ui.dart';
 
 class CategoryPickerScreen extends StatelessWidget {
   const CategoryPickerScreen({super.key});

@@ -1,7 +1,4 @@
-// lib/presentation/providers/product_provider.dart
-//
-// Proveedor de estado central para productos. Implementa ChangeNotifier
-// (compatible con el Provider ya instalado en el proyecto).
+// Proveedor de estado central para productos.
 //
 // Responsabilidades:
 //  1. Mantener la lista de Product en memoria como fuente única de verdad,
@@ -9,15 +6,14 @@
 //     altas, bajas y modificaciones de CUALQUIER miembro del hogar, desde
 //     cualquier dispositivo, llegan solas por el stream — no hace falta
 //     refrescar manualmente.
-//  2. Exponer `productosMap` (List<Map<String,dynamic>>) para retrocompatibilidad
-//     con las pantallas que ya funcionan con Maps.
-//  3. Centralizar toda la lógica de negocio de productos que antes estaba
-//     dispersa en inicio_screen y add_product_screen:
+//  2. Exponer `productosMap` (List<Map<String,dynamic>>) para las pantallas
+//     que trabajan con Maps.
+//  3. Centralizar la lógica de negocio de productos:
 //       - Upsert (agregar o acumular cantidad si ya existe por barcode/nombre)
 //       - Actualización completa de un producto existente
 //       - Eliminación
 //
-// Las pantallas ya NO llaman a FirebaseFirestore.instance directamente.
+// Las pantallas no llaman a FirebaseFirestore.instance directamente.
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -70,7 +66,7 @@ class ProductProvider extends ChangeNotifier {
   /// todavía no hay uno activo (ver setActiveHousehold).
   String? get activeHouseholdId => _householdId;
 
-  // ─── Alertas de Stock mínimo (#2) ──────────────────────────────────
+  // ─── Alertas de Stock mínimo ──────────────────────────────────
 
   /// Productos cuya cantidad actual llegó o bajó del umbral que el usuario
   /// definió (`minStock`). Los productos sin `minStock` nunca aparecen aquí.
@@ -79,7 +75,7 @@ class ProductProvider extends ChangeNotifier {
 
   int get lowStockCount => lowStockProducts.length;
 
-  // ─── Categorización de Alimentos (#1) ──────────────────────────────
+  // ─── Categorización de Alimentos ──────────────────────────────
 
   /// Agrupa los productos actuales por categoría, en el orden declarado en
   /// [FoodCategory]. Las categorías sin productos no aparecen en el mapa.

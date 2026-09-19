@@ -1,0 +1,42 @@
+@startuml
+left to right direction
+skinparam backgroundColor white
+skinparam actorStyle awesome
+skinparam rectangle {
+  BackgroundColor #F3E8FF
+  BorderColor #7C3AED
+}
+skinparam usecase {
+  BackgroundColor #D8B4FE
+  BorderColor #7C3AED
+  FontSize 13
+}
+skinparam actor {
+  BorderColor #333333
+}
+
+actor "Usuario del Hogar" as Usuario
+actor "Administrador" as Admin
+
+Admin --|> Usuario
+
+rectangle "Sistema Frescorden" {
+  usecase "RF01: Gestionar Inventario\ny Control de Caducidad" as UC1
+  usecase "RF02: Consultar Coincidencia\nde Recetas" as UC2
+  usecase "RF03: Generar Receta\ncon IA" as UC3
+  usecase "RF04: Enviar Faltantes a\nLista de Compras" as UC4
+  usecase "RF05: Usar Modo Cocina\nInteractivo" as UC5
+  usecase "RF06: Administrar Miembros\ndel Hogar" as UC6
+}
+
+Usuario --> UC1
+Usuario --> UC2
+Usuario --> UC3
+Usuario --> UC4
+Usuario --> UC5
+Usuario --> UC6
+Admin --> UC6
+
+UC3 ..> UC2 : <<extend>>\n{si ninguna receta alcanza\n50% de coincidencia}
+UC4 ..> UC2 : <<include>>
+@enduml

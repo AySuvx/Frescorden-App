@@ -1,5 +1,3 @@
-// lib/presentation/providers/admin_provider.dart
-//
 // Proveedor de estado para el Panel Administrativo Global. La pantalla
 // (AdminDashboardScreen) ya verificó el UID antes de montar este provider
 // — igual, si Firestore llegara a denegar la consulta (UID no autorizado

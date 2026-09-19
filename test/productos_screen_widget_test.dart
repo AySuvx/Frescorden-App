@@ -13,7 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
 import 'package:frescorden/presentation/widgets/common/skeleton_loader.dart';
-import 'package:frescorden/screens/productos_screen.dart';
+import 'package:frescorden/presentation/screens/productos_screen.dart';
 
 import 'support/fake_repositories.dart';
 

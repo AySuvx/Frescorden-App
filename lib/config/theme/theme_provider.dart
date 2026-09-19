@@ -1,10 +1,7 @@
-// lib/config/theme/theme_provider.dart
-//
-// Reemplaza a lib/theme_provider.dart (booleano
-// `isDarkMode`, clave SharedPreferences 'isDarkMode'). Ahora persiste un
-// [ThemeMode] completo bajo la clave 'theme_mode', habilitando la tercera
-// opción "Sistema" — MaterialApp delega en MediaQuery.platformBrightness
-// sin que la app tenga que espiar el brillo de la plataforma a mano.
+// Persiste un [ThemeMode] completo bajo la clave 'theme_mode' en
+// SharedPreferences, habilitando la opción "Sistema" — MaterialApp delega
+// en MediaQuery.platformBrightness sin que la app tenga que espiar el
+// brillo de la plataforma a mano.
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -1,5 +1,3 @@
-// lib/domain/repositories/i_assistant_usage_repository.dart
-//
 // Contrato para registrar consultas exitosas al asistente culinario.
 // QuotaService (SharedPreferences local) sigue siendo la única fuente de
 // verdad para el límite diario por dispositivo — este repositorio NO

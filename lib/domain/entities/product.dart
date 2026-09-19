@@ -1,31 +1,21 @@
-// lib/domain/entities/product.dart
-//
-// Trazabilidad de perecederos a granel (formalizado):
-// El antiguo `storedAt` (DateTime nullable, opt-in) se reemplaza por
 // `entryDate` (DateTime, obligatorio): fecha en que el producto entró al
-// inventario. Todo producto la tiene — si no se registró explícitamente,
-// ProductModel.fromMap la resuelve a DateTime.now() (ver ese archivo).
+// inventario. Si no se registró explícitamente, ProductModel.fromMap la
+// resuelve a DateTime.now().
 //
-// `isBulk` (bool) marca productos de plaza/mercado comprados a granel
-// (tomate, papa, frutas sin fecha de caducidad impresa) — se setea desde
-// el flujo "Registro a Granel" del FAB (AddProductScreen.isBulkEntry).
-// Solo estos productos muestran el badge "Almacenado hace N días" en la
-// tarjeta de inventario: para un producto empacado recién agregado, ese
-// dato no aporta nada (siempre diría "0 días").
+// `isBulk` marca productos de plaza/mercado comprados a granel (tomate,
+// papa, frutas sin fecha de caducidad impresa) — se setea desde el flujo
+// "Registro a Granel" del FAB (AddProductScreen.isBulkEntry). Solo estos
+// productos muestran el badge "Almacenado hace N días": para un producto
+// empacado recién agregado, ese dato no aporta nada (siempre diría "0
+// días").
 //
-// Computed getter `daysInStorage`: días transcurridos desde entryDate.
-// Ya no es nullable — entryDate siempre existe.
+// `category` (FoodCategory, no nula): los documentos que no traen este
+// campo se reconstruyen como `FoodCategory.otros` (ver
+// ProductModel._fromMap / FoodCategory.fromName).
 //
-// Categorización de Alimentos (#1):
-// Se añade `category` (FoodCategory, no nula). Los productos ya existentes
-// en Firestore que no tenían este campo se reconstruyen como
-// `FoodCategory.otros` (ver ProductModel._fromMap / FoodCategory.fromName).
-//
-// Alertas de Stock mínimo (#2):
-// Se añade `minStock` (int? opcional). Cuando el usuario lo define, el
-// producto se considera en "stock bajo" cuando `quantity <= minStock`.
-// Si no se define, el producto nunca dispara la alerta (comportamiento
-// por defecto para no molestar a quien no usa esta función).
+// `minStock` (int? opcional): cuando el usuario lo define, el producto se
+// considera en "stock bajo" cuando `quantity <= minStock`. Si no se
+// define, el producto nunca dispara la alerta.
 
 import 'food_category.dart';
 
@@ -96,7 +86,6 @@ class Product {
   /// Valor por defecto: 5 días. Se puede personalizar por producto en futuras fases.
   int get storageCriticalDays => 5;
 
-  /// Alertas de Stock mínimo (#2):
   /// `true` cuando el usuario definió `minStock` y la cantidad actual ya
   /// llegó a ese umbral o está por debajo. Si `minStock` es `null`, el
   /// producto nunca se marca en stock bajo.

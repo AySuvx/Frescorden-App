@@ -1,6 +1,3 @@
-// lib/domain/entities/analytics_summary.dart
-//
-// Capa de Dominio de Analíticas:
 // Resumen agregado de KPIs, calculado por AnalyticsRepositoryImpl a partir
 // del historial de productos resueltos del hogar activo (ProductHistoryEntry,
 // ver getSummary). Todo el resumen queda acotado al último mes (últimos 30

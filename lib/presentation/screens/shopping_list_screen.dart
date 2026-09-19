@@ -1,34 +1,30 @@
-// lib/screens/shopping_list_screen.dart
-//
-// Módulo de Compras Inteligentes:
-// Se elimina el mock (3 canastas fijas con ítems hardcodeados) y se
-// conecta a ShoppingProvider + ProductProvider. La lista ahora:
+// Conectada a ShoppingProvider + ProductProvider:
 //  - Permite elegir el nivel de presupuesto (BudgetTier).
 //  - Muestra solo lo que el usuario NO tiene ya en su inventario
 //    (actualización dinámica real, no una lista estática).
 //  - Suma el costo estimado de lo que falta y lo compara contra el techo
 //    de presupuesto del nivel elegido.
 //
-// BUG #6 (se conserva): _ShoppingWebView es privada para no colisionar con
-// WebViewScreen de web_view_screen.dart.
+// _ShoppingWebView es privada para no colisionar con WebViewScreen de
+// web_view_screen.dart.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../config/theme/app_spacing.dart';
-import '../domain/entities/budget_tier.dart';
-import '../domain/entities/nutrition_group.dart';
-import '../domain/entities/product.dart';
-import '../domain/entities/shopping_item.dart';
-import '../routes.dart';
-import '../presentation/providers/product_provider.dart';
-import '../presentation/providers/shopping_provider.dart';
-import '../presentation/utils/currency_format.dart';
-import '../presentation/widgets/common/custom_card.dart';
-import '../presentation/widgets/common/primary_button.dart';
-import '../presentation/widgets/common/secondary_button.dart';
-import '../presentation/widgets/common/skeleton_loader.dart';
+import '../../config/theme/app_spacing.dart';
+import '../../domain/entities/budget_tier.dart';
+import '../../domain/entities/nutrition_group.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/entities/shopping_item.dart';
+import '../../routes.dart';
+import '../providers/product_provider.dart';
+import '../providers/shopping_provider.dart';
+import '../utils/currency_format.dart';
+import '../widgets/common/custom_card.dart';
+import '../widgets/common/primary_button.dart';
+import '../widgets/common/secondary_button.dart';
+import '../widgets/common/skeleton_loader.dart';
 
 /// Enlaces a supermercados colombianos, ofrecidos junto a la lista para que
 /// el usuario compare precios. No es contenido de dominio (no afecta la
@@ -92,8 +88,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               label: Text('${tier.label} (${tier.budgetCap.asCop})'),
               selected: selected,
               selectedColor: colorScheme.primary,
-              // Antes: Colors.black87 fijo para "no seleccionado" —
-              // invisible sobre el fondo oscuro del chip en modo oscuro.
               labelStyle: TextStyle(
                 color: selected ? colorScheme.onPrimary : colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -221,10 +215,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             children: [
               for (final group in NutritionGroup.values)
                 // colorScheme.error/primaryContainer + su on*Container
-                // correspondiente ya vienen balanceados para buen
-                // contraste en claro Y oscuro (antes: Colors.red[50] /
-                // green[50] fijos, con texto que en modo oscuro se
-                // pintaba claro sobre un fondo también claro).
+                // correspondiente vienen balanceados para buen contraste
+                // en claro y oscuro.
                 Chip(
                   avatar: Icon(
                     missingGroups.contains(group)
@@ -277,10 +269,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final cap = shoppingProvider.budgetCap;
     final over = total > cap;
     final colorScheme = Theme.of(context).colorScheme;
-    // Antes: Colors.red[50]/green[50] fijos, con el primer renglón sin
-    // color explícito (heredaba el texto claro del tema oscuro sobre un
-    // fondo también claro — casi ilegible). *Container/on*Container se
-    // adaptan solos a ambos modos.
     final onColor =
         over ? colorScheme.onErrorContainer : colorScheme.onPrimaryContainer;
 
@@ -432,9 +420,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 }
 
-// BUG #6 FIX (se conserva): renombrada de WebViewScreen → _ShoppingWebView
-// (privada). StatefulWidget correcto: el WebViewController se inicializa
-// una sola vez en initState, no en cada llamada a build.
+// WebViewController se inicializa una sola vez en initState, no en cada
+// llamada a build.
 class _ShoppingWebView extends StatefulWidget {
   final String url;
   final String title;

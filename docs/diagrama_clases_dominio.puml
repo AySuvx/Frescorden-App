@@ -1,0 +1,141 @@
+@startuml
+skinparam backgroundColor white
+skinparam class {
+  BackgroundColor #F3E8FF
+  BorderColor #7C3AED
+  ArrowColor #7C3AED
+}
+skinparam package {
+  BackgroundColor white
+  BorderColor #7C3AED
+}
+
+package "Domain — Entities" {
+  class Product {
+    +id: String
+    +name: String
+    +barcode: String [0..1]
+    +quantity: Integer
+    +unit: String
+    +imagePath: String [0..1]
+    +expirationDate: DateTime [0..1]
+    +createdAt: DateTime [0..1]
+    +entryDate: DateTime
+    +isBulk: Boolean
+    +minStock: Integer [0..1]
+    --
+    +daysInStorage(): Integer
+    +daysToExpiration(): Integer [0..1]
+    +isStorageCritical(): Boolean
+    +isLowStock(): Boolean
+  }
+
+  note right of Product
+    "status" (Fresco/Por vencer/Vencido)
+    NO es un campo de esta clase.
+    Se calcula fuera del dominio, en
+    presentation/widgets/common/status_badge.dart
+    (ProductFreshness.fromDaysRemaining),
+    usando el getter daysToExpiration.
+  end note
+
+  enum FoodCategory {
+    lacteos
+    carnesYEmbutidos
+    frutasYVerduras
+    granosYCereales
+    panaderia
+    bebidas
+    congelados
+    condimentosYSalsas
+    enlatadosYConservas
+    otros
+    frutas
+    verdurasYHortalizas
+  }
+
+  class Recipe {
+    +id: String
+    +name: String
+    +servings: Integer
+    +imagePath: String
+    +steps: List<String>
+    +prepTimeMinutes: Integer
+    +isAiGenerated: Boolean
+    --
+    +missingIngredients(inventoryNames): List<RecipeIngredient>
+    +isAvailable(inventoryNames): Boolean
+    +matchPercentage(inventoryNames): Float
+  }
+
+  class RecipeIngredient {
+    +name: String
+    +quantity: Float
+    +unit: String
+  }
+
+  class Household {
+    +id: String
+    +name: String
+    +createdBy: String
+    +members: List<String>
+    +memberEmails: Map<String, String>
+    +inviteCode: String
+    +codeExpiresAt: DateTime
+    +createdAt: DateTime
+    --
+    +isInviteCodeExpired(): Boolean
+    +isMember(uid): Boolean
+    +isAdmin(uid): Boolean
+  }
+
+  class ShoppingItem {
+    +name: String
+    +quantity: Float
+    +unit: String
+    +category: String
+    +estimatedPrice: Integer [0..1]
+  }
+
+  enum BudgetTier {
+    economica
+    basica
+    completa
+  }
+}
+
+package "Domain — Repository Interfaces" {
+  interface IProductRepository {
+    +watchProducts(householdId): List<Product>
+    +addProduct(householdId, product): Product
+    +updateProduct(householdId, product): void
+    +deleteProduct(householdId, id): void
+    +findByBarcode(householdId, barcode): Product [0..1]
+    +findByName(householdId, name): Product [0..1]
+  }
+
+  interface IRecipeRepository {
+    +getRecipes(): List<Recipe>
+    +generateAiRecipe(inventory): Recipe
+  }
+
+  interface IHouseholdRepository {
+    +watchActiveHouseholdId(uid): String [0..1]
+    +watchHousehold(householdId): Household [0..1]
+    +createHousehold(name, creatorUid, creatorEmail): Household
+    +joinHouseholdByCode(code, uid, email): Household
+    +generateNewInviteCode(householdId): String
+    +bootstrapPersonalHousehold(uid, email): void
+    +removeMember(householdId, memberUid): void
+    +clearActiveHousehold(uid): void
+    +recordUserActivity(uid): void
+  }
+
+  interface IShoppingRepository {
+    +getBasket(tier): List<ShoppingItem>
+  }
+}
+
+Product "0..*" --> "1" FoodCategory : category
+Recipe "1" *-- "0..*" RecipeIngredient : ingredients
+@enduml
