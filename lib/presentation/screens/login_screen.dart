@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 // solo se usa FirebaseAuthException de este paquete.
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
-import '../domain/repositories/i_auth_repository.dart';
-import '../routes.dart';
-import '../presentation/providers/auth_provider.dart';
+import '../../domain/repositories/i_auth_repository.dart';
+import '../../routes.dart';
+import '../providers/auth_provider.dart';
 import 'inicio_screen.dart';
 
 class LoginScreen extends StatefulWidget {

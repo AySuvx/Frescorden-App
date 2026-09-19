@@ -1,4 +1,4 @@
-// lib/screens/admin_dashboard_screen.dart
+// lib/presentation/screens/admin_dashboard_screen.dart
 //
 // Panel Administrativo Global:
 // Acceso restringido al UID declarado en kAdminUid (lib/config/app_config.dart)
@@ -10,20 +10,20 @@
 // agregadas de uso (miembros totales/promedio por hogar, hogares con
 // código de invitación vencido) — ver AdminRepositoryImpl.
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../config/app_config.dart';
-import '../domain/entities/admin_stats.dart';
-import '../presentation/providers/admin_provider.dart';
+import '../../config/app_config.dart';
+import '../../domain/entities/admin_stats.dart';
+import '../providers/admin_provider.dart';
+import '../providers/auth_provider.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = FirebaseAuth.instance.currentUser?.uid == kAdminUid;
+    final isAdmin = context.watch<AuthProvider>().currentUser?.uid == kAdminUid;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Panel Administrativo')),

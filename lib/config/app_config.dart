@@ -2,7 +2,7 @@
 //
 // Panel Administrativo Global:
 // UID de Firebase Authentication con acceso al panel de administración
-// (lib/screens/admin_dashboard_screen.dart). Se compara contra
+// (lib/presentation/screens/admin_dashboard_screen.dart). Se compara contra
 // FirebaseAuth.instance.currentUser?.uid — cualquier otro usuario ve un
 // aviso de acceso denegado. También referenciado (como valor literal, las
 // reglas no pueden importar Dart) en firestore.rules, para autorizar las

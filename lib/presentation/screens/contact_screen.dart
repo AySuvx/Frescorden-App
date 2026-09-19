@@ -1,4 +1,4 @@
-// lib/screens/contact_screen.dart
+// lib/presentation/screens/contact_screen.dart
 //
 // LINT FIX use_build_context_synchronously:
 // _launchEmail usaba ScaffoldMessenger.of(context) después de awaits

@@ -1,4 +1,4 @@
-// lib/screens/settings_screen.dart
+// lib/presentation/screens/settings_screen.dart
 //
 // BUG #5 CORREGIDO (original): el toggle de modo oscuro usaba setState local.
 //   FIX original: ThemeProvider via Provider (ya estaba aplicado en el ZIP).
@@ -17,10 +17,10 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config/theme/theme_provider.dart';
-import '../presentation/providers/auth_provider.dart';
-import '../presentation/widgets/common/glass_dialog.dart';
-import '../routes.dart';
+import '../../config/theme/theme_provider.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/common/glass_dialog.dart';
+import '../../routes.dart';
 import 'login_screen.dart';
 
 /// applicationId fijo del proyecto (ver android/app/build.gradle.kts) —

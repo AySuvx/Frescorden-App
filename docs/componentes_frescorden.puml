@@ -1,0 +1,63 @@
+@startuml
+left to right direction
+skinparam componentStyle rectangle
+skinparam package {
+  BackgroundColor #F3E8FF
+  BorderColor #7C3AED
+}
+
+package "Presentation Layer" {
+  [Screens\n(ProductosScreen, RecetasScreen,\nShoppingListScreen, HouseholdScreen)] as Screens
+  [ProductProvider] as ProdProv
+  [RecipeProvider] as RecProv
+  [ShoppingProvider] as ShopProv
+  [HouseholdProvider] as HhProv
+}
+
+package "Domain Layer" {
+  interface IProductRepository as IProd
+  interface IRecipeRepository as IRec
+  interface IShoppingRepository as IShop
+  interface IHouseholdRepository as IHh
+}
+
+package "Data Layer" {
+  [ProductRepositoryImpl] as ProdImpl
+  [RecipeRepositoryImpl] as RecImpl
+  [ShoppingRepositoryImpl] as ShopImpl
+  [HouseholdRepositoryImpl] as HhImpl
+  [FirestoreProductDataSource] as FSProd
+  [RecipeLocalDataSource\n(recetas.json)] as RecLocal
+  [GeminiAssistantDataSource] as GeminiDS
+  [ShoppingLocalDataSource\n(canastas.json)] as ShopLocal
+  [FirestoreHouseholdDataSource] as FSHh
+}
+
+database "Cloud Firestore" as Firestore
+cloud "Google Gemini API" as GeminiCloud
+
+Screens --> ProdProv
+Screens --> RecProv
+Screens --> ShopProv
+Screens --> HhProv
+
+ProdProv --> IProd : usa
+RecProv --> IRec : usa
+ShopProv --> IShop : usa
+HhProv --> IHh : usa
+
+ProdImpl ..|> IProd
+RecImpl ..|> IRec
+ShopImpl ..|> IShop
+HhImpl ..|> IHh
+
+ProdImpl --> FSProd
+RecImpl --> RecLocal
+RecImpl --> GeminiDS
+ShopImpl --> ShopLocal
+HhImpl --> FSHh
+
+FSProd --> Firestore
+FSHh --> Firestore
+GeminiDS --> GeminiCloud
+@enduml

@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/theme/app_spacing.dart';
-import '../domain/entities/chat_message.dart';
-import '../presentation/providers/assistant_provider.dart';
-import '../presentation/utils/quota_service.dart';
-import '../presentation/widgets/common/glass_card.dart';
+import '../../config/theme/app_spacing.dart';
+import '../../domain/entities/chat_message.dart';
+import '../providers/assistant_provider.dart';
+import '../utils/quota_service.dart';
+import '../widgets/common/glass_card.dart';
 
 /// Enlaces de Video para Recetas: detecta enlaces
 /// Markdown `[texto](url)` en la respuesta del asistente — hoy solo los usa

@@ -1,4 +1,4 @@
-// lib/screens/household_screen.dart
+// lib/presentation/screens/household_screen.dart
 //
 // Módulo de Grupos Familiares (Household) — pantalla "Mi Hogar":
 //  a) Nombre del hogar y lista de miembros (email si se conoce, uid si no
@@ -14,13 +14,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../domain/entities/activity_log_entry.dart';
-import '../domain/entities/household.dart';
-import '../domain/repositories/i_activity_log_repository.dart';
-import '../domain/repositories/i_household_repository.dart';
-import '../presentation/providers/household_provider.dart';
-import '../presentation/widgets/common/glass_card.dart';
-import '../presentation/widgets/common/glass_dialog.dart';
+import '../../domain/entities/activity_log_entry.dart';
+import '../../domain/entities/household.dart';
+import '../../domain/repositories/i_activity_log_repository.dart';
+import '../../domain/repositories/i_household_repository.dart';
+import '../providers/household_provider.dart';
+import '../widgets/common/glass_card.dart';
+import '../widgets/common/glass_dialog.dart';
 
 class HouseholdScreen extends StatefulWidget {
   const HouseholdScreen({super.key});

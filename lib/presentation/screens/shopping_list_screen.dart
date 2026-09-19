@@ -1,4 +1,4 @@
-// lib/screens/shopping_list_screen.dart
+// lib/presentation/screens/shopping_list_screen.dart
 //
 // Módulo de Compras Inteligentes:
 // Se elimina el mock (3 canastas fijas con ítems hardcodeados) y se
@@ -16,19 +16,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../config/theme/app_spacing.dart';
-import '../domain/entities/budget_tier.dart';
-import '../domain/entities/nutrition_group.dart';
-import '../domain/entities/product.dart';
-import '../domain/entities/shopping_item.dart';
-import '../routes.dart';
-import '../presentation/providers/product_provider.dart';
-import '../presentation/providers/shopping_provider.dart';
-import '../presentation/utils/currency_format.dart';
-import '../presentation/widgets/common/custom_card.dart';
-import '../presentation/widgets/common/primary_button.dart';
-import '../presentation/widgets/common/secondary_button.dart';
-import '../presentation/widgets/common/skeleton_loader.dart';
+import '../../config/theme/app_spacing.dart';
+import '../../domain/entities/budget_tier.dart';
+import '../../domain/entities/nutrition_group.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/entities/shopping_item.dart';
+import '../../routes.dart';
+import '../providers/product_provider.dart';
+import '../providers/shopping_provider.dart';
+import '../utils/currency_format.dart';
+import '../widgets/common/custom_card.dart';
+import '../widgets/common/primary_button.dart';
+import '../widgets/common/secondary_button.dart';
+import '../widgets/common/skeleton_loader.dart';
 
 /// Enlaces a supermercados colombianos, ofrecidos junto a la lista para que
 /// el usuario compare precios. No es contenido de dominio (no afecta la

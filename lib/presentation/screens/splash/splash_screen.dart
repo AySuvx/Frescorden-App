@@ -21,8 +21,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/theme/app_spacing.dart';
 import '../../../routes.dart';
-import '../../../screens/inicio_screen.dart';
-import '../../../screens/login_screen.dart';
+import '../inicio_screen.dart';
+import '../login_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../onboarding/onboarding_screen.dart';
 

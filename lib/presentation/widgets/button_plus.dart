@@ -1,4 +1,4 @@
-// lib/Widgets/button_plus.dart
+// lib/presentation/widgets/button_plus.dart
 //
 // Limpieza de escáner:
 // Se elimina por completo la opción "Agregar con código" (mobile_scanner).

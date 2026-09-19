@@ -1,15 +1,14 @@
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../config/app_config.dart';
-import '../config/theme/app_spacing.dart';
-import '../routes.dart';
-import '../presentation/providers/auth_provider.dart';
-import '../presentation/providers/product_provider.dart';
+import '../../config/app_config.dart';
+import '../../config/theme/app_spacing.dart';
+import '../../routes.dart';
+import '../providers/auth_provider.dart';
+import '../providers/product_provider.dart';
 import 'recetas_screen.dart';
 import 'productos_screen.dart';
 import 'add_product_screen.dart';
-import '../Widgets/button_plus.dart';
+import '../widgets/button_plus.dart';
 import 'login_screen.dart';
 import 'shopping_list_screen.dart';
 import 'analytics_screen.dart';
@@ -20,7 +19,7 @@ import 'household_screen.dart';
 import 'assistant_screen.dart';
 import 'category_picker_screen.dart';
 import 'admin_dashboard_screen.dart';
-import '../domain/entities/food_category.dart';
+import '../../domain/entities/food_category.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -316,7 +315,7 @@ class _InicioScreenState extends State<InicioScreen> {
             // Panel Administrativo Global: entrada
             // visible únicamente si el usuario autenticado es el admin
             // (ver kAdminUid) — para cualquier otro no aparece en el drawer.
-            if (FirebaseAuth.instance.currentUser?.uid == kAdminUid)
+            if (context.watch<AuthProvider>().currentUser?.uid == kAdminUid)
               ListTile(
                 leading: const Icon(Icons.admin_panel_settings),
                 title: const Text('Panel Administrativo'),

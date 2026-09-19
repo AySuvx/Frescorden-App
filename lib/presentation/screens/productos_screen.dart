@@ -1,4 +1,4 @@
-// lib/screens/productos_screen.dart
+// lib/presentation/screens/productos_screen.dart
 //
 // BUG #11 CORREGIDO: El widget leía producto['image'] para mostrar la foto,
 //   pero add_product_screen guarda el campo como 'imagePath'. Por eso las
@@ -25,15 +25,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../config/theme/app_spacing.dart';
-import '../domain/entities/food_category.dart';
-import '../domain/entities/product_history_entry.dart';
-import '../presentation/providers/product_provider.dart';
-import '../presentation/utils/food_category_ui.dart';
-import '../presentation/widgets/common/custom_card.dart';
-import '../presentation/widgets/common/glass_dialog.dart';
-import '../presentation/widgets/common/skeleton_loader.dart';
-import '../presentation/widgets/common/status_badge.dart';
+import '../../config/theme/app_spacing.dart';
+import '../../domain/entities/food_category.dart';
+import '../../domain/entities/product_freshness.dart';
+import '../../domain/entities/product_history_entry.dart';
+import '../providers/product_provider.dart';
+import '../utils/food_category_ui.dart';
+import '../widgets/common/custom_card.dart';
+import '../widgets/common/glass_dialog.dart';
+import '../widgets/common/skeleton_loader.dart';
+import '../widgets/common/status_badge.dart';
 
 enum _SortOption { expirationAsc, quantityDesc, quantityAsc }
 

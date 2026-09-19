@@ -1,4 +1,4 @@
-// lib/screens/recetas_screen.dart
+// lib/presentation/screens/recetas_screen.dart
 //
 // Módulo de Recetas — conectado a RecipeProvider + ProductProvider.
 //
@@ -11,18 +11,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../config/theme/app_spacing.dart';
-import '../domain/entities/product.dart';
-import '../domain/entities/recipe.dart';
-import '../routes.dart';
-import '../presentation/providers/product_provider.dart';
-import '../presentation/providers/recipe_provider.dart';
-import '../presentation/widgets/common/custom_card.dart';
-import '../presentation/widgets/common/glass_card.dart';
-import '../presentation/widgets/common/pressable_scale.dart';
-import '../presentation/widgets/common/primary_button.dart';
-import '../presentation/widgets/common/skeleton_loader.dart';
-import '../presentation/widgets/common/status_badge.dart';
+import '../../config/theme/app_spacing.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/entities/product_freshness.dart';
+import '../../domain/entities/recipe.dart';
+import '../../routes.dart';
+import '../providers/product_provider.dart';
+import '../providers/recipe_provider.dart';
+import '../widgets/common/custom_card.dart';
+import '../widgets/common/glass_card.dart';
+import '../widgets/common/pressable_scale.dart';
+import '../widgets/common/primary_button.dart';
+import '../widgets/common/skeleton_loader.dart';
+import '../widgets/common/status_badge.dart';
 import 'detalle_receta_screen.dart';
 
 /// Umbral de "coincidencia baja": si ni la mejor receta del catálogo llega

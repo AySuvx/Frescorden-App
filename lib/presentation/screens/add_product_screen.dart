@@ -1,4 +1,4 @@
-// lib/screens/add_product_screen.dart
+// lib/presentation/screens/add_product_screen.dart
 //
 // Clean Architecture:
 // El método _guardarProducto ya no accede a FirebaseFirestore.instance.
@@ -11,7 +11,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,9 +18,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
-import '../domain/entities/food_category.dart';
-import '../presentation/providers/product_provider.dart';
-import '../presentation/utils/food_category_ui.dart';
+import '../../domain/entities/food_category.dart';
+import '../providers/auth_provider.dart';
+import '../providers/product_provider.dart';
+import '../utils/food_category_ui.dart';
 
 class AddProductScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
@@ -239,7 +239,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final quantity = _quantityController.text.trim();
     final barcode = _barcodeController.text.trim();
 
-    if (FirebaseAuth.instance.currentUser == null) {
+    if (context.read<AuthProvider>().currentUser == null) {
       _showSnack('Debes iniciar sesión para guardar un producto');
       setState(() => _isSaving = false);
       return;

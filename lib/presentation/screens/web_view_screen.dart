@@ -1,4 +1,4 @@
-// lib/screens/web_view_screen.dart
+// lib/presentation/screens/web_view_screen.dart
 //
 // BUG #10 CORREGIDO: El WebViewController se creaba dentro del método build(),
 //   lo que provoca que se reinicialice (y la página se recargue desde cero) en

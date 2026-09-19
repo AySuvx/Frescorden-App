@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+participant "RecetasScreen /\nDetalleRecetaScreen" as UI
+participant "RecipeProvider" as RP
+participant "RecipeRepositoryImpl" as RR
+participant "RecipeLocalDataSource\n(recetas.json)" as RLD
+participant "GeminiAssistantDataSource" as GDS
+participant "Google Gemini\nCloud API" as GeminiAPI
+participant "ShoppingProvider" as SP
+
+Usuario -> UI: Abre RecetasScreen
+UI -> RP: loadRecipes()
+RP -> RR: getRecipes()
+RR -> RLD: getAll()
+RLD --> RR: List<Recipe> (catálogo local)
+RR --> RP: List<Recipe>
+RP -> RP: sortedByMatch(inventario)\nbestMatchPercentage(inventario)
+UI --> Usuario: Muestra recetas ordenadas\ncon indicador verde/ámbar
+
+alt bestMatchPercentage < 50%
+  UI --> Usuario: Muestra tarjeta de fallback IA
+  Usuario -> UI: Solicita receta con IA
+  UI -> RP: generateAiRecipe(inventario)
+  RP -> RR: generateAiRecipe(inventario)
+  RR -> GDS: generateColombianRecipe(inventario)
+  GDS -> GeminiAPI: POST HTTPS/TLS\n(prompt truncado a 4000 chars)
+  GeminiAPI --> GDS: Respuesta JSON
+  GDS -> GDS: Deserialización segura\n(captura FormatException)
+  GDS --> RR: Receta generada
+  RR --> RP: Recipe (ia_generada = true)
+  RP --> UI: Nueva receta disponible
+end
+
+Usuario -> UI: Abre detalle de receta
+Usuario -> UI: Toca "Agregar faltantes a Lista de Compras"
+UI -> SP: addItems(ingredientesFaltantes)
+SP -> SP: loadBasket() si canasta vacía\n(assets/data/canastas.json)
+SP -> SP: Deduplicación estricta\ncase-insensitive (estado en memoria)
+SP --> UI: notifyListeners()
+UI --> Usuario: SnackBar de confirmación
+@enduml

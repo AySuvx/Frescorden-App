@@ -9,20 +9,7 @@
 // container/onContainer del ColorScheme (ver AppTheme).
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_spacing.dart';
-
-enum ProductFreshness {
-  fresh,
-  expiringSoon,
-  expired;
-
-  /// Deriva el estado a partir de los días restantes para el vencimiento.
-  /// Mismo umbral que usaba el código anterior (<=3 días = "por vencer").
-  static ProductFreshness fromDaysRemaining(int daysRemaining) {
-    if (daysRemaining < 0) return ProductFreshness.expired;
-    if (daysRemaining <= 3) return ProductFreshness.expiringSoon;
-    return ProductFreshness.fresh;
-  }
-}
+import '../../../domain/entities/product_freshness.dart';
 
 class StatusBadge extends StatelessWidget {
   const StatusBadge({super.key, required this.status, this.label});
