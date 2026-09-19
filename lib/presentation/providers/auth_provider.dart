@@ -1,13 +1,8 @@
-// lib/presentation/providers/auth_provider.dart
-//
-// Proveedor de estado para autenticación. Implementa ChangeNotifier
-// (compatible con el Provider ya instalado en el proyecto).
-//
-// Las pantallas ya NO llaman a FirebaseAuth.instance / GoogleSignIn()
-// directamente: delegan en este provider, que a su vez delega en
-// IAuthRepository. Sigue el mismo patrón que ProductProvider: los métodos
+// Proveedor de estado para autenticación. Las pantallas delegan en este
+// provider, que a su vez delega en IAuthRepository — nunca llaman a
+// FirebaseAuth.instance / GoogleSignIn() directamente. Los métodos
 // relanzan (`rethrow`) la excepción original para que la pantalla decida
-// qué SnackBar mostrar, conservando los mensajes actuales.
+// qué SnackBar mostrar.
 
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/app_user.dart';

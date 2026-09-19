@@ -1,13 +1,8 @@
-// lib/config/theme/app_colors.dart
-//
-// Sistema de Diseño Unificado.
-//
-// Paleta orgánica de marca: tokens de color literales, fuente única de
-// verdad para AppTheme (ver app_theme.dart). Ninguna pantalla debe declarar
-// estos hex directamente — se consumen siempre vía
-// `Theme.of(context).colorScheme` (roles derivados) o, para los dos casos de
-// fondo que el rol `surface` no cubre con precisión (fondo de pantalla y
-// tarjeta en modo oscuro), vía estas constantes.
+// Paleta de marca: tokens de color literales, fuente única de verdad para
+// AppTheme. Ninguna pantalla debe declarar estos hex directamente — se
+// consumen vía `Theme.of(context).colorScheme` (roles derivados) o, para
+// los dos casos de fondo que el rol `surface` no cubre con precisión
+// (fondo de pantalla y tarjeta en modo oscuro), vía estas constantes.
 import 'package:flutter/material.dart';
 
 class AppColors {

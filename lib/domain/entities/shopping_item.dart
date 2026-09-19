@@ -1,10 +1,6 @@
-// lib/domain/entities/shopping_item.dart
-//
-// Módulo de Compras Inteligentes:
-// Ítem de la canasta básica de un [BudgetTier]. Reemplaza los Strings
-// sueltos ('Arroz 5kg', 'Huevos 30 unidades', ...) del mock original por
-// una estructura con cantidad, unidad y precio estimado — necesaria para
-// poder sumar un costo total y compararlo contra el presupuesto.
+// Ítem de la canasta básica de un [BudgetTier]: nombre, cantidad, unidad y
+// precio estimado — necesario para sumar un costo total y compararlo
+// contra el presupuesto.
 //
 // `estimatedPrice` es opcional: si el catálogo local no trae precio para
 // un ítem, ese ítem simplemente no aporta al total estimado (no rompe el

@@ -1,12 +1,5 @@
-// lib/domain/entities/budget_tier.dart
-//
-// Módulo de Compras Inteligentes:
 // Enum de dominio con los niveles de presupuesto para la canasta básica
-// familiar. Reemplaza los 3 títulos de texto hardcodeados
-// ("Lista básica (Presupuesto: $50,000 COP)", etc.) que antes vivían
-// directamente en ShoppingListScreen.
-//
-// `budgetCap` es el techo en COP contra el cual ShoppingProvider compara
+// familiar. `budgetCap` es el techo en COP contra el cual ShoppingProvider compara
 // el costo total estimado de la canasta (suma de ShoppingItem.estimatedPrice).
 
 enum BudgetTier {

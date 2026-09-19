@@ -1,25 +1,11 @@
-// lib/presentation/screens/productos_screen.dart
+// Se lee 'imagePath' con fallback a 'image' para compatibilidad con
+// documentos de Firestore que puedan tener el campo con el nombre viejo.
 //
-// BUG #11 CORREGIDO: El widget leía producto['image'] para mostrar la foto,
-//   pero add_product_screen guarda el campo como 'imagePath'. Por eso las
-//   imágenes nunca aparecían en la lista.
-//   FIX: Se lee 'imagePath' con fallback a 'image' para retrocompatibilidad
-//   con documentos existentes en Firestore que puedan tener el campo viejo.
-//
-// Reactividad en tiempo real (Household):
-// Antes, esta pantalla recibía `productos` como snapshot fijo por
-// constructor (copiado a un campo local `_productos` en initState) y solo
-// se refrescaba manualmente al volver de una sub-pantalla
-// (`_actualizarProductos`). Con el inventario ahora sincronizado por
-// stream (ver ProductProvider.setActiveHousehold), esa copia local quedaba
-// obsoleta apenas otro miembro del hogar editaba algo mientras esta
-// pantalla seguía abierta.
-// FIX: se elimina el constructor `productos` y la copia local — el build()
-// lee `context.watch<ProductProvider>().productosMap` directo, así que
-// cualquier cambio (propio o de otro dispositivo del hogar) reconstruye la
-// lista sola. Filtro/búsqueda/orden pasan a ser criterios persistentes
-// (campos de estado) que se reaplican en cada build sobre los datos
-// frescos del provider, en vez de mutar una lista guardada una sola vez.
+// build() lee `context.watch<ProductProvider>().productosMap` directo, así
+// que cualquier cambio (propio o de otro dispositivo del hogar) reconstruye
+// la lista sola. Filtro/búsqueda/orden son criterios persistentes (campos
+// de estado) que se reaplican en cada build sobre los datos frescos del
+// provider.
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -206,8 +192,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     return filtrados;
   }
 
-  /// Alertas de Stock mínimo (#2): replica `Product.isLowStock`
-  /// sobre el formato Map que usan las pantallas.
+  /// Replica `Product.isLowStock` sobre el formato Map que usan las pantallas.
   bool _esStockBajo(Map<String, dynamic> producto) {
     final minStock = producto['minStock'];
     if (minStock == null) return false;
@@ -297,7 +282,6 @@ class _ProductosScreenState extends State<ProductosScreen> {
       daysRemaining = null;
     }
 
-    // BUG #11 FIX: leer 'imagePath'; fallback a 'image' para docs existentes
     final String? imagePath =
         producto['imagePath'] as String? ?? producto['image'] as String?;
 

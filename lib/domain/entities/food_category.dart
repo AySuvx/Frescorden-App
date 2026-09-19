@@ -1,6 +1,3 @@
-// lib/domain/entities/food_category.dart
-//
-// Categorización de Alimentos (#1):
 // Enum de dominio con las categorías disponibles para clasificar un
 // producto. Vive en `domain` porque es una regla de negocio (qué
 // categorías existen), no un detalle de UI ni de persistencia.

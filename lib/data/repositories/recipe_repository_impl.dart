@@ -1,5 +1,3 @@
-// lib/data/repositories/recipe_repository_impl.dart
-//
 // Implementación concreta de IRecipeRepository. El catálogo curado sigue
 // viniendo del datasource local; el fallback de IA reutiliza
 // GeminiAssistantDataSource — la misma clase que ya habla con Gemini para

@@ -1,5 +1,3 @@
-// lib/presentation/utils/analytics_service.dart
-//
 // Firebase Analytics: eventos de adopción de las funciones clave de la
 // app — mismo estilo singleton que NotificationService/QuotaService,
 // llamado directo desde los providers de presentación (no hay
@@ -42,7 +40,6 @@ class AnalyticsService {
   /// Adopción del Asistente Culinario: una consulta exitosa.
   Future<void> logAssistantQuery() => _log('assistant_query');
 
-  /// Adopción del Módulo de Grupos Familiares.
   Future<void> logHouseholdCreated() => _log('household_created');
   Future<void> logHouseholdJoined() => _log('household_joined');
 }

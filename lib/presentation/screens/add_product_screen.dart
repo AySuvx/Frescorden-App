@@ -1,11 +1,5 @@
-// lib/presentation/screens/add_product_screen.dart
-//
-// Clean Architecture:
-// El método _guardarProducto ya no accede a FirebaseFirestore.instance.
-// Delega el upsert a ProductProvider.saveProduct(), que centraliza
-// la lógica de "crear o acumular" en un solo lugar.
-// Todo lo demás (notificaciones, imagen, cámara, permisos) no cambia.
-// Los bugs #1 #2 #4 siguen corregidos.
+// _guardarProducto delega el upsert a ProductProvider.saveProduct(), que
+// centraliza la lógica de "crear o acumular" en un solo lugar.
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -129,7 +123,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  // FIX #H1: liberar los TextEditingControllers para evitar memory leak
   @override
   void dispose() {
     _nameController.dispose();
@@ -139,25 +132,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
     super.dispose();
   }
 
-  // BUG #1 FIX: usa DeviceInfoPlugin para el API level real
   Future<bool> _isAndroid12OrHigher() async {
     if (!Platform.isAndroid) return false;
     final info = await DeviceInfoPlugin().androidInfo;
     return info.version.sdkInt >= 31;
   }
 
-  // BUG #1 FIX: guard con SharedPreferences
-  //
-  // BUG CRÍTICO CORREGIDO (hallado en prueba visual en dispositivo): este
-  // chequeo nunca verificaba si el permiso YA estaba concedido — solo si
-  // ya se había preguntado antes — así que siempre ofrecía el diálogo y
-  // redirigía a "Alarmas y recordatorios" del sistema aunque la app ya
-  // tuviera USE_EXACT_ALARM (auto-otorgado, no requiere toggle). El
-  // usuario llegaba a esa pantalla y la app nunca aparecía ahí — no hay
-  // nada que activar cuando USE_EXACT_ALARM ya cubre la capacidad.
-  // FIX: Permission.scheduleExactAlarm.isGranted consulta el estado real
-  // (AlarmManager.canScheduleExactAlarms()), sin importar cuál de los dos
-  // permisos del manifest es el que la concede.
+  // Permission.scheduleExactAlarm.isGranted consulta el estado real
+  // (AlarmManager.canScheduleExactAlarms()) en vez de si ya se preguntó
+  // antes: algunos dispositivos auto-otorgan USE_EXACT_ALARM sin toggle,
+  // así que preguntar sin verificar el estado real llevaría al usuario a
+  // una pantalla de ajustes donde no hay nada que activar.
   Future<void> _checkExactAlarmPermission() async {
     if (!await _isAndroid12OrHigher()) return;
     if (await Permission.scheduleExactAlarm.isGranted) return;
@@ -202,7 +187,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  // BUG #4 FIX: copia la imagen al directorio permanente
   Future<File> _copyImageToPermanentStorage(File tempFile) async {
     final appDir = await getApplicationDocumentsDirectory();
     final imagesDir = Directory('${appDir.path}/product_images');
@@ -216,7 +200,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile == null) return;
-    // FIX #H2: mounted check después de awaits para evitar setState en widget descartado
     try {
       final permanentFile = await _copyImageToPermanentStorage(
         File(pickedFile.path),
@@ -230,7 +213,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  // ─── _guardarProducto ya no toca Firestore directamente ──────────
   Future<void> _guardarProducto() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);

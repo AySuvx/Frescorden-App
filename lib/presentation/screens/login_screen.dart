@@ -155,12 +155,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Antes: Scaffold.backgroundColor fijo en Colors.grey.shade100 y los
-    // campos/botones en Colors.white — la pantalla entera ignoraba el
-    // tema (modo oscuro incluido) y el botón "Iniciar Sesión" quedaba con
-    // texto blanco (heredado de onPrimary) sobre un fondo también blanco
-    // forzado — invisible en ambos modos. Se resuelve consumiendo
-    // colorScheme en vez de literales.
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -176,10 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 curve: Curves.easeInOut,
                 child: Text(
                   _isLogin ? 'Bienvenido A Fresc(o)rden' : 'Crea tu Cuenta',
-                  // Antes: GoogleFonts.poppins() puntual + Colors.green.shade600
-                  // fijo — no seguía el tema (invisible en modo oscuro, y
-                  // competía con la tipografía Varela Round/Nunito Sans del
-                  // resto de la app; ver AppTheme._buildTextTheme).
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                       ),

@@ -1,14 +1,9 @@
-// lib/routes.dart
-//
-// Nombres de ruta (mejora arquitectónica previa al rediseño de interfaz):
-// cada Navigator.push de la app pasa uno de estos como RouteSettings.name.
-// No es una migración a rutas declarativas (go_router no entra en este
-// cambio) — se conserva Navigator.push + MaterialPageRoute tal cual, solo
-// se nombra cada una. Dos usos concretos que esto habilita:
-//  - FirebaseAnalyticsObserver (ver main.dart) ya reporta qué pantalla se
-//    abrió en vez de "desconocida" — antes no había nada que extraer.
-//  - Cualquier navegación programática futura (deep links, tests) tiene un
-//    identificador estable en vez de comparar por tipo de widget.
+// Nombres de ruta: cada Navigator.push de la app pasa uno de estos como
+// RouteSettings.name (no es una migración a rutas declarativas — se usa
+// Navigator.push + MaterialPageRoute normal, solo nombrado). Dos usos:
+//  - FirebaseAnalyticsObserver (ver main.dart) reporta qué pantalla se abrió.
+//  - Navegación programática (deep links, tests) tiene un identificador
+//    estable en vez de comparar por tipo de widget.
 class AppRoutes {
   AppRoutes._();
 

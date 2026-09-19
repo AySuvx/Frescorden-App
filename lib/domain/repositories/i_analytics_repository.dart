@@ -1,5 +1,3 @@
-// lib/domain/repositories/i_analytics_repository.dart
-//
 // Contrato que define QUÉ resumen de analíticas está disponible, sin
 // especificar CÓMO se calcula (hoy: agregando ProductHistoryEntry del hogar
 // activo desde Firestore — ver AnalyticsRepositoryImpl). Regla de

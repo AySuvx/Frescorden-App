@@ -1,12 +1,8 @@
-// lib/data/datasources/firestore_product_history_datasource.dart
-//
 // Única clase que habla directamente con Cloud Firestore para el historial
 // de productos resueltos. Colección: households/{householdId}/
 // product_history — por-hogar, mismo patrón de anidación que
 // FirestoreProductDataSource usa para 'productos' y
-// FirestoreActivityLogDataSource para 'activity_log'. Reemplaza la
-// colección legacy usuarios/{uid}/historial (pre-Household), que se
-// conserva de solo lectura en firestore.rules pero ya no se escribe.
+// FirestoreActivityLogDataSource para 'activity_log'.
 //
 // La comparten dos repositorios con propósitos distintos (ISP):
 //  - ProductHistoryRepositoryImpl: escribe (logResolution, desde

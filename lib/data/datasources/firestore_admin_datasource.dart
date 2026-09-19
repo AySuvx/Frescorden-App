@@ -1,5 +1,3 @@
-// lib/data/datasources/firestore_admin_datasource.dart
-//
 // Única clase que habla directamente con Cloud Firestore para el Panel
 // Administrativo Global. Todas las consultas de acá requieren el UID admin
 // (ver firestore.rules) — un usuario normal recibe un error de permisos.

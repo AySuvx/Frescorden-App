@@ -1,6 +1,3 @@
-// lib/domain/entities/recipe_ingredient.dart
-//
-// Módulo de Recetas:
 // Value object que representa un ingrediente requerido por una [Recipe].
 // Vive en domain porque es parte del vocabulario del negocio (qué
 // necesita una receta), sin depender de Flutter ni de la fuente de datos.

@@ -1,5 +1,3 @@
-// lib/data/datasources/firestore_assistant_usage_datasource.dart
-//
 // Colección '/households/{householdId}/assistant_usage' — un documento por
 // consulta exitosa al asistente culinario (append-only, mismo patrón que
 // FirestoreActivityLogDataSource). Solo se escribe desde

@@ -1,7 +1,4 @@
-// lib/presentation/screens/admin_dashboard_screen.dart
-//
-// Panel Administrativo Global:
-// Acceso restringido al UID declarado en kAdminUid (lib/config/app_config.dart)
+// Acceso restringido al UID declarado en kAdminUid (config/app_config.dart)
 // — cualquier otro usuario autenticado ve un aviso de acceso denegado, sin
 // llegar a consultar AdminProvider (y por lo tanto sin disparar ninguna
 // lectura a Firestore que igual sería rechazada por firestore.rules).

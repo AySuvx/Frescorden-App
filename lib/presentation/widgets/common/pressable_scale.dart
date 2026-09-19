@@ -1,7 +1,5 @@
-// lib/presentation/widgets/common/pressable_scale.dart
-//
-// (Polish Premium) — física de resortes sutil para
-// cualquier elemento tocable: se encoge levemente al presionar y vuelve a
+// Física de resortes sutil para cualquier elemento tocable: se encoge
+// levemente al presionar y vuelve a
 // su tamaño con una curva suave, además de un golpecito háptico.
 //
 // Usa `Listener` (eventos de puntero crudos) en vez de `GestureDetector`

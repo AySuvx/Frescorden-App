@@ -1,5 +1,3 @@
-// lib/data/datasources/recipe_local_datasource.dart
-//
 // Única clase que sabe DÓNDE viven las recetas: un asset JSON local
 // (assets/data/recetas.json). Las recetas son contenido curado y estático
 // (igual que las imágenes ya empaquetadas en assets/), no datos de usuario,

@@ -1,10 +1,6 @@
-// lib/config/theme/app_theme.dart
+// Tema Material3 de la app:
 //
-// Sistema de Diseño Unificado.
-// Reemplaza al antiguo lib/app_theme.dart (ver su cabecera: solo tematizaba
-// AppBar/ElevatedButton con un seed genérico Colors.green). Esta versión:
-//
-//  1. Fija la paleta orgánica de marca (AppColors) como semilla real,
+//  1. Fija la paleta de marca (AppColors) como semilla real,
 //     con `contrastLevel` de Material3 elevado a 0.5 (tier "medium
 //     contrast" de la especificación) para un contraste AA riguroso en
 //     TODOS los pares on*/container generados, no solo primary/onPrimary.

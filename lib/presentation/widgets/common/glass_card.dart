@@ -1,7 +1,5 @@
-// lib/presentation/widgets/common/glass_card.dart
-//
-// (Polish Premium) — acabado "cristal esmerilado":
-// BackdropFilter difumina lo que hay detrás y un relleno translúcido dejа
+// Acabado "cristal esmerilado": BackdropFilter difumina lo que hay
+// detrás y un relleno translúcido dejа
 // entrever ese blur, con un borde de 1dp apenas visible que separa la
 // tarjeta del fondo. Reservado para elementos que flotan SOBRE contenido
 // (diálogos, la barra de cuota del asistente, el resumen del hogar) — no

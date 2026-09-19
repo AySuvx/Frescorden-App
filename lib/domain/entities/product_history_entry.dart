@@ -1,15 +1,9 @@
-// lib/domain/entities/product_history_entry.dart
+// Registro de un producto ya resuelto (eliminado del inventario): ¿se
+// consumió a tiempo o venció? Es la fuente de datos cruda sobre la que
+// AnalyticsRepositoryImpl calcula el AnalyticsSummary.
 //
-// Historial de Productos:
-// Registro de un producto ya resuelto (eliminado del inventario), con el
-// dato que antes se perdía por completo: ¿se consumió a tiempo o venció?
-// Esta es la fuente de datos cruda sobre la que AnalyticsRepositoryImpl
-// calcula el AnalyticsSummary — sin historial no hay analíticas reales.
-//
-// Se crea en ProductProvider.deleteProduct() (ver ese archivo) con el
-// `outcome` que la pantalla recibe del diálogo de confirmación
-// "Consumido" / "Desperdiciado" — explícito, ya no
-// inferido comparando la fecha de eliminación contra `expirationDate`.
+// Se crea en ProductProvider.deleteProduct() con el `outcome` que la
+// pantalla recibe del diálogo de confirmación "Consumido" / "Desperdiciado".
 
 import 'food_category.dart';
 
