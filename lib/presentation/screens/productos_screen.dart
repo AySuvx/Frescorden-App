@@ -81,7 +81,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       ),
                       for (final cat in FoodCategory.values)
                         ChoiceChip(
-                          avatar: Icon(cat.icon, size: 16),
+                          avatar: Image.asset(
+                            cat.iconAsset,
+                            width: 16,
+                            height: 16,
+                          ),
                           label: Text(cat.label),
                           selected: _filtroCategoria == cat,
                           onSelected: (_) {
@@ -321,10 +325,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
               ),
             ),
             // ícono de la categoría del producto
-            Icon(
-              FoodCategory.fromName(producto['category'] as String?).icon,
-              size: 18,
-              color: colorScheme.onSurfaceVariant,
+            Image.asset(
+              FoodCategory.fromName(
+                producto['category'] as String?,
+              ).iconAsset,
+              width: 18,
+              height: 18,
             ),
           ],
         ),
@@ -551,12 +557,25 @@ class _ProductosScreenState extends State<ProductosScreen> {
         outcome: outcome,
       );
       if (!mounted) return;
+      final isConsumed = outcome == ProductOutcome.consumedOnTime;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            outcome == ProductOutcome.consumedOnTime
-                ? 'Producto marcado como consumido'
-                : 'Producto marcado como desperdiciado',
+          content: Row(
+            children: [
+              Image.asset(
+                isConsumed
+                    ? 'assets/Frescorden-logo/stickers/sticker-love.png'
+                    : 'assets/Frescorden-logo/stickers/sticker-bad.png',
+                width: 28,
+                height: 28,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                isConsumed
+                    ? 'Producto marcado como consumido'
+                    : 'Producto marcado como desperdiciado',
+              ),
+            ],
           ),
         ),
       );

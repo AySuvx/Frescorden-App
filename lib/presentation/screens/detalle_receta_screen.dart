@@ -117,18 +117,18 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
               children: [
                 _buildMetaItem(
                   context,
-                  icon: Icons.timer_outlined,
+                  iconAsset: 'assets/iconos/fresco_receta_tiempo.png',
                   label: '${receta.prepTimeMinutes} min',
                 ),
                 _buildMetaItem(
                   context,
-                  icon: Icons.people_outline,
+                  iconAsset: 'assets/iconos/fresco_receta_porciones.png',
                   label: '${receta.servings} personas',
                 ),
                 if (receta.isAiGenerated)
                   _buildMetaItem(
                     context,
-                    icon: Icons.auto_awesome,
+                    iconAsset: 'assets/iconos/fresco_receta_ia.png',
                     label: 'Creada con IA',
                   ),
               ],
@@ -145,14 +145,12 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(
                 children: [
-                  Icon(
+                  Image.asset(
                     tieneIngrediente
-                        ? Icons.check_circle
-                        : Icons.remove_circle_outline,
-                    size: 20,
-                    color: tieneIngrediente
-                        ? colorScheme.primary
-                        : colorScheme.error,
+                        ? 'assets/iconos/fresco_receta_disponible.png'
+                        : 'assets/iconos/fresco_receta_faltante.png',
+                    width: 20,
+                    height: 20,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
@@ -172,8 +170,12 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
                   ? 'Agregado a la Lista de Compras'
                   : 'Agregar faltantes a la Lista de Compras',
               icon: _yaAgregoFaltantes
-                  ? Icons.check
-                  : Icons.add_shopping_cart,
+                  ? const Icon(Icons.check)
+                  : Image.asset(
+                      'assets/iconos/fresco_receta_agregar.png',
+                      width: 20,
+                      height: 20,
+                    ),
               onPressed: _yaAgregoFaltantes ? null : _agregarFaltantesALaLista,
             ),
           ],
@@ -184,7 +186,7 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
           // checkbox y háptico — no una lista de texto pasiva.
           Row(
             children: [
-              Icon(Icons.soup_kitchen_outlined, color: colorScheme.primary),
+              Image.asset('assets/iconos/fresco_receta.png', width: 24, height: 24),
               const SizedBox(width: AppSpacing.sm),
               Text('Modo Cocina', style: Theme.of(context).textTheme.titleLarge),
               const Spacer(),
@@ -258,14 +260,14 @@ class _DetalleRecetaScreenState extends State<DetalleRecetaScreen> {
 
   Widget _buildMetaItem(
     BuildContext context, {
-    required IconData icon,
+    required String iconAsset,
     required String label,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: colorScheme.primary, size: 20),
+        Image.asset(iconAsset, width: 20, height: 20),
         const SizedBox(height: 2),
         Text(
           label,

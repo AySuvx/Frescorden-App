@@ -245,7 +245,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             const SizedBox(height: AppSpacing.sm),
             PrimaryButton(
               label: 'Agregar insumos faltantes (${missingGroups.length})',
-              icon: Icons.add_shopping_cart,
+              icon: const Icon(Icons.add_shopping_cart),
               onPressed: () {
                 shoppingProvider.addBalancedPlateItems(inventory);
                 ScaffoldMessenger.of(context).showSnackBar(

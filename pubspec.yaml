@@ -2,7 +2,7 @@ name: frescorden
 description: "Gestión integral de alimentos en el hogar."
 publish_to: 'none'
 
-version: 1.15.0+19
+version: 1.16.0+20
 
 environment:
   sdk: ^3.7.0
@@ -43,14 +43,27 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
   assets:
     - assets/
-    # FIX: assets/ no incluye subcarpetas automáticamente — recetas.json y
-    # canastas.json (assets/data/) nunca se empaquetaban en el APK, causando
-    # "Unable to load asset: assets/data/canastas.json" en tiempo de
-    # ejecución (detectado en prueba manual de Fase 3, historial/precio
-    # estimado). Se declara explícitamente.
     - assets/data/
+    - assets/Frescorden-logo/
+    - assets/Frescorden-logo/stickers/
+    - assets/iconos/
+    - assets/iconos/pequenos/
+
+flutter_launcher_icons:
+  image_path: "assets/Frescorden-logo/app-icon-1024.png"
+  android: "ic_launcher"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/Frescorden-logo/android/ic_launcher_foreground.png"
+  adaptive_icon_monochrome: "assets/Frescorden-logo/android/ic_launcher_monochrome.png"
+  adaptive_icon_foreground_inset: 4
+  min_sdk_android: 24
+  web:
+    generate: true
+    background_color: "#2E7D32"
+    theme_color: "#2E7D32"

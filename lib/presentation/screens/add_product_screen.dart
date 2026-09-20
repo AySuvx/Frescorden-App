@@ -494,7 +494,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               value: cat,
                               child: Row(
                                 children: [
-                                  Icon(cat.icon, size: 18, color: Colors.green),
+                                  Image.asset(
+                                    cat.iconAsset,
+                                    width: 18,
+                                    height: 18,
+                                  ),
                                   const SizedBox(width: 10),
                                   Text(cat.label),
                                 ],

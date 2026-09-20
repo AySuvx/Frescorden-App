@@ -1,38 +1,39 @@
-// Mapeo de FoodCategory -> IconData. Vive en `presentation` (y no en
-// `domain`) porque IconData es un detalle de Flutter/UI, no una regla
-// de negocio. Las pantallas importan esta extensión en vez de repetir
-// el switch-case cada vez que necesitan mostrar un ícono de categoría.
+// Mapeo de FoodCategory -> asset de ícono (mascota Frescorden). Vive en
+// `presentation` (y no en `domain`) porque la ruta del asset es un
+// detalle de Flutter/UI, no una regla de negocio. Las pantallas importan
+// esta extensión en vez de repetir el switch-case cada vez que necesitan
+// mostrar un ícono de categoría.
 
 import 'package:flutter/material.dart';
 import '../../domain/entities/food_category.dart';
 
 extension FoodCategoryUi on FoodCategory {
-  IconData get icon {
+  String get iconAsset {
     switch (this) {
       case FoodCategory.lacteos:
-        return Icons.icecream_outlined;
+        return 'assets/iconos/fresco_cat_lacteos.png';
       case FoodCategory.carnesYEmbutidos:
-        return Icons.kebab_dining_outlined;
+        return 'assets/iconos/fresco_cat_carnes.png';
       case FoodCategory.frutasYVerduras:
-        return Icons.eco_outlined;
+        return 'assets/iconos/fresco_cat_frutasyverduras.png';
       case FoodCategory.granosYCereales:
-        return Icons.grain_outlined;
+        return 'assets/iconos/fresco_cat_granos.png';
       case FoodCategory.panaderia:
-        return Icons.bakery_dining_outlined;
+        return 'assets/iconos/fresco_cat_panaderia.png';
       case FoodCategory.bebidas:
-        return Icons.local_drink_outlined;
+        return 'assets/iconos/fresco_cat_bebidas.png';
       case FoodCategory.congelados:
-        return Icons.ac_unit_outlined;
+        return 'assets/iconos/fresco_cat_congelados.png';
       case FoodCategory.condimentosYSalsas:
-        return Icons.liquor_outlined;
+        return 'assets/iconos/fresco_cat_condimentos.png';
       case FoodCategory.enlatadosYConservas:
-        return Icons.inventory_2_outlined;
+        return 'assets/iconos/fresco_cat_enlatados.png';
       case FoodCategory.otros:
-        return Icons.category_outlined;
+        return 'assets/iconos/fresco_cat_otros.png';
       case FoodCategory.frutas:
-        return Icons.apple;
+        return 'assets/iconos/fresco_cat_frutas.png';
       case FoodCategory.verdurasYHortalizas:
-        return Icons.grass_outlined;
+        return 'assets/iconos/fresco_cat_verduras.png';
     }
   }
 

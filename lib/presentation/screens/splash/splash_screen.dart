@@ -136,7 +136,11 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset('assets/manzana.png', width: 96, height: 96),
+                Image.asset(
+                  'assets/Frescorden-logo/fresco-fresh-512.png',
+                  width: 96,
+                  height: 96,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Fresc(o)rden',

@@ -1,0 +1,7 @@
+Frescorden - nombres de los íconos (snake_case, sin ñ, listos para Android/web)
+
+Cada ícono viene en .svg (editable) y .png. Los nombres cambian así respecto a tu lista:
+- Los guiones pasan a guion bajo: fresco-cat-lacteos -> fresco_cat_lacteos
+- La ñ se quita: receta-chocolate-santafereño -> receta_chocolate_santafereno
+- fresco-receta-faltant -> fresco_receta_faltante (corregido)
+- fresco-receta (sección de pasos) -> fresco_receta
