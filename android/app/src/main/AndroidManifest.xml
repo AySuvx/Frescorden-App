@@ -1,29 +1,21 @@
-<!-- android/app/src/main/AndroidManifest.xml
-     BUG #7 CORREGIDO: android:usesCleartextTraffic y android:enableOnBackInvokedCallback
-     estaban colocados DESPUÉS del ">" de cierre de la etiqueta <application>, por lo que
-     el parser XML los ignoraba silenciosamente. El build de debug funcionaba porque
-     AAPT es permisivo, pero el build de release y Android 13+ fallaban.
-     FIX: Los atributos se mueven al lugar correcto, dentro de la etiqueta <application>
-     antes de su ">". -->
+
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permisos de hardware y almacenamiento -->
+
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
 
-    <!-- Permisos de notificaciones y alarmas -->
+
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
-    <!-- Requerido para lanzar ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-         (exención de ahorro de batería en ROMs agresivas: MIUI/HyperOS,
-         One UI, ColorOS, etc.) -->
+
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <!-- Red -->
@@ -54,7 +46,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Requerido por android_alarm_manager_plus para disparar alarmas al reiniciar -->
         <receiver
             android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmBroadcastReceiver"
             android:exported="false"/>
@@ -63,18 +54,24 @@
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE"/>
 
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
 
-        <!-- EnableImpeller:false (2026-09-11) mitigaba un supuesto bug de pantalla
-             en blanco en AddProductScreen/CategoryPickerScreen (Xiaomi de prueba).
-             Removido y verificado en dispositivo real (Xiaomi d7effa11) el
-             2026-09-16, en dos sesiones independientes: ambas pantallas renderizan
-             bien con Impeller/Vulkan; los AHardwareBuffer/GraphicBuffer del logcat
-             son ruido de bootstrap del motor, no el bug original. Si reaparece,
-             repetir esta verificación en dispositivo real antes de reintroducir
-             la bandera. -->
     </application>
 
     <queries>

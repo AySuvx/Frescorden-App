@@ -1,22 +1,15 @@
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
+
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
-    // Built-in Kotlin (AGP 9+): ya no se aplica el plugin kotlin-android por
-    // separado — AGP compila Kotlin de forma nativa. La versión de Kotlin
-    // para los módulos de plugins de terceros que aún lo requieren sigue
-    // resuelta desde settings.gradle.kts (org.jetbrains.kotlin.android).
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.frescorden.app"
     compileSdk = flutter.compileSdkVersion
-    // Todos los plugins (Firebase, image_picker, etc.)
-    // requieren NDK 28.2.13676358. AGP la descarga automáticamente durante
-    // el build si no está presente localmente.
+
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -30,10 +23,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.frescorden.app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -42,15 +33,10 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+
             signingConfig = signingConfigs.getByName("debug")
 
-            // Ofuscación/minificación (auditoría de seguridad, Fase 6 Módulo 2):
-            // dificulta la ingeniería inversa del APK de release y reduce su
-            // tamaño. `--obfuscate --split-debug-info=...` en el comando de
-            // build es lo que efectivamente ofusca nombres de símbolos Dart;
-            // esto habilita R8 para el código/recursos nativos y de plugins.
+
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
