@@ -16,24 +16,24 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final (Color bg, Color fg, IconData icon, String defaultLabel) =
+    final (Color bg, Color fg, String mascotAsset, String defaultLabel) =
         switch (status) {
           ProductFreshness.fresh => (
             colorScheme.primaryContainer,
             colorScheme.onPrimaryContainer,
-            Icons.check_circle,
+            'assets/Frescorden-logo/fresco-fresh-512.png',
             'Fresco',
           ),
           ProductFreshness.expiringSoon => (
             colorScheme.tertiaryContainer,
             colorScheme.onTertiaryContainer,
-            Icons.warning_amber,
+            'assets/Frescorden-logo/fresco-warn-512.png',
             'Por vencer',
           ),
           ProductFreshness.expired => (
             colorScheme.errorContainer,
             colorScheme.onErrorContainer,
-            Icons.error,
+            'assets/Frescorden-logo/fresco-bad-512.png',
             'Vencido',
           ),
         };
@@ -50,7 +50,7 @@ class StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: fg),
+          Image.asset(mascotAsset, width: 16, height: 16),
           const SizedBox(width: AppSpacing.xs),
           // Fase 6, Módulo 3: un label largo (ej. "Tienes 1 de 4
           // ingredientes") desbordaba el Row en pantallas angostas cuando

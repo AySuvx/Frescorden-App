@@ -54,10 +54,6 @@ class _InicioScreenState extends State<InicioScreen> {
   }
 
 
-  /// Flujo "Por Categoría" de la manzanita: primero el selector de
-  /// categorías (CategoryPickerScreen), después el formulario estándar con
-  /// esa categoría ya preseleccionada. Si el usuario vuelve atrás sin
-  /// elegir ninguna, no se abre el formulario.
   Future<void> _navegarAgregarPorCategoria() async {
     final categoria = await Navigator.push<FoodCategory>(
       context,
@@ -129,11 +125,7 @@ class _InicioScreenState extends State<InicioScreen> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              // Degradado suave dentro de la propia paleta orgánica:
-              // primary → una mezcla hacia tertiary (Ámbar), no
-              // primary→primaryContainer — ese salto es
-              // demasiado grande en luminosidad y dejaría "onPrimary" sin
-              // contraste garantizado en el extremo claro del degradado.
+
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -341,28 +333,43 @@ class _InicioScreenState extends State<InicioScreen> {
       body:
           provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : ListView(
-                children: [
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(150.0),
-                      child: Opacity(
-                        opacity: 0.5,
-                        child: Image.asset('assets/verduras.png'),
-                      ),
-                    ),
+              : Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
                   ),
-                  const Center(
-                    child: Text(
-                      '¡Bienvenido a Fresc(o)rden!',
-                      style: TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w700,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/Frescorden-logo/stickers/sticker-joy.png',
+                        width: 180,
+                        height: 180,
                       ),
-                    ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(
+                        '¡Bienvenido a Fresc(o)rden!',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Tu despensa está lista para que empieces a '
+                        'organizarla y dejes de desperdiciar comida.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      const Textos(),
+                    ],
                   ),
-                  const Textos(),
-                ],
+                ),
               ),
       floatingActionButton: ButtonPlus(
         onManualAdd: _navegarAgregarPorCategoria,
@@ -389,7 +396,11 @@ class Textos extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Flexible(child: Text('Da en la  ', textAlign: TextAlign.right)),
-          Image.asset('assets/manzana.png', width: 25.0, height: 25.0),
+          Image.asset(
+            'assets/Frescorden-logo/fresco-fresh-512.png',
+            width: 25.0,
+            height: 25.0,
+          ),
           const SizedBox(width: 3.0),
           const Flexible(
             child: Text(' para agregar un producto', textAlign: TextAlign.left),

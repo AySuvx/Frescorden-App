@@ -124,7 +124,11 @@ class _BarChartBody extends StatelessWidget {
                 final category = data[index].category;
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Icon(category.icon, size: 16, color: category.chartColor),
+                  child: Image.asset(
+                    category.iconAsset,
+                    width: 16,
+                    height: 16,
+                  ),
                 );
               },
             ),

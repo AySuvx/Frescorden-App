@@ -4,7 +4,7 @@
     "nombre": "Arepa con queso",
     "personas": 2,
     "tiempo_minutos": 10,
-    "imagen": "assets/arepa.png",
+    "imagen": "assets/iconos/arepa.png",
     "ingredientes": [
       { "nombre": "arepa", "cantidad": 2, "unidad": "unidades" },
       { "nombre": "queso", "cantidad": 100, "unidad": "gramos" },
@@ -23,7 +23,7 @@
     "nombre": "Huevos pericos",
     "personas": 2,
     "tiempo_minutos": 15,
-    "imagen": "assets/huevos_pericos.png",
+    "imagen": "assets/iconos/huevos_pericos.png",
     "ingredientes": [
       { "nombre": "huevos", "cantidad": 3, "unidad": "unidades" },
       { "nombre": "tomate", "cantidad": 1, "unidad": "unidad" },
@@ -45,7 +45,7 @@
     "nombre": "Caldo de papa",
     "personas": 4,
     "tiempo_minutos": 30,
-    "imagen": "assets/caldo_papa.png",
+    "imagen": "assets/iconos/caldo_papa.png",
     "ingredientes": [
       { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
       { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
@@ -67,7 +67,7 @@
     "nombre": "Arroz con pollo",
     "personas": 4,
     "tiempo_minutos": 35,
-    "imagen": "assets/arroz_pollo.png",
+    "imagen": "assets/iconos/arroz_pollo.png",
     "ingredientes": [
       { "nombre": "arroz", "cantidad": 2, "unidad": "tazas" },
       { "nombre": "pollo", "cantidad": 500, "unidad": "gramos" },
@@ -92,7 +92,7 @@
     "nombre": "Changua",
     "personas": 2,
     "tiempo_minutos": 15,
-    "imagen": "assets/changua.png",
+    "imagen": "assets/iconos/changua.png",
     "ingredientes": [
       { "nombre": "leche", "cantidad": 500, "unidad": "ml" },
       { "nombre": "agua", "cantidad": 500, "unidad": "ml" },
@@ -114,7 +114,7 @@
     "nombre": "Calentado paisa",
     "personas": 2,
     "tiempo_minutos": 15,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_calentado_paisa.png",
     "ingredientes": [
       { "nombre": "arroz", "cantidad": 1, "unidad": "taza" },
       { "nombre": "frijoles", "cantidad": 1, "unidad": "taza" },
@@ -135,7 +135,7 @@
     "nombre": "Chocolate santafereño con queso",
     "personas": 2,
     "tiempo_minutos": 10,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_chocolate_santafereno.png",
     "ingredientes": [
       { "nombre": "chocolate", "cantidad": 2, "unidad": "pastillas" },
       { "nombre": "leche", "cantidad": 400, "unidad": "ml" },
@@ -154,7 +154,7 @@
     "nombre": "Sancocho de pollo",
     "personas": 4,
     "tiempo_minutos": 50,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_sancocho.png",
     "ingredientes": [
       { "nombre": "pollo", "cantidad": 600, "unidad": "gramos" },
       { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
@@ -179,7 +179,7 @@
     "nombre": "Lentejas guisadas",
     "personas": 4,
     "tiempo_minutos": 35,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_lentejas.png",
     "ingredientes": [
       { "nombre": "lentejas", "cantidad": 2, "unidad": "tazas" },
       { "nombre": "cebolla", "cantidad": 1, "unidad": "unidad" },
@@ -203,7 +203,7 @@
     "nombre": "Frijoles colombianos",
     "personas": 4,
     "tiempo_minutos": 45,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_frijoles.png",
     "ingredientes": [
       { "nombre": "frijoles", "cantidad": 2, "unidad": "tazas" },
       { "nombre": "plátano", "cantidad": 1, "unidad": "unidad" },
@@ -227,7 +227,7 @@
     "nombre": "Pollo guisado con papa",
     "personas": 4,
     "tiempo_minutos": 40,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_pollo_guisado.png",
     "ingredientes": [
       { "nombre": "pollo", "cantidad": 500, "unidad": "gramos" },
       { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
@@ -252,7 +252,7 @@
     "nombre": "Tortilla de papa",
     "personas": 3,
     "tiempo_minutos": 25,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_tortilla_papa.png",
     "ingredientes": [
       { "nombre": "papas", "cantidad": 3, "unidad": "unidades" },
       { "nombre": "huevos", "cantidad": 4, "unidad": "unidades" },
@@ -274,7 +274,7 @@
     "nombre": "Sopa de verduras",
     "personas": 4,
     "tiempo_minutos": 30,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_sopa_verduras.png",
     "ingredientes": [
       { "nombre": "zanahoria", "cantidad": 2, "unidad": "unidades" },
       { "nombre": "papas", "cantidad": 2, "unidad": "unidades" },
@@ -296,7 +296,7 @@
     "nombre": "Pasta con pollo",
     "personas": 4,
     "tiempo_minutos": 25,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_pasta_pollo.png",
     "ingredientes": [
       { "nombre": "pasta", "cantidad": 300, "unidad": "gramos" },
       { "nombre": "pollo", "cantidad": 400, "unidad": "gramos" },
@@ -320,7 +320,7 @@
     "nombre": "Arepa de choclo rellena",
     "personas": 3,
     "tiempo_minutos": 20,
-    "imagen": "assets/arepa.png",
+    "imagen": "assets/iconos/arepa.png",
     "ingredientes": [
       { "nombre": "mazorca", "cantidad": 3, "unidad": "unidades" },
       { "nombre": "queso", "cantidad": 150, "unidad": "gramos" },
@@ -340,7 +340,7 @@
     "nombre": "Arroz con leche",
     "personas": 4,
     "tiempo_minutos": 35,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_arroz_leche.png",
     "ingredientes": [
       { "nombre": "arroz", "cantidad": 1, "unidad": "taza" },
       { "nombre": "leche", "cantidad": 1, "unidad": "litro" },
@@ -361,7 +361,7 @@
     "nombre": "Cocadas",
     "personas": 6,
     "tiempo_minutos": 30,
-    "imagen": "assets/verduras.png",
+    "imagen": "assets/iconos/receta_cocadas.png",
     "ingredientes": [
       { "nombre": "coco", "cantidad": 2, "unidad": "tazas" },
       { "nombre": "panela", "cantidad": 200, "unidad": "gramos" },
@@ -381,7 +381,7 @@
     "nombre": "Ensalada de frutas",
     "personas": 4,
     "tiempo_minutos": 15,
-    "imagen": "assets/manzana.png",
+    "imagen": "assets/iconos/receta_ensalada_frutas.png",
     "ingredientes": [
       { "nombre": "manzana", "cantidad": 1, "unidad": "unidad" },
       { "nombre": "banano", "cantidad": 2, "unidad": "unidades" },

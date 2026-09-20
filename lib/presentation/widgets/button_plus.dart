@@ -6,6 +6,7 @@
 //     selección de categoría — ver AddProductScreen(isBulkEntry: true).
 
 import 'package:flutter/material.dart';
+import '../../config/theme/app_spacing.dart';
 
 class ButtonPlus extends StatefulWidget {
   final VoidCallback onManualAdd;
@@ -50,7 +51,11 @@ class _ButtonPlusState extends State<ButtonPlus> {
                 toggleMenu();
               },
               backgroundColor: const Color(0xFF42A5F5),
-              icon: const Icon(Icons.shopping_basket, color: Colors.white),
+              icon: Image.asset(
+                'assets/iconos/fresco_accion_granel.png',
+                width: 24,
+                height: 24,
+              ),
               label: const Text(
                 'Registro a Granel',
                 style: TextStyle(color: Colors.white),
@@ -58,7 +63,7 @@ class _ButtonPlusState extends State<ButtonPlus> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.md),
 
         // Botón Agregar por Categoría (flujo estándar)
         AnimatedSlide(
@@ -75,7 +80,11 @@ class _ButtonPlusState extends State<ButtonPlus> {
                 toggleMenu();
               },
               backgroundColor: const Color(0xFF66BB6A),
-              icon: const Icon(Icons.eco, color: Colors.white),
+              icon: Image.asset(
+                'assets/iconos/fresco_accion_categoria.png',
+                width: 24,
+                height: 24,
+              ),
               label: const Text(
                 'Agregar por Categoría',
                 style: TextStyle(color: Colors.white),
@@ -83,19 +92,23 @@ class _ButtonPlusState extends State<ButtonPlus> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.md),
 
-        // Botón principal (Manzanita)
+        // Botón principal (mascota)
         Tooltip(
           message: _isExpanded ? 'Cerrar opciones' : 'Agregar nuevo producto',
-          child: FloatingActionButton(
+          child: FloatingActionButton.large(
             heroTag: 'toggleMenu',
             onPressed: toggleMenu,
             backgroundColor: Colors.transparent,
+            elevation: 0,
+            focusElevation: 0,
+            hoverElevation: 0,
+            highlightElevation: 0,
             child: Image.asset(
-              'assets/manzana.png',
-              width: 75.0,
-              height: 75.0,
+              'assets/Frescorden-logo/fresco-fresh-512.png',
+              width: 72.0,
+              height: 72.0,
             ),
           ),
         ),
