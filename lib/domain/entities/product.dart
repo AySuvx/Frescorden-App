@@ -73,13 +73,9 @@ class Product {
   /// Solo relevante para productos a granel (`isBulk`); un producto
   /// empacado normal no dispara esta alerta aunque lleve muchos días.
   ///
-  /// TODO(Roadmap): hoy `isStorageCritical` solo alimenta el badge
-  /// visual en la tarjeta de inventario (productos_screen.dart). No dispara
-  /// ninguna notificación push cuando un producto a granel lleva
-  /// `storageCriticalDays` o más almacenado — a diferencia de
-  /// `expirationDate`, que sí programa una alarma real (ver
-  /// AddProductScreen._scheduleNotification). Pendiente: decidir el
-  /// disparador (¿job periódico? ¿al abrir la app?) y programarlo.
+  /// Además del badge visual en la tarjeta de inventario, dispara una
+  /// notificación real (ver NotificationService.scheduleBulkStorageAlert,
+  /// invocada desde ProductProvider._scheduleNotifications al guardar).
   bool get isStorageCritical => isBulk && daysInStorage >= storageCriticalDays;
 
   /// Umbral de días para considerar el almacenamiento "crítico".

@@ -1,25 +1,3 @@
-// Única clase que habla directamente con Cloud Firestore para operaciones
-// de Household. Encapsula:
-//  - La colección '/households'
-//  - La colección '/inviteCodes' (lookup código → householdId — ver nota
-//    de diseño abajo y en firestore.rules)
-//  - El campo 'activeHouseholdId' del documento 'usuarios/{uid}' (mismo
-//    nombre de colección de perfil que ya usan FirestoreProductDataSource
-//    y FirestoreProductHistoryDataSource; no se crea una colección
-//    'users' nueva, para no fragmentar los datos del usuario).
-//
-// Diseño de '/inviteCodes' (por qué no es un `where('inviteCode', ...)`
-// sobre '/households'): las reglas de seguridad de Firestore no son
-// filtros — una query `list` se deniega COMPLETA si no se puede garantizar
-// que todo documento que pudiera matchear es visible para quien consulta.
-// Como quien se une a un hogar TODAVÍA no es miembro, una regla de lectura
-// restringida a `members` bloquearía la propia búsqueda del hogar por
-// código. La solución estándar de Firestore es una colección de lookup
-// aparte, indexada por el propio código como ID de documento: un `get`
-// puntual (no una query) sí puede evaluarse por documento. Ver
-// firestore.rules para el detalle completo de las reglas de ambas
-// colecciones.
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/repositories/i_household_repository.dart';
