@@ -68,3 +68,6 @@ graphify-out/
 # Config local de Claude Code (permisos/preferencias de esta máquina, ej.
 # worktree.baseRef) — nunca compartida entre desarrolladores.
 .claude/settings.local.json
+
+# Documentación de la monografía: se maneja fuera del repo de código.
+docs/
