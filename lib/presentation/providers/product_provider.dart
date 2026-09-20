@@ -188,9 +188,10 @@ class ProductProvider extends ChangeNotifier {
 
       if (isEdit) {
         // ── Edición completa ────────────────────────────────────────────────
+        final previous = _findLocal(map['id'].toString());
         final updated = _productFromMap(map);
         await _repository.updateProduct(householdId, updated);
-        await _scheduleNotifications(updated);
+        await _scheduleNotifications(updated, previous: previous);
         unawaited(_logActivity(householdId, updated.name, ActivityAction.editado));
       } else {
         // ── Agregar o acumular ──────────────────────────────────────────────
@@ -224,7 +225,7 @@ class ProductProvider extends ChangeNotifier {
             map,
           ).copyWith(id: existing.id, quantity: newQty);
           await _repository.updateProduct(householdId, updated);
-          await _scheduleNotifications(updated);
+          await _scheduleNotifications(updated, previous: existing);
           unawaited(_logActivity(householdId, updated.name, ActivityAction.editado));
         } else {
           // Nuevo producto
@@ -244,13 +245,32 @@ class ProductProvider extends ChangeNotifier {
   /// determinista) las alertas de vencimiento y de almacenamiento a granel
   /// del producto recién guardado. Best-effort: un fallo aquí no debe
   /// deshacer el guardado, que ya se confirmó en Firestore.
-  Future<void> _scheduleNotifications(Product product) async {
+  ///
+  /// [previous] es el estado del producto ANTES de este guardado (`null`
+  /// si es un alta nueva). La alerta de stock bajo solo se dispara al
+  /// CRUZAR el umbral (no estaba en stock bajo, ahora sí) — sin esto,
+  /// cada edición de un producto que ya estaba en stock bajo repetiría
+  /// la notificación innecesariamente.
+  Future<void> _scheduleNotifications(Product product, {Product? previous}) async {
     try {
       await NotificationService.instance.scheduleExpirationAlert(product);
       await NotificationService.instance.scheduleBulkStorageAlert(product);
+      final wasLowStock = previous?.isLowStock ?? false;
+      if (!wasLowStock && product.isLowStock) {
+        await NotificationService.instance.showLowStockAlert(product);
+      }
     } catch (e) {
       debugPrint('ProductProvider._scheduleNotifications error: $e');
     }
+  }
+
+  /// Busca en la lista local (ya sincronizada por el stream) el producto
+  /// con este [id]. `null` si no está (p. ej. alta nueva).
+  Product? _findLocal(String id) {
+    for (final p in _products) {
+      if (p.id == id) return p;
+    }
+    return null;
   }
 
   /// Registra un evento en el log de actividad del hogar. Best-effort
@@ -299,8 +319,7 @@ class ProductProvider extends ChangeNotifier {
 
     Product? resolved;
     try {
-      final matches = _products.where((p) => p.id == id);
-      resolved = matches.isEmpty ? null : matches.first;
+      resolved = _findLocal(id);
       await _repository.deleteProduct(householdId, id);
       // `_products` se actualiza solo cuando llega el próximo snapshot del
       // stream (ver setActiveHousehold) — no se muta a mano aquí.
@@ -325,6 +344,31 @@ class ProductProvider extends ChangeNotifier {
             : ActivityAction.consumido,
       ));
       unawaited(AnalyticsService.instance.logProductResolved(outcome: outcome.name));
+    }
+  }
+
+  /// Descuenta 1 unidad de la cantidad del producto [id] — acción rápida
+  /// para consumo parcial, sin pasar por el diálogo de "retirar producto"
+  /// (ver deleteProduct, pensado para cuando ya no queda nada). No hace
+  /// nada si la cantidad ya está en 0 o el producto no existe localmente.
+  Future<void> decrementQuantity(String id) async {
+    final householdId = _householdId;
+    if (householdId == null) return;
+
+    final existing = _findLocal(id);
+    if (existing == null || existing.quantity <= 0) return;
+
+    final wasLowStock = existing.isLowStock;
+    final updated = existing.copyWith(quantity: existing.quantity - 1);
+    try {
+      await _repository.updateProduct(householdId, updated);
+    } catch (e) {
+      debugPrint('ProductProvider.decrementQuantity error: $e');
+      rethrow;
+    }
+
+    if (!wasLowStock && updated.isLowStock) {
+      unawaited(NotificationService.instance.showLowStockAlert(updated));
     }
   }
 

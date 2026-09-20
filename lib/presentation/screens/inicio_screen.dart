@@ -70,7 +70,6 @@ class _InicioScreenState extends State<InicioScreen> {
         builder:
             (_) => AddProductScreen(
               onSave: (_) {},
-              isManualAdd: true,
               initialCategory: categoria,
             ),
         settings: const RouteSettings(name: AppRoutes.addProduct),
@@ -87,7 +86,6 @@ class _InicioScreenState extends State<InicioScreen> {
         builder:
             (_) => AddProductScreen(
               onSave: (_) {},
-              isManualAdd: true,
               isBulkEntry: true,
             ),
         settings: const RouteSettings(name: AppRoutes.addProduct),
