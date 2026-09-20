@@ -31,7 +31,9 @@ class PrimaryButton extends StatelessWidget {
 
   /// `null` deshabilita el botón (igual que en ElevatedButton estándar).
   final VoidCallback? onPressed;
-  final IconData? icon;
+
+  /// Típicamente un `Icon(...)` o un `Image.asset(...)` de 20x20.
+  final Widget? icon;
   final bool isLoading;
 
   /// Si es `true` (default), el botón ocupa todo el ancho disponible —
@@ -67,7 +69,7 @@ class _ButtonContent extends StatelessWidget {
   });
 
   final String label;
-  final IconData? icon;
+  final Widget? icon;
   final bool isLoading;
   final Color color;
 
@@ -86,7 +88,10 @@ class _ButtonContent extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 20),
+        IconTheme.merge(
+          data: IconThemeData(size: 20, color: color),
+          child: icon!,
+        ),
         const SizedBox(width: AppSpacing.sm),
         // Fase 6, Módulo 3: un label largo (ej. "Crear Receta Colombiana
         // con IA") desbordaba el Row en pantallas angostas — el Text no

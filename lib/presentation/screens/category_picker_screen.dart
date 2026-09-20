@@ -56,7 +56,7 @@ class _CategoryTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(category.icon, size: 32, color: color),
+              Image.asset(category.iconAsset, width: 32, height: 32),
               const SizedBox(height: 8),
               Text(
                 category.label,

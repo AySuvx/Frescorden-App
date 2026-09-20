@@ -251,7 +251,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           for (final entry in entries) ...[
             ListTile(
               dense: true,
-              leading: Icon(entry.category.icon, color: Colors.deepOrange),
+              leading: Image.asset(
+                entry.category.iconAsset,
+                width: 24,
+                height: 24,
+              ),
               title: Text(entry.name),
               subtitle: Text(entry.category.label),
               trailing: Text(

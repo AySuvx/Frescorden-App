@@ -147,10 +147,10 @@ class _RecetasScreenState extends State<RecetasScreen> {
                     const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: 13,
-                          color: colorScheme.onSurfaceVariant,
+                        Image.asset(
+                          'assets/iconos/fresco_receta_tiempo.png',
+                          width: 13,
+                          height: 13,
                         ),
                         const SizedBox(width: 2),
                         Text(
@@ -161,10 +161,10 @@ class _RecetasScreenState extends State<RecetasScreen> {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
-                        Icon(
-                          Icons.people_outline,
-                          size: 13,
-                          color: colorScheme.onSurfaceVariant,
+                        Image.asset(
+                          'assets/iconos/fresco_receta_porciones.png',
+                          width: 13,
+                          height: 13,
                         ),
                         const SizedBox(width: 2),
                         Text(
@@ -216,7 +216,7 @@ class _RecetasScreenState extends State<RecetasScreen> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            Icon(Icons.auto_awesome, size: 32, color: colorScheme.primary),
+            Image.asset('assets/iconos/fresco_receta_ia.png', width: 40, height: 40),
             const SizedBox(height: AppSpacing.sm),
             Text(
               '¿No encuentras algo que te sirva?',
@@ -241,7 +241,11 @@ class _RecetasScreenState extends State<RecetasScreen> {
             const SizedBox(height: AppSpacing.md),
             PrimaryButton(
               label: 'Crear Receta Colombiana con IA',
-              icon: Icons.auto_awesome,
+              icon: Image.asset(
+                'assets/iconos/fresco_receta_ia.png',
+                width: 20,
+                height: 20,
+              ),
               isLoading: recipeProvider.isGeneratingAiRecipe,
               onPressed: () => _crearRecetaConIa(recipeProvider, inventory),
             ),
@@ -256,7 +260,6 @@ class _RecetasScreenState extends State<RecetasScreen> {
     RecipeProvider recipeProvider,
     List<Product> inventory,
   ) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -265,7 +268,11 @@ class _RecetasScreenState extends State<RecetasScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.restaurant_menu, size: 40, color: colorScheme.primary),
+              Image.asset(
+                'assets/iconos/fresco_receta_header.png',
+                width: 40,
+                height: 40,
+              ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'No hay recetas disponibles por ahora',
@@ -275,7 +282,11 @@ class _RecetasScreenState extends State<RecetasScreen> {
               const SizedBox(height: AppSpacing.md),
               PrimaryButton(
                 label: 'Crear Receta Colombiana con IA',
-                icon: Icons.auto_awesome,
+                icon: Image.asset(
+                  'assets/iconos/fresco_receta_ia.png',
+                  width: 20,
+                  height: 20,
+                ),
                 isLoading: recipeProvider.isGeneratingAiRecipe,
                 onPressed: () => _crearRecetaConIa(recipeProvider, inventory),
               ),
