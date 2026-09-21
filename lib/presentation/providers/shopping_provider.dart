@@ -19,6 +19,7 @@
 
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/budget_tier.dart';
+import '../../domain/entities/food_category.dart';
 import '../../domain/entities/nutrition_group.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/shopping_item.dart';
@@ -89,6 +90,21 @@ class ShoppingProvider extends ChangeNotifier {
     try {
       _basket = await _repository.getBasket(_selectedTier);
       _error = null;
+      // BUG CORREGIDO (reportado por el usuario: ítems duplicados en "Por
+      // comprar" al cambiar de nivel de presupuesto después de usar Plato
+      // Equilibrado): _extraItems nunca se limpiaba, así que un ítem
+      // agregado bajo un nivel (ej. "Carne" en Básica, que no la trae)
+      // quedaba viviendo en _extraItems para siempre. Si el usuario luego
+      // cambiaba a un nivel que SÍ trae "Carne" en su propia canasta
+      // (ej. Familiar), missingItems() mostraba el mismo nombre dos veces
+      // — una vez por _basket, otra por el _extraItems obsoleto. Se poda
+      // acá, apenas se conoce la canasta nueva, en vez de solo filtrar en
+      // missingItems() (eso solo ocultaría el síntoma en pantalla sin
+      // arreglar el estado real).
+      final basketNames = _basket.map((i) => i.name.toLowerCase()).toSet();
+      _extraItems.removeWhere(
+        (item) => basketNames.contains(item.name.toLowerCase()),
+      );
     } catch (e) {
       _error = e.toString();
       debugPrint('ShoppingProvider.loadBasket error: $e');
@@ -102,10 +118,35 @@ class ShoppingProvider extends ChangeNotifier {
   /// `_extraItems`) que el usuario todavía no tiene registrados en su
   /// inventario, con cantidad y precio escalados según `personCount`. Esto
   /// es lo que realmente falta comprar.
+  ///
+  /// Deduplicación defensiva por nombre (`_basket` tiene prioridad sobre
+  /// `_extraItems` si ambos traen el mismo ítem) — `loadBasket` ya poda
+  /// `_extraItems` cuando cambia de nivel, esto es una segunda capa por si
+  /// algún otro camino (ej. `addItems` desde una receta) llegara a
+  /// solaparse.
   List<ShoppingItem> missingItems(List<Product> inventory) {
     final inventoryNames = inventory.map((p) => p.name.toLowerCase()).toSet();
-    return [..._basket, ..._extraItems]
-        .where((item) => !inventoryNames.contains(item.name.toLowerCase()))
+    final inventoryCategories = inventory.map((p) => p.category).toSet();
+
+    final combined = <String, ShoppingItem>{};
+    for (final item in [..._basket, ..._extraItems]) {
+      combined.putIfAbsent(item.name.toLowerCase(), () => item);
+    }
+
+    return combined.values
+        .where((item) {
+          // Ítems genéricos de categoría ("Leche", "Carne" — ver
+          // NutritionGroup.suggestedItems): el usuario los cubre con
+          // CUALQUIER producto de esa categoría, no solo con ese nombre
+          // exacto — así si ya tiene "Leche deslactosada Alpina" en el
+          // inventario, "Leche" no vuelve a aparecer como faltante.
+          if (item.matchByCategory) {
+            return !inventoryCategories.contains(
+              FoodCategory.fromName(item.category),
+            );
+          }
+          return !inventoryNames.contains(item.name.toLowerCase());
+        })
         .map(_scaled)
         .toList();
   }

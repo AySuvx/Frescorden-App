@@ -13,6 +13,7 @@
 // Ninguna pantalla instancia estas clases directamente; las obtienen a
 // través de context.read<...>() / context.watch<...>().
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -67,6 +68,32 @@ import 'presentation/providers/household_provider.dart';
 import 'presentation/providers/assistant_provider.dart';
 import 'presentation/providers/admin_provider.dart';
 
+/// App Check (protege Firestore/Storage/Gemini) y AlarmManager (solo lo usa
+/// SettingsScreen) — ninguno hace falta para el primer frame. Se corren en
+/// paralelo, no delante de runApp(). Si App Check activate() llegara a
+/// fallar (sin red, por ejemplo), no debe tumbar el arranque de la app —
+/// las llamadas a Firebase que dependan de él simplemente saldrán
+/// rechazadas más adelante, con su propio error visible en esa pantalla.
+Future<void> _initNonCriticalServices() async {
+  try {
+    // Firebase AI Logic exige App Check. En debug se usa el proveedor debug
+    // (requiere registrar el token que imprime logcat en la consola de
+    // Firebase); en release, Play Integrity.
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: kDebugMode
+          ? const AndroidDebugProvider()
+          : const AndroidPlayIntegrityProvider(),
+    );
+  } catch (e) {
+    debugPrint('FirebaseAppCheck.activate error: $e');
+  }
+  try {
+    await AndroidAlarmManager.initialize();
+  } catch (e) {
+    debugPrint('AndroidAlarmManager.initialize error: $e');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -77,15 +104,16 @@ void main() async {
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
   );
-  // Firebase AI Logic exige App Check. En debug se usa el proveedor debug
-  // (requiere registrar el token que imprime logcat en la consola de
-  // Firebase); en release, Play Integrity.
-  await FirebaseAppCheck.instance.activate(
-    providerAndroid: kDebugMode
-        ? const AndroidDebugProvider()
-        : const AndroidPlayIntegrityProvider(),
-  );
-  await AndroidAlarmManager.initialize();
+
+  // App Check y AlarmManager NO bloquean el primer frame (antes vivían acá
+  // arriba, con `await`, delante de runApp() — el usuario veía la pantalla
+  // negra nativa de Android mientras Flutter esperaba esto sin haber
+  // dibujado nada todavía). Ninguno de los dos hace falta antes de mostrar
+  // el splash: App Check protege llamadas a Firestore/Storage/Gemini, que
+  // no ocurren hasta después de la pantalla de splash (mínimo 1.2s, ver
+  // SplashScreen); AndroidAlarmManager solo lo usa SettingsScreen, nunca en
+  // el arranque. Se disparan en paralelo, sin esperar su resultado.
+  unawaited(_initNonCriticalServices());
 
   runApp(
     MultiProvider(

@@ -3,10 +3,15 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="?android:colorBackground" />
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <!-- Mascota de Frescorden, centrada — mismo drawable que ya genera
+         flutter_launcher_icons para el ícono adaptativo (transparente, se
+         ve bien tanto en el fondo claro como en el oscuro de arriba). Sin
+         esto, los ~1-2s de arranque nativo (antes de que Flutter dibuje su
+         primer frame) se veían como una pantalla en blanco/negra sin
+         relación con la app. -->
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/ic_launcher_foreground" />
+    </item>
 </layer-list>

@@ -54,6 +54,10 @@ extension NutritionGroupInfo on NutritionGroup {
     switch (this) {
       case NutritionGroup.proteinas:
         return const [
+          // Huevos NO usa matchByCategory: su categoría ('otros') es el
+          // cajón genérico de todo lo no clasificado — cruzarlo por
+          // categoría daría falsos positivos con cualquier producto sin
+          // categoría clara. Se queda con el cruce por nombre exacto.
           ShoppingItem(
             name: 'Huevos',
             quantity: 30,
@@ -67,6 +71,7 @@ extension NutritionGroupInfo on NutritionGroup {
             unit: 'kg',
             category: 'carnesYEmbutidos',
             estimatedPrice: 19000,
+            matchByCategory: true,
           ),
         ];
       case NutritionGroup.carbohidratos:
@@ -77,6 +82,7 @@ extension NutritionGroupInfo on NutritionGroup {
             unit: 'kg',
             category: 'granosYCereales',
             estimatedPrice: 22000,
+            matchByCategory: true,
           ),
           ShoppingItem(
             name: 'Pan',
@@ -84,6 +90,7 @@ extension NutritionGroupInfo on NutritionGroup {
             unit: 'paquete',
             category: 'panaderia',
             estimatedPrice: 4500,
+            matchByCategory: true,
           ),
         ];
       case NutritionGroup.frutasYVerduras:
@@ -94,6 +101,7 @@ extension NutritionGroupInfo on NutritionGroup {
             unit: 'kg',
             category: 'frutasYVerduras',
             estimatedPrice: 6000,
+            matchByCategory: true,
           ),
           ShoppingItem(
             name: 'Verduras',
@@ -101,6 +109,7 @@ extension NutritionGroupInfo on NutritionGroup {
             unit: 'kg',
             category: 'frutasYVerduras',
             estimatedPrice: 6000,
+            matchByCategory: true,
           ),
         ];
       case NutritionGroup.lacteosYGrasas:
@@ -111,6 +120,7 @@ extension NutritionGroupInfo on NutritionGroup {
             unit: 'L',
             category: 'lacteos',
             estimatedPrice: 9000,
+            matchByCategory: true,
           ),
           ShoppingItem(
             name: 'Aceite',
@@ -118,6 +128,7 @@ extension NutritionGroupInfo on NutritionGroup {
             unit: 'L',
             category: 'condimentosYSalsas',
             estimatedPrice: 9000,
+            matchByCategory: true,
           ),
         ];
     }

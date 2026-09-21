@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme/app_spacing.dart';
 import '../../domain/entities/food_category.dart';
 import '../../domain/repositories/i_product_recognition_repository.dart';
+import '../../domain/requests/save_product_request.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../utils/food_category_ui.dart';
@@ -293,33 +294,43 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
 
     try {
-      final productoMap = {
-        if (widget.initialProduct?['id'] != null)
-          'id': widget.initialProduct!['id'],
-        'name': name,
-        'quantity': quantity,
-        'unit': _selectedUnit,
-        'imagePath': _imageFile?.path,
-        'expirationDate': _expiryDate?.toIso8601String(),
+      final request = SaveProductRequest(
+        id: widget.initialProduct?['id'] as String?,
+        name: name,
+        quantity: parsedQuantity,
+        unit: _selectedUnit,
+        imagePath: _imageFile?.path,
+        expirationDate: _expiryDate,
         // entryDate es obligatoria en el dominio: si el usuario no
         // eligió una fecha de entrada explícita, se usa el momento de
         // guardado (mismo criterio de fallback que ProductModel._fromMap).
-        'entryDate': (_entryDate ?? DateTime.now()).toIso8601String(),
-        'isBulk': _isBulk,
-        'category': _selectedCategory.name,
-        if (minStock != null) 'minStock': minStock,
-      };
+        entryDate: _entryDate ?? DateTime.now(),
+        isBulk: _isBulk,
+        category: _selectedCategory,
+        minStock: minStock,
+      );
 
       // Delegar al provider — sin Firestore directo. También programa/
       // reprograma las notificaciones (vencimiento y almacenamiento a
       // granel) vía NotificationService, con el producto ya guardado
       // (con su id real, necesario para el ID determinista de la
       // notificación) — ver ProductProvider.saveProduct.
-      await context.read<ProductProvider>().saveProduct(productoMap);
+      await context.read<ProductProvider>().saveProduct(request);
 
       // Callback opcional (inicio_screen ya no lo usa para Firestore,
       // pero se mantiene por si otras pantallas dependen de él)
-      widget.onSave(productoMap);
+      widget.onSave({
+        if (request.id != null) 'id': request.id,
+        'name': request.name,
+        'quantity': request.quantity.toString(),
+        'unit': request.unit,
+        'imagePath': request.imagePath,
+        'expirationDate': request.expirationDate?.toIso8601String(),
+        'entryDate': request.entryDate.toIso8601String(),
+        'isBulk': request.isBulk,
+        'category': request.category.name,
+        if (request.minStock != null) 'minStock': request.minStock,
+      });
 
       _showSnack(
         widget.initialProduct != null
