@@ -7,21 +7,38 @@
 
 import 'dart:async';
 
+import 'package:frescorden/domain/entities/activity_log_entry.dart';
 import 'package:frescorden/domain/entities/budget_tier.dart';
 import 'package:frescorden/domain/entities/household.dart';
 import 'package:frescorden/domain/entities/product.dart';
+import 'package:frescorden/domain/entities/product_history_entry.dart';
 import 'package:frescorden/domain/entities/recipe.dart';
 import 'package:frescorden/domain/entities/shopping_item.dart';
+import 'package:frescorden/domain/repositories/i_activity_log_repository.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
+import 'package:frescorden/domain/repositories/i_product_history_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_repository.dart';
 import 'package:frescorden/domain/repositories/i_recipe_repository.dart';
 import 'package:frescorden/domain/repositories/i_shopping_repository.dart';
 
 /// Fake de [IProductRepository]: `watchProducts` es un stream controlable
 /// a mano ([emit]) para simular snapshots sucesivos de Firestore.
+///
+/// [findByNameResult]/[findByBarcodeResult] configuran de antemano lo que
+/// devuelve la búsqueda de duplicados (por defecto `null`, "no existe").
+/// Los `*Error` inyectan una falla del repositorio (p. ej. red/permisos)
+/// para los escenarios "repositorio genera error" del formato BDD.
 class FakeProductRepository implements IProductRepository {
   final _controllers = <String, StreamController<List<Product>>>{};
   final List<Product> added = [];
+  final List<Product> updated = [];
+  final List<String> deletedIds = [];
+
+  Product? findByNameResult;
+  Product? findByBarcodeResult;
+  Object? addProductError;
+  Object? updateProductError;
+  Object? deleteProductError;
 
   StreamController<List<Product>> _controllerFor(String householdId) =>
       _controllers.putIfAbsent(
@@ -45,22 +62,30 @@ class FakeProductRepository implements IProductRepository {
 
   @override
   Future<Product> addProduct(String householdId, Product product) async {
+    if (addProductError != null) throw addProductError!;
     added.add(product);
     return product;
   }
 
   @override
-  Future<void> updateProduct(String householdId, Product product) async {}
+  Future<void> updateProduct(String householdId, Product product) async {
+    if (updateProductError != null) throw updateProductError!;
+    updated.add(product);
+  }
 
   @override
-  Future<void> deleteProduct(String householdId, String id) async {}
+  Future<void> deleteProduct(String householdId, String id) async {
+    if (deleteProductError != null) throw deleteProductError!;
+    deletedIds.add(id);
+  }
 
   @override
   Future<Product?> findByBarcode(String householdId, String barcode) async =>
-      null;
+      findByBarcodeResult;
 
   @override
-  Future<Product?> findByName(String householdId, String name) async => null;
+  Future<Product?> findByName(String householdId, String name) async =>
+      findByNameResult;
 
   void dispose() {
     for (final c in _controllers.values) {
@@ -171,4 +196,44 @@ class FakeHouseholdRepository implements IHouseholdRepository {
     unawaited(_activeIdController.close());
     unawaited(_householdController.close());
   }
+}
+
+/// Fake de [IProductHistoryRepository]: registra las entradas recibidas en
+/// [logged]. [logResolutionError] simula una falla best-effort (el caller
+/// -[ProductResolutionUseCase]- debe atraparla y no propagarla).
+class FakeProductHistoryRepository implements IProductHistoryRepository {
+  final List<ProductHistoryEntry> logged = [];
+  Object? logResolutionError;
+
+  @override
+  Future<void> logResolution(
+    String householdId,
+    ProductHistoryEntry entry,
+  ) async {
+    if (logResolutionError != null) throw logResolutionError!;
+    logged.add(entry);
+  }
+}
+
+/// Fake de [IActivityLogRepository]: registra las llamadas a [logActivity]
+/// en [logged]. [logActivityError] simula una falla best-effort.
+class FakeActivityLogRepository implements IActivityLogRepository {
+  final List<ActivityAction> logged = [];
+  Object? logActivityError;
+
+  @override
+  Future<void> logActivity({
+    required String householdId,
+    required String productName,
+    required ActivityAction action,
+  }) async {
+    if (logActivityError != null) throw logActivityError!;
+    logged.add(action);
+  }
+
+  @override
+  Stream<List<ActivityLogEntry>> watchRecentActivity(
+    String householdId, {
+    int limit = 20,
+  }) => const Stream.empty();
 }
