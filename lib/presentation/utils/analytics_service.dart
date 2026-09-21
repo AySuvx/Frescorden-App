@@ -18,7 +18,9 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 
-class AnalyticsService {
+import '../../domain/services/i_analytics_service.dart';
+
+class AnalyticsService implements IAnalyticsService {
   AnalyticsService._();
   static final AnalyticsService instance = AnalyticsService._();
 
@@ -34,6 +36,7 @@ class AnalyticsService {
 
   /// Trazabilidad de Desperdicio vs. Consumo: quién retira un producto y
   /// qué eligió (ver ProductProvider.deleteProduct).
+  @override
   Future<void> logProductResolved({required String outcome}) =>
       _log('product_resolved', {'outcome': outcome});
 

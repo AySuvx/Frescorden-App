@@ -2,7 +2,7 @@ name: frescorden
 description: "Gestión integral de alimentos en el hogar."
 publish_to: 'none'
 
-version: 1.17.0+21
+version: 1.17.3+24
 
 environment:
   sdk: ^3.7.0
@@ -52,6 +52,7 @@ flutter:
     - assets/data/
     - assets/Frescorden-logo/
     - assets/Frescorden-logo/stickers/
+    - assets/Frescorden-logo/banners/
     - assets/iconos/
     - assets/iconos/pequenos/
 
