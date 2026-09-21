@@ -8,10 +8,9 @@
 //     refrescar manualmente.
 //  2. Exponer `productosMap` (List<Map<String,dynamic>>) para las pantallas
 //     que trabajan con Maps.
-//  3. Centralizar la lógica de negocio de productos:
-//       - Upsert (agregar o acumular cantidad si ya existe por barcode/nombre)
-//       - Actualización completa de un producto existente
-//       - Eliminación
+//  3. Delegar la lógica de negocio (upsert, edición, eliminación) a los
+//     Use Cases del dominio — este provider solo orquesta el estado de UI
+//     y decide QUÉ Use Case llamar según la acción del usuario.
 //
 // Las pantallas no llaman a FirebaseFirestore.instance directamente.
 
@@ -24,6 +23,14 @@ import '../../domain/entities/product_history_entry.dart';
 import '../../domain/repositories/i_activity_log_repository.dart';
 import '../../domain/repositories/i_product_repository.dart';
 import '../../domain/repositories/i_product_history_repository.dart';
+import '../../domain/requests/save_product_request.dart';
+import '../../domain/services/i_analytics_service.dart';
+import '../../domain/services/i_notification_service.dart';
+import '../../domain/usecases/product/add_product_usecase.dart';
+import '../../domain/usecases/product/consume_product_usecase.dart';
+import '../../domain/usecases/product/decrement_product_quantity_usecase.dart';
+import '../../domain/usecases/product/discard_product_usecase.dart';
+import '../../domain/usecases/product/update_product_usecase.dart';
 import '../utils/analytics_service.dart';
 import '../utils/notification_service.dart';
 
@@ -40,10 +47,50 @@ class ProductProvider extends ChangeNotifier {
   // _historyRepository.
   final IActivityLogRepository? _activityLogRepository;
 
+  // Inyectados opcionalmente (tests); si no se pasan, se resuelve el
+  // singleton por defecto — pero solo al primer uso real (ver los `late
+  // final` de abajo), nunca en el constructor: construir un ProductProvider
+  // no debe requerir Firebase.initializeApp() a menos que de verdad se
+  // guarde/elimine un producto.
+  final INotificationService? _injectedNotificationService;
+  final IAnalyticsService? _injectedAnalyticsService;
+
+  late final INotificationService _notifications =
+      _injectedNotificationService ?? NotificationService.instance;
+  late final IAnalyticsService _analytics =
+      _injectedAnalyticsService ?? AnalyticsService.instance;
+
+  late final AddProductUseCase _addProductUseCase = AddProductUseCase(
+    _repository,
+    _notifications,
+  );
+  late final UpdateProductUseCase _updateProductUseCase = UpdateProductUseCase(
+    _repository,
+    _notifications,
+  );
+  late final ConsumeProductUseCase _consumeProductUseCase = ConsumeProductUseCase(
+    _repository,
+    _notifications,
+    _analytics,
+    _historyRepository,
+    _activityLogRepository,
+  );
+  late final DiscardProductUseCase _discardProductUseCase = DiscardProductUseCase(
+    _repository,
+    _notifications,
+    _analytics,
+    _historyRepository,
+    _activityLogRepository,
+  );
+  late final DecrementProductQuantityUseCase _decrementProductQuantityUseCase =
+      DecrementProductQuantityUseCase(_repository, _notifications);
+
   ProductProvider(
     this._repository, [
     this._historyRepository,
     this._activityLogRepository,
+    this._injectedNotificationService,
+    this._injectedAnalyticsService,
   ]);
 
   // ─── Estado ───────────────────────────────────────────────────────────────
@@ -68,111 +115,72 @@ class ProductProvider extends ChangeNotifier {
 
   // ─── Alertas de Stock mínimo ──────────────────────────────────
 
-  /// Productos cuya cantidad actual llegó o bajó del umbral que el usuario
-  /// definió (`minStock`). Los productos sin `minStock` nunca aparecen aquí.
   List<Product> get lowStockProducts =>
-      List.unmodifiable(_products.where((p) => p.isLowStock));
+      _products.where((p) => p.isLowStock).toList();
 
   int get lowStockCount => lowStockProducts.length;
 
-  // ─── Categorización de Alimentos ──────────────────────────────
-
-  /// Agrupa los productos actuales por categoría, en el orden declarado en
-  /// [FoodCategory]. Las categorías sin productos no aparecen en el mapa.
   Map<FoodCategory, List<Product>> get productsByCategory {
-    final Map<FoodCategory, List<Product>> grouped = {};
-    for (final product in _products) {
-      grouped.putIfAbsent(product.category, () => []).add(product);
+    final map = <FoodCategory, List<Product>>{};
+    for (final p in _products) {
+      map.putIfAbsent(p.category, () => []).add(p);
     }
-    return grouped;
+    return map;
   }
 
-  /// Retorna los productos como `List<Map<String,dynamic>>` para retrocompatibilidad
-  /// con todas las pantallas existentes (ProductosScreen, RecetasScreen, etc.).
+  /// Getter de compatibilidad retroactiva para pantallas que aún trabajan
+  /// con Maps en vez de la entidad Product.
   List<Map<String, dynamic>> get productosMap =>
       _products.map((p) => p.toMap()).toList();
 
-  // ─── Sincronización con el hogar activo ────────────────────────────────────
+  // ─── Suscripción por hogar ──────────────────────────────────────────────
 
-  /// Llamado por main.dart (ChangeNotifierProxyProvider<HouseholdProvider,
-  /// _>) cada vez que cambia el hogar activo del usuario (login, logout,
-  /// creó/se unió a un hogar, o cambió de hogar). (Re)suscribe el stream de
-  /// productos de Firestore para ese hogar — de ahí en más, cualquier alta,
-  /// baja o modificación (propia o de otro miembro, desde cualquier
-  /// dispositivo) llega sola y dispara notifyListeners().
   void setActiveHousehold(String? householdId) {
-    if (householdId == _householdId) return;
+    if (_householdId == householdId) return;
     _householdId = householdId;
-
     unawaited(_productsSub?.cancel());
     _productsSub = null;
 
     if (householdId == null) {
       _products = [];
-      _isLoading = false;
       notifyListeners();
       return;
     }
 
     _isLoading = true;
-    _error = null;
     notifyListeners();
 
     _productsSub = _repository.watchProducts(householdId).listen(
       (products) {
-        // BUG CRÍTICO CORREGIDO (hallado en prueba manual en dispositivo):
-        // el objeto que emite watchProducts() está reificado en tiempo de
-        // ejecución como List<ProductModel>, aunque la interfaz declare
-        // List<Product>. Dart no "amplía" el tipo de un List ya construido —
-        // asignarlo tal cual a _products dejaba _products apuntando a esa
-        // misma List<ProductModel> reificada. Cualquier escritura posterior
-        // con un Product base (copyWith() siempre construye la clase base,
-        // no el subtipo) lanzaba en runtime:
-        // "type 'Product' is not a subtype of type 'ProductModel' of 'value'".
-        // FIX: List<Product>.of(...) crea una lista NUEVA reificada
-        // exactamente como List<Product>.
+        // BUG CRÍTICO CORREGIDO: el stream emite List<ProductModel>
+        // reificado en tiempo de ejecución — hay que re-envolverlo como
+        // List<Product> o copyWith() posteriores lanzan
+        // "type 'Product' is not a subtype of type 'ProductModel'".
         _products = List<Product>.of(products);
         _isLoading = false;
         _error = null;
         notifyListeners();
       },
-      onError: (Object e) {
+      onError: (e) {
         _error = e.toString();
         _isLoading = false;
-        debugPrint('ProductProvider.watchProducts error: $e');
         notifyListeners();
       },
     );
   }
 
-  /// Compatibilidad: con el inventario ahora sincronizado en tiempo real
-  /// (ver setActiveHousehold), ya no hace falta una recarga manual — el
-  /// stream mantiene `products` al día solo. Se conserva como no-op seguro
-  /// para no romper las pantallas que todavía la invocan tras acciones
-  /// puntuales (volver de una sub-pantalla, pull-to-refresh, etc.).
+  /// No-op: se mantiene solo por compatibilidad con pantallas que aún la
+  /// llaman después de una acción — la lista ya se sincroniza sola vía
+  /// stream (ver setActiveHousehold).
   Future<void> loadProducts() async {}
 
-  // ─── Agregar / Actualizar (upsert) ─────────────────────────────────────────
+  // ─── Guardar (alta o edición) ───────────────────────────────────────────
 
-  /// Guarda un producto a partir de un Map (formato que vienen usando las pantallas).
-  ///
-  /// Lógica de upsert:
-  ///  - Si el map trae un 'id' → es una edición completa (update all fields).
-  ///  - Si tiene 'barcode' no vacío y ya existe uno igual → acumula cantidad.
-  ///  - Si tiene solo 'name' y ya existe uno igual → acumula cantidad.
-  ///  - Si no coincide ninguno → agrega nuevo documento.
-  ///
-  /// Reemplaza los métodos agregarOActualizarProducto() de inicio_screen y
-  /// _guardarProducto() de add_product_screen que operaban sobre Firestore
-  /// directamente.
-  ///
-  /// Nota (inventario en tiempo real): este método solo escribe en
-  /// Firestore — ya NO toca `_products` a mano. El stream suscrito en
-  /// setActiveHousehold es la única fuente de verdad de la lista; en
-  /// cuanto Firestore confirma la escritura, el snapshot llega solo y
-  /// dispara notifyListeners(). Evita el desfase de tener dos caminos
-  /// (mutación local + stream) que podían pisarse entre sí.
-  Future<void> saveProduct(Map<String, dynamic> map) async {
+  /// Registra un producto nuevo o edita uno existente, según
+  /// `request.isEdit`. Delega la regla de negocio (acumular cantidad si ya
+  /// existe, o reemplazar campos en una edición) a AddProductUseCase /
+  /// UpdateProductUseCase.
+  Future<void> saveProduct(SaveProductRequest request) async {
     final householdId = _householdId;
     if (householdId == null) {
       throw StateError(
@@ -181,86 +189,31 @@ class ProductProvider extends ChangeNotifier {
     }
 
     try {
-      final isEdit =
-          map['id'] != null &&
-          map['id'].toString().isNotEmpty &&
-          map['id'].toString() != '';
-
-      if (isEdit) {
-        // ── Edición completa ────────────────────────────────────────────────
-        final previous = _findLocal(map['id'].toString());
-        final updated = _productFromMap(map);
-        await _repository.updateProduct(householdId, updated);
-        await _scheduleNotifications(updated, previous: previous);
-        unawaited(_logActivity(householdId, updated.name, ActivityAction.editado));
+      if (request.isEdit) {
+        final previous = _findLocal(request.id!);
+        final updated = await _updateProductUseCase(
+          householdId,
+          request,
+          previous: previous,
+        );
+        unawaited(
+          _logActivity(householdId, updated.name, ActivityAction.editado),
+        );
       } else {
-        // ── Agregar o acumular ──────────────────────────────────────────────
-        final barcode = map['barcode'] as String? ?? '';
-        final name = map['name'] as String? ?? '';
-        final incomingQty =
-            int.tryParse(map['quantity']?.toString() ?? '1') ?? 1;
-
-        Product? existing;
-        if (barcode.isNotEmpty) {
-          existing = await _repository.findByBarcode(householdId, barcode);
-        }
-        existing ??= await _repository.findByName(householdId, name);
-
-        if (existing != null) {
-          // Acumular cantidad sobre el producto existente.
-          //
-          // BUG CRÍTICO CORREGIDO (hallado en prueba visual en dispositivo):
-          // `existing.copyWith(quantity: newQty)` solo sobreescribía la
-          // cantidad y copiaba el resto de campos (expirationDate,
-          // categoría, unidad, isBulk, entryDate, minStock) del registro viejo,
-          // ignorando lo que el usuario acababa de escribir en el
-          // formulario. Síntoma reportado: una fecha de vencimiento "fantasma"
-          // reaparecía en productos guardados sin fecha, porque el nombre
-          // coincidía con un registro anterior que sí tenía fecha.
-          // FIX: se parte del Product recién construido desde el formulario
-          // (refleja fielmente lo que el usuario ingresó ahora) y solo se
-          // preservan el id (mismo documento) y la cantidad acumulada.
-          final newQty = existing.quantity + incomingQty;
-          final updated = _productFromMap(
-            map,
-          ).copyWith(id: existing.id, quantity: newQty);
-          await _repository.updateProduct(householdId, updated);
-          await _scheduleNotifications(updated, previous: existing);
-          unawaited(_logActivity(householdId, updated.name, ActivityAction.editado));
-        } else {
-          // Nuevo producto
-          final newProduct = _productFromMap(map);
-          final saved = await _repository.addProduct(householdId, newProduct);
-          await _scheduleNotifications(saved);
-          unawaited(_logActivity(householdId, saved.name, ActivityAction.creado));
-        }
+        final result = await _addProductUseCase(householdId, request);
+        unawaited(
+          _logActivity(
+            householdId,
+            result.product.name,
+            result.wasAccumulated
+                ? ActivityAction.editado
+                : ActivityAction.creado,
+          ),
+        );
       }
     } catch (e) {
       debugPrint('ProductProvider.saveProduct error: $e');
       rethrow; // La pantalla decide si muestra un SnackBar
-    }
-  }
-
-  /// Programa (o reprograma, si ya existía una con el mismo ID
-  /// determinista) las alertas de vencimiento y de almacenamiento a granel
-  /// del producto recién guardado. Best-effort: un fallo aquí no debe
-  /// deshacer el guardado, que ya se confirmó en Firestore.
-  ///
-  /// [previous] es el estado del producto ANTES de este guardado (`null`
-  /// si es un alta nueva). La alerta de stock bajo solo se dispara al
-  /// CRUZAR el umbral (no estaba en stock bajo, ahora sí) — sin esto,
-  /// cada edición de un producto que ya estaba en stock bajo repetiría
-  /// la notificación innecesariamente.
-  Future<void> _scheduleNotifications(Product product, {Product? previous}) async {
-    try {
-      await NotificationService.instance.scheduleExpirationAlert(product);
-      await NotificationService.instance.scheduleBulkStorageAlert(product);
-      final wasLowStock = previous?.isLowStock ?? false;
-      if (!wasLowStock && product.isLowStock) {
-        await NotificationService.instance.showLowStockAlert(product);
-      }
-    } catch (e) {
-      debugPrint('ProductProvider._scheduleNotifications error: $e');
     }
   }
 
@@ -303,13 +256,10 @@ class ProductProvider extends ChangeNotifier {
   /// ([ProductOutcome.expired]) — ya NO se infiere comparando la fecha de
   /// eliminación contra `expirationDate`. La pantalla es responsable de
   /// mostrar el diálogo de confirmación y pasar el [outcome] elegido.
-  ///
-  /// Historial: antes de borrar, se captura una copia del producto para
-  /// registrar [outcome] en el historial y en el log de actividad del
-  /// hogar. Ambos registros son best-effort: si fallan, NO afectan la
-  /// eliminación (que ya ocurrió) ni se propagan como error al caller —
-  /// solo se pierde ese dato para analíticas/auditoría.
-  Future<void> deleteProduct(String id, {required ProductOutcome outcome}) async {
+  Future<void> deleteProduct(
+    String id, {
+    required ProductOutcome outcome,
+  }) async {
     final householdId = _householdId;
     if (householdId == null) {
       throw StateError(
@@ -317,33 +267,17 @@ class ProductProvider extends ChangeNotifier {
       );
     }
 
-    Product? resolved;
+    final resolved = _findLocal(id);
     try {
-      resolved = _findLocal(id);
-      await _repository.deleteProduct(householdId, id);
+      final useCase = outcome == ProductOutcome.expired
+          ? _discardProductUseCase
+          : _consumeProductUseCase;
+      await useCase(householdId, id, resolved: resolved);
       // `_products` se actualiza solo cuando llega el próximo snapshot del
       // stream (ver setActiveHousehold) — no se muta a mano aquí.
     } catch (e) {
       debugPrint('ProductProvider.deleteProduct error: $e');
       rethrow;
-    }
-
-    // Cancela cualquier alerta pendiente (vencimiento/almacenamiento) de
-    // este producto — tanto "consumirlo" como "desperdiciarlo" en la UI
-    // pasan por acá, ya que ambos casos son el mismo deleteProduct.
-    unawaited(NotificationService.instance.cancelForProduct(id));
-
-    if (resolved != null) {
-      final now = DateTime.now();
-      unawaited(_logHistory(householdId, resolved, now: now, outcome: outcome));
-      unawaited(_logActivity(
-        householdId,
-        resolved.name,
-        outcome == ProductOutcome.expired
-            ? ActivityAction.desperdiciado
-            : ActivityAction.consumido,
-      ));
-      unawaited(AnalyticsService.instance.logProductResolved(outcome: outcome.name));
     }
   }
 
@@ -356,89 +290,14 @@ class ProductProvider extends ChangeNotifier {
     if (householdId == null) return;
 
     final existing = _findLocal(id);
-    if (existing == null || existing.quantity <= 0) return;
+    if (existing == null) return;
 
-    final wasLowStock = existing.isLowStock;
-    final updated = existing.copyWith(quantity: existing.quantity - 1);
     try {
-      await _repository.updateProduct(householdId, updated);
+      await _decrementProductQuantityUseCase(householdId, existing);
     } catch (e) {
       debugPrint('ProductProvider.decrementQuantity error: $e');
       rethrow;
     }
-
-    if (!wasLowStock && updated.isLowStock) {
-      unawaited(NotificationService.instance.showLowStockAlert(updated));
-    }
-  }
-
-  /// Registra en el historial (por-hogar) el resultado de haber eliminado
-  /// [product].
-  Future<void> _logHistory(
-    String householdId,
-    Product product, {
-    required DateTime now,
-    required ProductOutcome outcome,
-  }) async {
-    if (_historyRepository == null) return;
-    try {
-      await _historyRepository.logResolution(
-        householdId,
-        ProductHistoryEntry(
-          productId: product.id,
-          name: product.name,
-          category: product.category,
-          entryDate: product.entryDate,
-          expirationDate: product.expirationDate,
-          resolvedAt: now,
-          outcome: outcome,
-        ),
-      );
-    } catch (e) {
-      debugPrint('ProductProvider._logHistory error: $e');
-    }
-  }
-
-  // ─── Helpers privados ─────────────────────────────────────────────────────
-
-  Product _productFromMap(Map<String, dynamic> map) {
-    int parseQty(dynamic v) {
-      if (v == null) return 1;
-      if (v is int) return v;
-      return int.tryParse(v.toString()) ?? 1;
-    }
-
-    DateTime? parseDate(dynamic v) {
-      if (v == null) return null;
-      if (v is String && v.isNotEmpty) return DateTime.tryParse(v);
-      return null;
-    }
-
-    int? parseMinStock(dynamic v) {
-      if (v == null) return null;
-      if (v is int) return v;
-      final parsed = int.tryParse(v.toString());
-      return parsed;
-    }
-
-    final imagePath = map['imagePath'] as String? ?? map['image'] as String?;
-
-    return Product(
-      id: map['id'] as String? ?? '',
-      name: map['name'] as String? ?? '',
-      barcode: map['barcode'] as String?,
-      quantity: parseQty(map['quantity']),
-      unit: map['unit'] as String? ?? 'unidad',
-      imagePath: (imagePath != null && imagePath.isNotEmpty) ? imagePath : null,
-      expirationDate: parseDate(map['expirationDate']),
-      // mismo criterio de fallback que ProductModel._fromMap:
-      // entryDate > storedAt (legacy) > DateTime.now().
-      entryDate:
-          parseDate(map['entryDate']) ?? parseDate(map['storedAt']) ?? DateTime.now(),
-      isBulk: map['isBulk'] as bool? ?? false,
-      category: FoodCategory.fromName(map['category'] as String?),
-      minStock: parseMinStock(map['minStock']),
-    );
   }
 
   @override

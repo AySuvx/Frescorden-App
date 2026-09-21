@@ -9,8 +9,9 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/entities/product.dart';
+import '../../domain/services/i_notification_service.dart';
 
-class NotificationService {
+class NotificationService implements INotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
 
@@ -39,6 +40,7 @@ class NotificationService {
 
   /// Alerta 3 días antes de `expirationDate`. No hace nada si el producto
   /// no tiene fecha de vencimiento o si esos 3 días ya pasaron.
+  @override
   Future<void> scheduleExpirationAlert(Product product) async {
     final expiryDate = product.expirationDate;
     if (expiryDate == null) return;
@@ -75,6 +77,7 @@ class NotificationService {
   /// guardar un producto nuevo porque se escribe con
   /// FieldValue.serverTimestamp) — mismo campo que ya usa
   /// Product.isStorageCritical para el mismo umbral.
+  @override
   Future<void> scheduleBulkStorageAlert(Product product) async {
     if (!product.isBulk) return;
     final notifyAt = product.entryDate.add(
@@ -113,6 +116,7 @@ class NotificationService {
   /// muestra con `show` en vez de `zonedSchedule`. Quien llama decide
   /// CUÁNDO invocarla (ver ProductProvider — solo al cruzar el umbral por
   /// primera vez, no en cada edición de un producto que ya estaba bajo).
+  @override
   Future<void> showLowStockAlert(Product product) async {
     if (!product.isLowStock) return;
 
@@ -142,6 +146,7 @@ class NotificationService {
   /// Cancela las alertas posibles del producto (vencimiento, almacenamiento
   /// y stock bajo) — al eliminarlo o al consumirlo. Cancelar un ID sin
   /// notificación programada no falla, así que es seguro llamarlo siempre.
+  @override
   Future<void> cancelForProduct(String productId) async {
     await initialize();
     await _plugin.cancel(_expirationId(productId));

@@ -44,6 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Salida de Gradle (reportes, .transforms, etc.) — no cubierta por /build/
+# de la raíz, que solo apunta al build/ de Flutter.
+/android/build/
+
 # Firebase local options
 lib/firebase_options.dart
 
@@ -68,6 +72,13 @@ graphify-out/
 # Config local de Claude Code (permisos/preferencias de esta máquina, ej.
 # worktree.baseRef) — nunca compartida entre desarrolladores.
 .claude/settings.local.json
+
+# Estado en vivo del wrap de Headroom (PID, puerto, timestamps del proceso
+# de ESTA máquina/sesión) — no es configuración del proyecto, cambia en
+# cada ejecución y no tiene ningún valor para otro desarrollador.
+.claude/.headroom_wrap_marker.json
+.claude/.headroom_wrap_owners.json
+.claude/.headroom_wrap_settings.lock
 
 # Documentación de la monografía: se maneja fuera del repo de código.
 docs/
