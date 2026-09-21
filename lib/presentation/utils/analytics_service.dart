@@ -19,8 +19,9 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../domain/services/i_analytics_service.dart';
+import '../../domain/services/i_household_analytics_service.dart';
 
-class AnalyticsService implements IAnalyticsService {
+class AnalyticsService implements IAnalyticsService, IHouseholdAnalyticsService {
   AnalyticsService._();
   static final AnalyticsService instance = AnalyticsService._();
 
@@ -43,6 +44,9 @@ class AnalyticsService implements IAnalyticsService {
   /// Adopción del Asistente Culinario: una consulta exitosa.
   Future<void> logAssistantQuery() => _log('assistant_query');
 
+  @override
   Future<void> logHouseholdCreated() => _log('household_created');
+
+  @override
   Future<void> logHouseholdJoined() => _log('household_joined');
 }

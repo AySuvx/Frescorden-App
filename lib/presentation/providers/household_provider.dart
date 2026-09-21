@@ -25,14 +25,39 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/app_user.dart';
 import '../../domain/entities/household.dart';
 import '../../domain/repositories/i_household_repository.dart';
+import '../../domain/services/i_household_analytics_service.dart';
+import '../../domain/usecases/household/create_household_usecase.dart';
+import '../../domain/usecases/household/join_household_usecase.dart';
+import '../../domain/usecases/household/remove_member_usecase.dart';
 import '../utils/analytics_service.dart';
 
 class HouseholdProvider extends ChangeNotifier {
   final IHouseholdRepository _repository;
 
+  // Igual criterio que ProductProvider: resuelto solo al primer uso real
+  // (ver los `late final` de abajo), nunca en el constructor.
+  final IHouseholdAnalyticsService? _injectedAnalyticsService;
+
+  late final IHouseholdAnalyticsService _analytics =
+      _injectedAnalyticsService ?? AnalyticsService.instance;
+
+  late final CreateHouseholdUseCase _createHouseholdUseCase =
+      CreateHouseholdUseCase(_repository, _analytics);
+  late final JoinHouseholdUseCase _joinHouseholdUseCase = JoinHouseholdUseCase(
+    _repository,
+    _analytics,
+  );
+  late final RemoveMemberUseCase _removeMemberUseCase = RemoveMemberUseCase(
+    _repository,
+  );
+
   StreamSubscription<AppUser?>? _authSub;
 
-  HouseholdProvider(this._repository, Stream<AppUser?> authStateChanges) {
+  HouseholdProvider(
+    this._repository,
+    Stream<AppUser?> authStateChanges, [
+    this._injectedAnalyticsService,
+  ]) {
     _authSub = authStateChanges.listen((user) {
       _email = user?.email;
       setUid(user?.uid);
@@ -176,7 +201,7 @@ class HouseholdProvider extends ChangeNotifier {
     _bootstrapping = true;
     try {
       await _repository.bootstrapPersonalHousehold(uid, email: _email);
-      unawaited(AnalyticsService.instance.logHouseholdCreated());
+      unawaited(_analytics.logHouseholdCreated());
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -198,12 +223,11 @@ class HouseholdProvider extends ChangeNotifier {
     try {
       // El stream de watchActiveHouseholdId recoge el cambio solo; no hace
       // falta setear estado local aquí a mano.
-      await _repository.createHousehold(
+      await _createHouseholdUseCase(
         name: name,
         creatorUid: uid,
         creatorEmail: _email,
       );
-      unawaited(AnalyticsService.instance.logHouseholdCreated());
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -221,8 +245,7 @@ class HouseholdProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      await _repository.joinHouseholdByCode(code: code, uid: uid, email: _email);
-      unawaited(AnalyticsService.instance.logHouseholdJoined());
+      await _joinHouseholdUseCase(code: code, uid: uid, email: _email);
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
@@ -247,33 +270,21 @@ class HouseholdProvider extends ChangeNotifier {
     }
   }
 
-  /// Expulsa a [memberUid] del hogar activo. Solo el administrador
-  /// (creador) puede expulsar a OTROS miembros — restricción aplicada
-  /// aquí, no en firestore.rules (mismo modelo de confianza que el resto
-  /// del hogar: cualquier miembro actual puede escribir libremente en el
-  /// documento). El propio administrador no puede expulsarse a sí mismo
-  /// por esta vía — ver [leaveHousehold].
+  /// Expulsa a [memberUid] del hogar activo — reglas de autorización en
+  /// [RemoveMemberUseCase] (solo el administrador puede expulsar a otros;
+  /// no puede expulsarse a sí mismo por esta vía, ver [leaveHousehold]).
   Future<void> removeMember(String memberUid) async {
     final household = _household;
     final uid = _uid;
     if (household == null || uid == null) {
       throw const HouseholdException('No hay un hogar activo.');
     }
-    if (uid != household.createdBy) {
-      throw const HouseholdException(
-        'Solo el administrador del hogar puede expulsar miembros.',
-      );
-    }
-    if (memberUid == household.createdBy) {
-      throw const HouseholdException(
-        'El administrador no puede expulsarse a sí mismo.',
-      );
-    }
 
     try {
-      await _repository.removeMember(
-        householdId: household.id,
-        memberUid: memberUid,
+      await _removeMemberUseCase(
+        household,
+        requesterUid: uid,
+        targetUid: memberUid,
       );
     } catch (e) {
       _error = e.toString();
@@ -282,27 +293,20 @@ class HouseholdProvider extends ChangeNotifier {
     }
   }
 
-  /// El usuario actual sale del hogar activo: se quita de `members` y
-  /// limpia su `activeHouseholdId`. El bootstrap (mismo mecanismo que un
-  /// usuario nuevo sin hogar) le crea uno personal solo — ver
-  /// _onActiveHouseholdIdChanged. El administrador no puede salir por acá
-  /// (dejaría el hogar sin nadie que pueda expulsar/administrar); debe
-  /// expulsar a los demás miembros primero.
+  /// El usuario actual sale del hogar activo — reglas de autorización en
+  /// [RemoveMemberUseCase] (el administrador no puede salir por esta vía,
+  /// debe expulsar a los demás miembros primero). El bootstrap (mismo
+  /// mecanismo que un usuario nuevo sin hogar) le crea uno personal solo —
+  /// ver _onActiveHouseholdIdChanged.
   Future<void> leaveHousehold() async {
     final household = _household;
     final uid = _uid;
     if (household == null || uid == null) {
       throw const HouseholdException('No hay un hogar activo.');
     }
-    if (uid == household.createdBy) {
-      throw const HouseholdException(
-        'El administrador no puede salir de su propio hogar.',
-      );
-    }
 
     try {
-      await _repository.removeMember(householdId: household.id, memberUid: uid);
-      await _repository.clearActiveHousehold(uid);
+      await _removeMemberUseCase(household, requesterUid: uid, targetUid: uid);
     } catch (e) {
       _error = e.toString();
       notifyListeners();
