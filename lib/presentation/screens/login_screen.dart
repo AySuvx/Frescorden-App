@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-// hide AuthProvider: colisiona con presentation/providers/auth_provider.dart;
-// solo se usa FirebaseAuthException de este paquete.
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
-import '../../domain/repositories/i_auth_repository.dart';
+import '../../core/errors/domain_exception.dart';
 import '../../routes.dart';
 import '../providers/auth_provider.dart';
 import 'inicio_screen.dart';
@@ -41,6 +38,12 @@ class _LoginScreenState extends State<LoginScreen> {
             settings: const RouteSettings(name: AppRoutes.inicio),
           ),
         );
+      }
+    } on DomainException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (e) {
       if (mounted) {
@@ -113,14 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Error desconocido')),
-        );
-      }
-    } on AuthException catch (e) {
-      // Correo no verificado (mismo mensaje que antes)
+    } on DomainException catch (e) {
+      // Credenciales inválidas, correo no verificado, etc. — ver
+      // lib/core/errors/auth_exceptions.dart (mapeadas en
+      // AuthRepositoryImpl a partir de FirebaseAuthException).
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -154,6 +153,12 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         );
+      }
+    } on DomainException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (e) {
       if (mounted) {
