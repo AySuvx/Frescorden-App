@@ -8,6 +8,8 @@
 import 'dart:async';
 
 import 'package:frescorden/domain/entities/activity_log_entry.dart';
+import 'package:frescorden/domain/entities/admin_stats.dart';
+import 'package:frescorden/domain/entities/analytics_summary.dart';
 import 'package:frescorden/domain/entities/budget_tier.dart';
 import 'package:frescorden/domain/entities/household.dart';
 import 'package:frescorden/domain/entities/product.dart';
@@ -15,6 +17,8 @@ import 'package:frescorden/domain/entities/product_history_entry.dart';
 import 'package:frescorden/domain/entities/recipe.dart';
 import 'package:frescorden/domain/entities/shopping_item.dart';
 import 'package:frescorden/domain/repositories/i_activity_log_repository.dart';
+import 'package:frescorden/domain/repositories/i_admin_repository.dart';
+import 'package:frescorden/domain/repositories/i_analytics_repository.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_history_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_repository.dart';
@@ -250,4 +254,31 @@ class FakeActivityLogRepository implements IActivityLogRepository {
     String householdId, {
     int limit = 20,
   }) => const Stream.empty();
+}
+
+/// Fake de [IAdminRepository]: [statsToReturn] configura el resultado de
+/// [getGlobalStats]; [error] simula un fallo (p. ej. permisos, ya que las
+/// reglas de Firestore restringen esta consulta al UID admin).
+class FakeAdminRepository implements IAdminRepository {
+  AdminStats statsToReturn = AdminStats.empty();
+  Object? error;
+
+  @override
+  Future<AdminStats> getGlobalStats() async {
+    if (error != null) throw error!;
+    return statsToReturn;
+  }
+}
+
+/// Fake de [IAnalyticsRepository]: [summaryToReturn] configura el
+/// resultado de [getSummary]; [error] simula un fallo del repositorio.
+class FakeAnalyticsRepository implements IAnalyticsRepository {
+  AnalyticsSummary summaryToReturn = AnalyticsSummary.empty();
+  Object? error;
+
+  @override
+  Future<AnalyticsSummary> getSummary(String householdId) async {
+    if (error != null) throw error!;
+    return summaryToReturn;
+  }
 }
