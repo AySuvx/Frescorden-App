@@ -28,11 +28,14 @@ class NotificationService {
     _initialized = true;
   }
 
-  // Dos IDs por producto (vencimiento / almacenamiento), derivados de su id
-  // de Firestore — estables entre sesiones sin necesidad de persistirlos.
+  // Tres IDs por producto (vencimiento / almacenamiento / stock bajo),
+  // derivados de su id de Firestore — estables entre sesiones sin
+  // necesidad de persistirlos.
   int _expirationId(String productId) => productId.hashCode & 0x7FFFFFFF;
   int _storageId(String productId) =>
       (productId.hashCode ^ 0x5A5A5A5A) & 0x7FFFFFFF;
+  int _lowStockId(String productId) =>
+      (productId.hashCode ^ 0x3C3C3C3C) & 0x7FFFFFFF;
 
   /// Alerta 3 días antes de `expirationDate`. No hace nada si el producto
   /// no tiene fecha de vencimiento o si esos 3 días ya pasaron.
@@ -104,12 +107,45 @@ class NotificationService {
     }
   }
 
-  /// Cancela ambas alertas posibles del producto (vencimiento y
-  /// almacenamiento) — al eliminarlo o al consumirlo. Cancelar un ID sin
+  /// Alerta inmediata cuando un producto llega a su `minStock`. A
+  /// diferencia de vencimiento/almacenamiento, no se programa a futuro:
+  /// la condición ya es cierta en el momento en que se llama, así que se
+  /// muestra con `show` en vez de `zonedSchedule`. Quien llama decide
+  /// CUÁNDO invocarla (ver ProductProvider — solo al cruzar el umbral por
+  /// primera vez, no en cada edición de un producto que ya estaba bajo).
+  Future<void> showLowStockAlert(Product product) async {
+    if (!product.isLowStock) return;
+
+    await initialize();
+    try {
+      await _plugin.show(
+        _lowStockId(product.id),
+        'Stock bajo',
+        '"${product.name}" llegó a su cantidad mínima '
+            '(${product.quantity} ${product.unit}).',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'stock_bajo_channel',
+            'Notificaciones de Stock Bajo',
+            channelDescription:
+                'Avisos cuando un producto llega a su cantidad mínima definida',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('NotificationService.showLowStockAlert error: $e');
+    }
+  }
+
+  /// Cancela las alertas posibles del producto (vencimiento, almacenamiento
+  /// y stock bajo) — al eliminarlo o al consumirlo. Cancelar un ID sin
   /// notificación programada no falla, así que es seguro llamarlo siempre.
   Future<void> cancelForProduct(String productId) async {
     await initialize();
     await _plugin.cancel(_expirationId(productId));
     await _plugin.cancel(_storageId(productId));
+    await _plugin.cancel(_lowStockId(productId));
   }
 }

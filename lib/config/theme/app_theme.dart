@@ -142,6 +142,24 @@ class AppTheme {
         shape: const StadiumBorder(),
       ),
 
+      // Único lugar que define el estilo de TextField/DropdownButtonFormField
+      // de toda la app. Antes cada pantalla fijaba su propio
+      // `fillColor: Colors.grey.shade100` a mano: en modo oscuro el texto
+      // (claro, por el tema) caía sobre ese fondo casi blanco fijo y
+      // quedaba ilegible. Con colorScheme.surfaceContainerHighest el fondo
+      // se adapta solo entre claro/oscuro, igual que chipTheme arriba.
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest,
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        prefixIconColor: colorScheme.onSurfaceVariant,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+          borderSide: BorderSide.none,
+        ),
+      ),
+
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: _FadeSlidePageTransitionsBuilder(),

@@ -47,10 +47,13 @@ import 'data/datasources/firestore_admin_datasource.dart';
 import 'data/repositories/admin_repository_impl.dart';
 import 'data/datasources/firestore_assistant_usage_datasource.dart';
 import 'data/repositories/assistant_usage_repository_impl.dart';
+import 'data/datasources/gemini_product_recognition_data_source.dart';
+import 'data/repositories/product_recognition_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/repositories/i_activity_log_repository.dart';
 import 'domain/repositories/i_assistant_usage_repository.dart';
+import 'domain/repositories/i_product_recognition_repository.dart';
 import 'domain/usecases/get_analytics_usecase.dart';
 import 'domain/usecases/get_admin_stats_usecase.dart';
 
@@ -128,6 +131,16 @@ void main() async {
         Provider<IAssistantUsageRepository>(
           create: (_) => AssistantUsageRepositoryImpl(
             FirestoreAssistantUsageDataSource(),
+          ),
+        ),
+
+        // IProductRecognitionRepository — identifica un producto (nombre,
+        // categoría, unidad) a partir de una foto, vía Gemini (firebase_ai).
+        // Provider simple, sin estado propio: AddProductScreen la consulta
+        // directo y maneja su propio loading/error con setState.
+        Provider<IProductRecognitionRepository>(
+          create: (_) => ProductRecognitionRepositoryImpl(
+            GeminiProductRecognitionDataSource(),
           ),
         ),
 
