@@ -12,7 +12,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/theme/app_spacing.dart';
 import '../../domain/entities/food_category.dart';
+import '../../domain/repositories/i_product_recognition_repository.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../utils/food_category_ui.dart';
@@ -20,13 +22,11 @@ import '../utils/food_category_ui.dart';
 class AddProductScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
   final Map<String, dynamic>? initialProduct;
-  final bool isManualAdd;
 
-  /// Limpieza de escáner: al eliminarse el flujo de escaneo, todo
-  /// alta de producto nuevo es manual. Este flag distingue el registro a
-  /// granel (perecederos de plaza/mercado, ej. tomate, papa) del alta
-  /// estándar por categoría: preselecciona "Frutas y verduras", unidad "kg"
-  /// y deja el formulario listo para registrar la fecha de almacenamiento.
+  /// Distingue el registro a granel (perecederos de plaza/mercado, ej.
+  /// tomate, papa) del alta estándar por categoría: preselecciona "Frutas
+  /// y verduras", unidad "kg" y deja el formulario listo para registrar la
+  /// fecha de almacenamiento.
   final bool isBulkEntry;
 
   /// Flujo "Por Categoría" del FAB: categoría ya elegida en
@@ -38,7 +38,6 @@ class AddProductScreen extends StatefulWidget {
     super.key,
     required this.onSave,
     this.initialProduct,
-    this.isManualAdd = false,
     this.isBulkEntry = false,
     this.initialCategory,
   });
@@ -49,8 +48,7 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   bool _isSaving = false;
-  final TextEditingController _barcodeController = TextEditingController();
-  bool _isManualAdd = false;
+  bool _isRecognizing = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController(
     text: '1',
@@ -76,7 +74,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     if (widget.initialProduct != null) {
       _nameController.text = widget.initialProduct!['name'] ?? '';
-      _barcodeController.text = widget.initialProduct!['barcode'] ?? '';
       _quantityController.text = widget.initialProduct!['quantity'] ?? '1';
       _selectedUnit = widget.initialProduct!['unit'] ?? 'unidad';
 
@@ -110,7 +107,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
         _minStockController.text = minStock.toString();
       }
     } else {
-      _isManualAdd = widget.isManualAdd;
       _isBulk = widget.isBulkEntry;
       // Registro a granel: valores por defecto típicos de perecederos de
       // plaza/mercado. El usuario puede cambiarlos libremente.
@@ -126,7 +122,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _barcodeController.dispose();
     _quantityController.dispose();
     _minStockController.dispose();
     super.dispose();
@@ -213,13 +208,53 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
+  /// Toma una foto (mismo picker que "Tomar Foto") y la manda a Gemini
+  /// para identificar nombre/categoría/unidad — ver
+  /// IProductRecognitionRepository. La foto capturada también queda como
+  /// foto del producto: el usuario ya la tomó, no tiene sentido pedirle
+  /// una segunda para "Foto del producto".
+  Future<void> _reconocerConIA() async {
+    if (_isRecognizing) return;
+    // Se lee antes del primer `await`: usar `context` después de un gap
+    // async sin verificar `mounted` no es seguro (el widget pudo
+    // desmontarse mientras tanto).
+    final recognitionRepository = context.read<IProductRecognitionRepository>();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    if (pickedFile == null) return;
+
+    setState(() => _isRecognizing = true);
+    try {
+      final tempFile = File(pickedFile.path);
+      final bytes = await tempFile.readAsBytes();
+      final result = await recognitionRepository.recognizeProduct(bytes);
+      final permanentFile = await _copyImageToPermanentStorage(tempFile);
+
+      if (!mounted) return;
+      setState(() {
+        _nameController.text = result.name;
+        _selectedCategory = result.category;
+        _selectedUnit = result.unit;
+        _imageFile = permanentFile;
+      });
+      _showSnack('Producto reconocido: ${result.name}');
+    } catch (e) {
+      debugPrint('Error al reconocer producto con IA: $e');
+      if (!mounted) return;
+      _showSnack(
+        'No se pudo reconocer el producto. Intenta de nuevo o llena el '
+        'formulario a mano.',
+      );
+    } finally {
+      if (mounted) setState(() => _isRecognizing = false);
+    }
+  }
+
   Future<void> _guardarProducto() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
     final name = _nameController.text.trim();
     final quantity = _quantityController.text.trim();
-    final barcode = _barcodeController.text.trim();
 
     if (context.read<AuthProvider>().currentUser == null) {
       _showSnack('Debes iniciar sesión para guardar un producto');
@@ -262,7 +297,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
         if (widget.initialProduct?['id'] != null)
           'id': widget.initialProduct!['id'],
         'name': name,
-        'barcode': barcode.isNotEmpty ? barcode : null,
         'quantity': quantity,
         'unit': _selectedUnit,
         'imagePath': _imageFile?.path,
@@ -320,9 +354,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Widget _buildExpiryDatePicker() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        const Icon(Icons.calendar_today, color: Colors.grey),
+        Icon(Icons.calendar_today, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 10),
         Expanded(
           child: InkWell(
@@ -341,7 +376,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 15),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey.shade400)),
+                border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
               ),
               child: Row(
                 children: [
@@ -352,14 +387,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           : 'Vence el: ${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}',
                       style: TextStyle(
                         fontSize: 16,
-                        color: _expiryDate == null ? Colors.grey : Colors.black,
+                        color: _expiryDate == null
+                            ? colorScheme.onSurfaceVariant
+                            : colorScheme.onSurface,
                       ),
                     ),
                   ),
                   if (_expiryDate != null)
                     GestureDetector(
                       onTap: () => setState(() => _expiryDate = null),
-                      child: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                      child: Icon(
+                        Icons.clear,
+                        size: 18,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                 ],
               ),
@@ -372,6 +413,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -383,6 +425,59 @@ class _AddProductScreenState extends State<AddProductScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Atajo de IA: solo tiene sentido en alta nueva — al editar ya
+            // hay datos reales que no deberían reemplazarse por una
+            // adivinanza de una foto nueva.
+            if (widget.initialProduct == null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '¿Prefieres que la IA llene el formulario?',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Toma una foto del producto y completamos nombre, '
+                      'categoría y unidad por ti. Tú revisas y ajustas el '
+                      'resto.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: _isRecognizing ? null : _reconocerConIA,
+                      icon: _isRecognizing
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome),
+                      label: Text(
+                        _isRecognizing
+                            ? 'Reconociendo...'
+                            : 'Reconocer con IA',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
             const Text(
               'Nombre del producto',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -396,39 +491,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 LengthLimitingTextInputFormatter(30),
               ],
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Ej: Leche deslactosada',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
               ),
             ),
             const SizedBox(height: 16),
-            if (!_isManualAdd)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Código de barras',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _barcodeController,
-                    decoration: InputDecoration(
-                      hintText: 'Ej: 7701234567890',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
             const Text(
               'Cantidad',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -441,14 +508,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     controller: _quantityController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      hintText: 'Ej: 3',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                    ),
+                    decoration: const InputDecoration(hintText: 'Ej: 3'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -480,8 +540,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<FoodCategory>(
@@ -521,23 +581,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Te avisaremos en la lista cuando la cantidad llegue a este valor',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            Text(
+              'Te avisaremos cuando la cantidad llegue a este valor',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _minStockController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Ej: 2',
-                prefixIcon: const Icon(Icons.warning_amber_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
+                prefixIcon: Icon(Icons.warning_amber_outlined),
               ),
             ),
             const SizedBox(height: 16),
@@ -546,9 +604,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
               'Fecha de vencimiento (opcional)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const Text(
+            Text(
               'Déjala vacía para productos a granel sin fecha impresa',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
             _buildExpiryDatePicker(),
@@ -557,7 +615,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.kitchen, color: Colors.blueGrey, size: 20),
+                Icon(Icons.kitchen, color: colorScheme.onSurfaceVariant, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -571,9 +629,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Para saber cuántos días lleva guardado',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       InkWell(
@@ -596,7 +657,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                           decoration: BoxDecoration(
                             border: Border(
-                              bottom: BorderSide(color: Colors.grey.shade400),
+                              bottom: BorderSide(color: colorScheme.outlineVariant),
                             ),
                           ),
                           child: Row(
@@ -609,27 +670,27 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   fontSize: 14,
                                   color:
                                       _entryDate == null
-                                          ? Colors.grey
-                                          : Colors.black87,
+                                          ? colorScheme.onSurfaceVariant
+                                          : colorScheme.onSurface,
                                 ),
                               ),
                               if (_entryDate != null) ...[
                                 const SizedBox(width: 8),
                                 Text(
                                   '(${DateTime.now().difference(_entryDate!).inDays} días)',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.blueGrey,
+                                    color: colorScheme.primary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const Spacer(),
                                 GestureDetector(
                                   onTap: () => setState(() => _entryDate = null),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.clear,
                                     size: 16,
-                                    color: Colors.grey,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],

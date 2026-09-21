@@ -202,9 +202,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
     if (minStock == null) return false;
     final min = minStock is int ? minStock : int.tryParse(minStock.toString());
     if (min == null) return false;
-    final qty = int.tryParse(producto['quantity']?.toString() ?? '') ?? 0;
-    return qty <= min;
+    return _cantidadActual(producto) <= min;
   }
+
+  int _cantidadActual(Map<String, dynamic> producto) =>
+      int.tryParse(producto['quantity']?.toString() ?? '') ?? 0;
 
   @override
   Widget build(BuildContext context) {
@@ -397,6 +399,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              tooltip: 'Descontar 1',
+              icon: Icon(
+                Icons.remove_circle_outline,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              onPressed: _cantidadActual(producto) <= 0
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      final id = producto['id'] as String?;
+                      if (id != null) {
+                        context.read<ProductProvider>().decrementQuantity(id);
+                      }
+                    },
+            ),
             IconButton(
               icon: Icon(Icons.edit, color: colorScheme.primary),
               onPressed: () {
