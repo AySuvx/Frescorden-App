@@ -1,8 +1,8 @@
 // Firebase Analytics: eventos de adopción de las funciones clave de la
-// app — mismo estilo singleton que NotificationService/QuotaService,
-// llamado directo desde los providers de presentación (no hay
-// interfaz/DI: es infraestructura transversal, no una regla de negocio
-// del dominio).
+// app — mismo estilo singleton que NotificationService/QuotaService.
+// Implementa un contrato ISP por módulo (I*AnalyticsService en
+// domain/services/) para que cada Provider dependa solo de los eventos que
+// le corresponden, inyectado por constructor en vez de llamado directo.
 //
 // screen_view automático: ya lo cubre FirebaseAnalyticsObserver, registrado
 // en MaterialApp.navigatorObservers (ver main.dart) — funciona porque cada
@@ -19,9 +19,11 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../domain/services/i_analytics_service.dart';
+import '../../domain/services/i_assistant_analytics_service.dart';
 import '../../domain/services/i_household_analytics_service.dart';
 
-class AnalyticsService implements IAnalyticsService, IHouseholdAnalyticsService {
+class AnalyticsService
+    implements IAnalyticsService, IHouseholdAnalyticsService, IAssistantAnalyticsService {
   AnalyticsService._();
   static final AnalyticsService instance = AnalyticsService._();
 
@@ -42,6 +44,7 @@ class AnalyticsService implements IAnalyticsService, IHouseholdAnalyticsService 
       _log('product_resolved', {'outcome': outcome});
 
   /// Adopción del Asistente Culinario: una consulta exitosa.
+  @override
   Future<void> logAssistantQuery() => _log('assistant_query');
 
   @override

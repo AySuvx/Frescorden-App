@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/chat_message.dart';
 import '../../domain/repositories/i_assistant_repository.dart';
 import '../../domain/repositories/i_assistant_usage_repository.dart';
+import '../../domain/services/i_assistant_analytics_service.dart';
+import '../../domain/services/i_quota_service.dart';
 import '../utils/analytics_service.dart';
 import '../utils/quota_service.dart';
 import 'product_provider.dart';
@@ -18,10 +20,20 @@ class AssistantProvider extends ChangeNotifier {
   // AssistantProvider sin él (mismo criterio que ProductProvider).
   final IAssistantUsageRepository? _usageRepository;
 
+  // Igual criterio que HouseholdProvider/RecipeProvider: resuelto solo al
+  // primer uso real (late final), nunca en el constructor.
+  final IQuotaService? _injectedQuotaService;
+  final IAssistantAnalyticsService? _injectedAnalyticsService;
+  late final IQuotaService _quota = _injectedQuotaService ?? QuotaService.instance;
+  late final IAssistantAnalyticsService _analytics =
+      _injectedAnalyticsService ?? AnalyticsService.instance;
+
   AssistantProvider(
     this._repository,
     this._productProvider, [
     this._usageRepository,
+    this._injectedQuotaService,
+    this._injectedAnalyticsService,
   ]) {
     _loadQuota();
   }
@@ -43,7 +55,7 @@ class AssistantProvider extends ChangeNotifier {
   Duration get timeUntilReset => _timeUntilReset;
 
   Future<void> _loadQuota() async {
-    _remainingQueries = await QuotaService.instance.getRemaining();
+    _remainingQueries = await _quota.getRemaining();
     if (isLimitReached) _startCountdown();
     notifyListeners();
   }
@@ -81,9 +93,9 @@ class AssistantProvider extends ChangeNotifier {
   }
 
   Future<void> _recordSuccessfulQuery() async {
-    _remainingQueries = await QuotaService.instance.recordSuccessfulQuery();
+    _remainingQueries = await _quota.recordSuccessfulQuery();
     if (isLimitReached) _startCountdown();
-    unawaited(AnalyticsService.instance.logAssistantQuery());
+    unawaited(_analytics.logAssistantQuery());
 
     final householdId = _productProvider.activeHouseholdId;
     if (_usageRepository != null && householdId != null) {
@@ -109,9 +121,7 @@ class AssistantProvider extends ChangeNotifier {
   }
 
   void _tickCountdown() {
-    final remaining = QuotaService.instance.nextResetAt().difference(
-          DateTime.now(),
-        );
+    final remaining = _quota.nextResetAt().difference(DateTime.now());
 
     if (!remaining.isNegative && remaining > Duration.zero) {
       _timeUntilReset = remaining;
