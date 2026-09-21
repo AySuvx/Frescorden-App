@@ -7,6 +7,7 @@
 
 import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/domain/services/i_analytics_service.dart';
+import 'package:frescorden/domain/services/i_household_analytics_service.dart';
 import 'package:frescorden/domain/services/i_notification_service.dart';
 
 /// Fake de [INotificationService]: cada método registra los productos (o
@@ -46,5 +47,22 @@ class FakeAnalyticsService implements IAnalyticsService {
   @override
   Future<void> logProductResolved({required String outcome}) async {
     loggedOutcomes.add(outcome);
+  }
+}
+
+/// Fake de [IHouseholdAnalyticsService]: cuenta cuántas veces se registró
+/// cada evento de adopción de Hogares.
+class FakeHouseholdAnalyticsService implements IHouseholdAnalyticsService {
+  int householdCreatedCount = 0;
+  int householdJoinedCount = 0;
+
+  @override
+  Future<void> logHouseholdCreated() async {
+    householdCreatedCount++;
+  }
+
+  @override
+  Future<void> logHouseholdJoined() async {
+    householdJoinedCount++;
   }
 }

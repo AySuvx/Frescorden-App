@@ -140,6 +140,15 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   final List<String> removedMemberUids = [];
   final List<String> clearedActiveHouseholdUids = [];
   final List<String> recordedActivityUids = [];
+  Object? removeMemberError;
+
+  /// Configurables para CreateHouseholdUseCase/JoinHouseholdUseCase: por
+  /// defecto lanzan `UnimplementedError` (no usados en los escenarios de
+  /// HouseholdProvider), a menos que el test fije un resultado o error.
+  Household? createHouseholdResult;
+  Object? createHouseholdError;
+  Household? joinHouseholdResult;
+  Object? joinHouseholdError;
 
   void emitActiveId(String? householdId) => _activeIdController.add(householdId);
   void emitHousehold(Household? household) => _householdController.add(household);
@@ -156,7 +165,9 @@ class FakeHouseholdRepository implements IHouseholdRepository {
     required String creatorUid,
     String? creatorEmail,
   }) async {
-    throw UnimplementedError('No usado en estos escenarios.');
+    if (createHouseholdError != null) throw createHouseholdError!;
+    return createHouseholdResult ??
+        (throw UnimplementedError('Configura createHouseholdResult.'));
   }
 
   @override
@@ -165,7 +176,9 @@ class FakeHouseholdRepository implements IHouseholdRepository {
     required String uid,
     String? email,
   }) async {
-    throw UnimplementedError('No usado en estos escenarios.');
+    if (joinHouseholdError != null) throw joinHouseholdError!;
+    return joinHouseholdResult ??
+        (throw UnimplementedError('Configura joinHouseholdResult.'));
   }
 
   @override
@@ -179,6 +192,7 @@ class FakeHouseholdRepository implements IHouseholdRepository {
     required String householdId,
     required String memberUid,
   }) async {
+    if (removeMemberError != null) throw removeMemberError!;
     removedMemberUids.add(memberUid);
   }
 
