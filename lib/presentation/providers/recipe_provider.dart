@@ -13,12 +13,18 @@ import '../../domain/entities/product.dart';
 import '../../domain/entities/recipe.dart';
 import '../../domain/entities/recipe_ingredient.dart';
 import '../../domain/repositories/i_recipe_repository.dart';
+import '../../domain/services/i_quota_service.dart';
 import '../utils/quota_service.dart';
 
 class RecipeProvider extends ChangeNotifier {
   final IRecipeRepository _repository;
 
-  RecipeProvider(this._repository);
+  // Igual criterio que HouseholdProvider: resuelto solo al primer uso real
+  // (late final), nunca en el constructor.
+  final IQuotaService? _injectedQuotaService;
+  late final IQuotaService _quota = _injectedQuotaService ?? QuotaService.instance;
+
+  RecipeProvider(this._repository, [this._injectedQuotaService]);
 
   List<Recipe> _recipes = [];
   bool _isLoading = false;
@@ -108,7 +114,7 @@ class RecipeProvider extends ChangeNotifier {
   /// queda en `aiError` para que la UI lo muestre.
   Future<Recipe?> generateAiRecipe(List<Product> inventory) async {
     if (_isGeneratingAiRecipe) return null;
-    final remaining = await QuotaService.instance.getRemaining();
+    final remaining = await _quota.getRemaining();
     if (remaining <= 0) {
       _aiError = 'Ya usaste tus consultas de IA de hoy. Vuelve mañana.';
       notifyListeners();
@@ -121,7 +127,7 @@ class RecipeProvider extends ChangeNotifier {
 
     try {
       final recipe = await _repository.generateAiRecipe(inventory);
-      await QuotaService.instance.recordSuccessfulQuery();
+      await _quota.recordSuccessfulQuery();
       return recipe;
     } catch (e) {
       _aiError = 'No se pudo crear la receta. Intenta de nuevo.';

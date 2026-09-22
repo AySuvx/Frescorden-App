@@ -19,14 +19,16 @@
 
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/budget_tier.dart';
-import '../../domain/entities/food_category.dart';
 import '../../domain/entities/nutrition_group.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/shopping_item.dart';
 import '../../domain/repositories/i_shopping_repository.dart';
+import '../../domain/usecases/shopping/generate_shopping_list_usecase.dart';
 
 class ShoppingProvider extends ChangeNotifier {
   final IShoppingRepository _repository;
+
+  static const _generateShoppingList = GenerateShoppingListUseCase();
 
   ShoppingProvider(this._repository);
 
@@ -49,7 +51,8 @@ class ShoppingProvider extends ChangeNotifier {
 
   /// Personas para las que se calcula la canasta. El catálogo local
   /// (canastas.json) está calibrado para una familia de 4 — este valor
-  /// escala linealmente cantidades y precios estimados (ver `_scaled`).
+  /// escala linealmente cantidades y precios estimados (ver
+  /// [GenerateShoppingListUseCase]).
   int _personCount = _defaultPersonCount;
 
   static const _defaultPersonCount = 4;
@@ -117,38 +120,16 @@ class ShoppingProvider extends ChangeNotifier {
   /// Ítems de la canasta (más los agregados por "Plato Equilibrado", ver
   /// `_extraItems`) que el usuario todavía no tiene registrados en su
   /// inventario, con cantidad y precio escalados según `personCount`. Esto
-  /// es lo que realmente falta comprar.
-  ///
-  /// Deduplicación defensiva por nombre (`_basket` tiene prioridad sobre
-  /// `_extraItems` si ambos traen el mismo ítem) — `loadBasket` ya poda
-  /// `_extraItems` cuando cambia de nivel, esto es una segunda capa por si
-  /// algún otro camino (ej. `addItems` desde una receta) llegara a
-  /// solaparse.
+  /// es lo que realmente falta comprar — regla de negocio delegada en
+  /// [GenerateShoppingListUseCase] (deduplicación por nombre, cruce por
+  /// categoría/nombre y escalado, ver esa clase).
   List<ShoppingItem> missingItems(List<Product> inventory) {
-    final inventoryNames = inventory.map((p) => p.name.toLowerCase()).toSet();
-    final inventoryCategories = inventory.map((p) => p.category).toSet();
-
-    final combined = <String, ShoppingItem>{};
-    for (final item in [..._basket, ..._extraItems]) {
-      combined.putIfAbsent(item.name.toLowerCase(), () => item);
-    }
-
-    return combined.values
-        .where((item) {
-          // Ítems genéricos de categoría ("Leche", "Carne" — ver
-          // NutritionGroup.suggestedItems): el usuario los cubre con
-          // CUALQUIER producto de esa categoría, no solo con ese nombre
-          // exacto — así si ya tiene "Leche deslactosada Alpina" en el
-          // inventario, "Leche" no vuelve a aparecer como faltante.
-          if (item.matchByCategory) {
-            return !inventoryCategories.contains(
-              FoodCategory.fromName(item.category),
-            );
-          }
-          return !inventoryNames.contains(item.name.toLowerCase());
-        })
-        .map(_scaled)
-        .toList();
+    return _generateShoppingList(
+      basket: _basket,
+      extraItems: _extraItems,
+      inventory: inventory,
+      personCount: _personCount,
+    );
   }
 
   // ─── 'Plato Equilibrado' ────────────────────────────────────────────────
@@ -212,23 +193,6 @@ class ShoppingProvider extends ChangeNotifier {
       }
     }
     if (added) notifyListeners();
-  }
-
-  /// Escala cantidad y precio estimado de [item] según `personCount`,
-  /// relativo a la línea base del catálogo (`_defaultPersonCount`). Sin
-  /// cambios cuando personCount es la línea base, para no introducir ruido
-  /// de redondeo en el caso más común.
-  ShoppingItem _scaled(ShoppingItem item) {
-    if (_personCount == _defaultPersonCount) return item;
-    final ratio = _personCount / _defaultPersonCount;
-    return ShoppingItem(
-      name: item.name,
-      quantity: item.quantity * ratio,
-      unit: item.unit,
-      category: item.category,
-      estimatedPrice:
-          item.estimatedPrice == null ? null : (item.estimatedPrice! * ratio).round(),
-    );
   }
 
   /// Suma de `estimatedPrice` de los ítems que faltan por comprar (ya

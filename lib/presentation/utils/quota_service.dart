@@ -7,7 +7,9 @@
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-class QuotaService {
+import '../../domain/services/i_quota_service.dart';
+
+class QuotaService implements IQuotaService {
   QuotaService._();
   static final QuotaService instance = QuotaService._();
 
@@ -29,6 +31,7 @@ class QuotaService {
   }
 
   /// Consultas que quedan disponibles hoy (0 a [dailyLimit]).
+  @override
   Future<int> getRemaining() async {
     final used = await _usedToday();
     return (dailyLimit - used).clamp(0, dailyLimit);
@@ -37,6 +40,7 @@ class QuotaService {
   /// Registra una consulta ya respondida con éxito y devuelve las
   /// consultas restantes. Solo debe llamarse tras una respuesta real de
   /// Gemini — nunca en un fallo de red (ver AssistantProvider.sendMessage).
+  @override
   Future<int> recordSuccessfulQuery() async {
     final prefs = await SharedPreferences.getInstance();
     final today = _dateKey(DateTime.now());
@@ -48,6 +52,7 @@ class QuotaService {
 
   /// Medianoche del día siguiente (hora local del dispositivo) — cuándo
   /// se reinicia la cuota.
+  @override
   DateTime nextResetAt() {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day + 1);

@@ -82,3 +82,7 @@ graphify-out/
 
 # Documentación de la monografía: se maneja fuera del repo de código.
 docs/
+
+# firestore-tests: dependencias npm de la suite de seguridad de Firestore
+# Rules (Entregable 4 / Cap. 11-12) — se reinstalan con `npm install`.
+firestore-tests/node_modules/
