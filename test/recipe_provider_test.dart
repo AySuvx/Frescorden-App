@@ -13,6 +13,8 @@
 // de coincidencia y el orden resultante, que es exactamente lo que la
 // pantalla usa para decidir ese color.
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/domain/entities/recipe.dart';
@@ -129,6 +131,124 @@ void main() {
 
         // Entonces es 1.0 (100%), no 0% — evita ofrecer IA prematuramente
         expect(resultado, 1.0);
+      },
+    );
+
+    test(
+      'Escenario: availableRecipes solo incluye las recetas 100% disponibles',
+      () {
+        // Dado el mismo inventario de arriba (Arroz con Pollo al 100%,
+        // Sancocho al 25%, Ensalada al 0%)
+        final inventory = [_product('Arroz'), _product('Pollo')];
+
+        // Cuando se filtran solo las disponibles
+        final disponibles = provider.availableRecipes(inventory);
+
+        // Entonces solo queda la que tiene el 100% de sus ingredientes
+        expect(disponibles.map((r) => r.id), ['r1']);
+      },
+    );
+  });
+
+  group('Historia de Usuario: Como usuario, quiero que un error al cargar '
+      'el catálogo no rompa la pantalla', () {
+    test(
+      'Escenario: si el repositorio falla, loadRecipes deja el catálogo '
+      'vacío y expone el error',
+      () async {
+        final repo = FakeRecipeRepository([])..getRecipesError = Exception('sin red');
+        final provider = RecipeProvider(repo);
+
+        await provider.loadRecipes();
+
+        expect(provider.error, isNotNull);
+        expect(provider.recipes, isEmpty);
+        expect(provider.isLoading, isFalse);
+      },
+    );
+  });
+
+  group('Historia de Usuario: Como usuario, quiero generar una receta con '
+      'IA cuando el catálogo no encaja bien', () {
+    test(
+      'Escenario: con cuota agotada, no se llama al repositorio y se '
+      'informa el motivo',
+      () async {
+        final repo = FakeRecipeRepository([]);
+        final quota = FakeQuotaService()..remaining = 0;
+        final provider = RecipeProvider(repo, quota);
+
+        final receta = await provider.generateAiRecipe([]);
+
+        expect(receta, isNull);
+        expect(
+          provider.aiError,
+          'Ya usaste tus consultas de IA de hoy. Vuelve mañana.',
+        );
+        expect(quota.recordedQueries, 0);
+      },
+    );
+
+    test(
+      'Escenario: con cuota disponible, genera la receta y descuenta una '
+      'consulta',
+      () async {
+        final receta = _recipe('ai-1', 'Sopa Express', ['Papa']);
+        final repo = FakeRecipeRepository([])..aiRecipeToReturn = receta;
+        final quota = FakeQuotaService();
+        final provider = RecipeProvider(repo, quota);
+
+        final resultado = await provider.generateAiRecipe([]);
+
+        expect(resultado, receta);
+        expect(provider.aiError, isNull);
+        expect(quota.recordedQueries, 1);
+        expect(provider.isGeneratingAiRecipe, isFalse);
+      },
+    );
+
+    test(
+      'Escenario: si Gemini falla, se informa el error sin descontar la '
+      'cuota',
+      () async {
+        final repo = FakeRecipeRepository([])..aiRecipeError = Exception('Gemini caído');
+        final quota = FakeQuotaService();
+        final provider = RecipeProvider(repo, quota);
+
+        final resultado = await provider.generateAiRecipe([]);
+
+        expect(resultado, isNull);
+        expect(
+          provider.aiError,
+          'No se pudo crear la receta. Intenta de nuevo.',
+        );
+        expect(quota.recordedQueries, 0);
+      },
+    );
+
+    test(
+      'Escenario: una generación ya en curso ignora un segundo llamado '
+      'concurrente',
+      () async {
+        final receta = _recipe('ai-1', 'Sopa Express', ['Papa']);
+        final completer = Completer<Recipe>();
+        final repo = FakeRecipeRepository([])..aiRecipeFuture = completer.future;
+        final quota = FakeQuotaService();
+        final provider = RecipeProvider(repo, quota);
+
+        // La primera llamada queda "en curso": ya pasó el await de la
+        // cuota (que marca _isGeneratingAiRecipe = true) pero sigue
+        // esperando la respuesta del repositorio.
+        final primera = provider.generateAiRecipe([]);
+        await Future<void>.delayed(Duration.zero);
+
+        final segunda = await provider.generateAiRecipe([]);
+        completer.complete(receta);
+        final resultado = await primera;
+
+        expect(segunda, isNull, reason: 'la segunda llamada se ignora por estar ya en curso');
+        expect(resultado, receta);
+        expect(quota.recordedQueries, 1);
       },
     );
   });

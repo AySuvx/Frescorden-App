@@ -20,12 +20,16 @@ import 'package:frescorden/domain/entities/shopping_item.dart';
 import 'package:frescorden/domain/repositories/i_activity_log_repository.dart';
 import 'package:frescorden/domain/repositories/i_admin_repository.dart';
 import 'package:frescorden/domain/repositories/i_analytics_repository.dart';
+import 'package:frescorden/domain/repositories/i_assistant_repository.dart';
+import 'package:frescorden/domain/repositories/i_assistant_usage_repository.dart';
 import 'package:frescorden/domain/repositories/i_auth_repository.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_history_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_repository.dart';
 import 'package:frescorden/domain/repositories/i_recipe_repository.dart';
 import 'package:frescorden/domain/repositories/i_shopping_repository.dart';
+import 'package:frescorden/domain/services/i_assistant_analytics_service.dart';
+import 'package:frescorden/domain/services/i_quota_service.dart';
 
 /// Fake de [IProductRepository]: `watchProducts` es un stream controlable
 /// a mano ([emit]) para simular snapshots sucesivos de Firestore.
@@ -106,10 +110,13 @@ class FakeShoppingRepository implements IShoppingRepository {
   FakeShoppingRepository(this.basketsByTier);
 
   final Map<BudgetTier, List<ShoppingItem>> basketsByTier;
+  Object? error;
 
   @override
-  Future<List<ShoppingItem>> getBasket(BudgetTier tier) async =>
-      basketsByTier[tier] ?? [];
+  Future<List<ShoppingItem>> getBasket(BudgetTier tier) async {
+    if (error != null) throw error!;
+    return basketsByTier[tier] ?? [];
+  }
 }
 
 /// Fake de [IRecipeRepository]: el catálogo devuelto por [getRecipes] se
@@ -122,16 +129,50 @@ class FakeRecipeRepository implements IRecipeRepository {
   final List<Recipe> catalog;
   Recipe? aiRecipeToReturn;
   Object? aiRecipeError;
+  Object? getRecipesError;
+
+  /// Si se configura, [generateAiRecipe] espera este future en vez de
+  /// resolver de inmediato — permite controlar el momento exacto en que
+  /// la llamada termina para probar el guard de concurrencia.
+  Future<Recipe>? aiRecipeFuture;
 
   @override
-  Future<List<Recipe>> getRecipes() async => catalog;
+  Future<List<Recipe>> getRecipes() async {
+    if (getRecipesError != null) throw getRecipesError!;
+    return catalog;
+  }
 
   @override
   Future<Recipe> generateAiRecipe(List<Product> inventory) async {
+    if (aiRecipeFuture != null) return aiRecipeFuture!;
     if (aiRecipeError != null) throw aiRecipeError!;
     return aiRecipeToReturn ??
         (throw StateError('FakeRecipeRepository: configura aiRecipeToReturn'));
   }
+}
+
+/// Fake de [IQuotaService]: [remaining] configura cuántas consultas quedan
+/// (default 5); [recordSuccessfulQuery] la decrementa y queda en
+/// [recordedQueries] cuántas veces se llamó.
+class FakeQuotaService implements IQuotaService {
+  int remaining = 5;
+  int recordedQueries = 0;
+
+  @override
+  Future<int> getRemaining() async => remaining;
+
+  @override
+  Future<int> recordSuccessfulQuery() async {
+    recordedQueries++;
+    remaining = remaining > 0 ? remaining - 1 : 0;
+    return remaining;
+  }
+
+  /// Siempre relativo a "ahora": una fecha fija quedaría en el pasado con
+  /// el tiempo, y AssistantProvider._tickCountdown() reinicia la cuota a
+  /// dailyLimit en cuanto detecta que la medianoche configurada ya pasó.
+  @override
+  DateTime nextResetAt() => DateTime.now().add(const Duration(days: 1));
 }
 
 /// Fake de [IHouseholdRepository]: `watchActiveHouseholdId`/`watchHousehold`
@@ -146,7 +187,11 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   final List<String> removedMemberUids = [];
   final List<String> clearedActiveHouseholdUids = [];
   final List<String> recordedActivityUids = [];
+  final List<String> bootstrappedUids = [];
   Object? removeMemberError;
+  Object? bootstrapError;
+  Object? generateInviteCodeError;
+  String inviteCodeToReturn = 'ABC123';
 
   /// Configurables para CreateHouseholdUseCase/JoinHouseholdUseCase: por
   /// defecto lanzan `UnimplementedError` (no usados en los escenarios de
@@ -158,6 +203,8 @@ class FakeHouseholdRepository implements IHouseholdRepository {
 
   void emitActiveId(String? householdId) => _activeIdController.add(householdId);
   void emitHousehold(Household? household) => _householdController.add(household);
+  void emitActiveIdError(Object error) => _activeIdController.addError(error);
+  void emitHouseholdError(Object error) => _householdController.addError(error);
 
   @override
   Stream<String?> watchActiveHouseholdId(String uid) => _activeIdController.stream;
@@ -188,10 +235,16 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   }
 
   @override
-  Future<String> generateNewInviteCode(String householdId) async => 'ABC123';
+  Future<String> generateNewInviteCode(String householdId) async {
+    if (generateInviteCodeError != null) throw generateInviteCodeError!;
+    return inviteCodeToReturn;
+  }
 
   @override
-  Future<void> bootstrapPersonalHousehold(String uid, {String? email}) async {}
+  Future<void> bootstrapPersonalHousehold(String uid, {String? email}) async {
+    bootstrappedUids.add(uid);
+    if (bootstrapError != null) throw bootstrapError!;
+  }
 
   @override
   Future<void> removeMember({
@@ -336,5 +389,54 @@ class FakeAuthRepository implements IAuthRepository {
   @override
   Future<void> deleteAccount() async {
     calls.add('deleteAccount');
+  }
+}
+
+/// Fake de [IAssistantRepository]: [replyToReturn] configura la respuesta
+/// del modelo; [sendMessageError] simula un fallo de red/Gemini.
+class FakeAssistantRepository implements IAssistantRepository {
+  String replyToReturn = 'Respuesta de prueba';
+  Object? sendMessageError;
+  bool resetConversationCalled = false;
+  final List<String> promptsSent = [];
+
+  @override
+  Future<String> sendMessage({
+    required String prompt,
+    List<Product>? currentInventory,
+  }) async {
+    promptsSent.add(prompt);
+    if (sendMessageError != null) throw sendMessageError!;
+    return replyToReturn;
+  }
+
+  @override
+  void resetConversation() {
+    resetConversationCalled = true;
+  }
+}
+
+/// Fake de [IAssistantUsageRepository]: registra los `householdId` en
+/// [loggedHouseholdIds]; [logQueryError] simula un fallo del registro
+/// server-side (best-effort, no debe romper el flujo del asistente).
+class FakeAssistantUsageRepository implements IAssistantUsageRepository {
+  final List<String> loggedHouseholdIds = [];
+  Object? logQueryError;
+
+  @override
+  Future<void> logQuery({required String householdId}) async {
+    if (logQueryError != null) throw logQueryError!;
+    loggedHouseholdIds.add(householdId);
+  }
+}
+
+/// Fake de [IAssistantAnalyticsService]: cuenta cuántas veces se registró
+/// una consulta exitosa del asistente.
+class FakeAssistantAnalyticsService implements IAssistantAnalyticsService {
+  int loggedQueries = 0;
+
+  @override
+  Future<void> logAssistantQuery() async {
+    loggedQueries++;
   }
 }
