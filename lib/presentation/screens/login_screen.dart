@@ -25,32 +25,33 @@ class _LoginScreenState extends State<LoginScreen> {
     'Un carácter especial': false,
   };
 
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _navigateToInicio() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const InicioScreen(),
+        settings: const RouteSettings(name: AppRoutes.inicio),
+      ),
+    );
+  }
+
   // Google Sign-In
   Future<void> signInWithGoogle() async {
     final auth = context.read<AuthProvider>();
     try {
       await auth.signInWithGoogle();
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const InicioScreen(),
-            settings: const RouteSettings(name: AppRoutes.inicio),
-          ),
-        );
-      }
+      if (mounted) _navigateToInicio();
     } on DomainException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      _showSnackBar(e.message);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error con Google: $e')));
-      }
+      _showSnackBar('Error con Google: $e');
     }
   }
 
@@ -71,101 +72,49 @@ class _LoginScreenState extends State<LoginScreen> {
     // en el SnackBar. Cortar acá antes de tocar Firebase evita ese
     // error de plataforma por completo, para login Y registro.
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa tu correo y contraseña.')),
-      );
+      _showSnackBar('Ingresa tu correo y contraseña.');
+      return;
+    }
+
+    if (!_isLogin && _passwordCriteria.values.contains(false)) {
+      _showSnackBar('La contraseña no cumple con los requisitos.');
       return;
     }
 
     try {
-      if (!_isLogin) {
-        // Validar los requisitos de la contraseña
-        if (_passwordCriteria.values.contains(false)) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('La contraseña no cumple con los requisitos.'),
-              ),
-            );
-          }
-          return;
-        }
-      }
-
       if (_isLogin) {
         await auth.signInWithEmail(email, password);
+        if (mounted) _navigateToInicio();
       } else {
         await auth.registerWithEmail(email, password);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Se ha enviado un correo de verificación. Por favor, revisa tu bandeja de entrada.',
-              ),
-            ),
-          );
-        }
-      }
-
-      if (mounted && _isLogin) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const InicioScreen(),
-            settings: const RouteSettings(name: AppRoutes.inicio),
-          ),
+        _showSnackBar(
+          'Se ha enviado un correo de verificación. Por favor, revisa tu bandeja de entrada.',
         );
       }
     } on DomainException catch (e) {
       // Credenciales inválidas, correo no verificado, etc. — ver
       // lib/core/errors/auth_exceptions.dart (mapeadas en
       // AuthRepositoryImpl a partir de FirebaseAuthException).
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      _showSnackBar(e.message);
     }
   }
   // FIX M2: evaluatePassword() eliminado (código muerto — la lógica vive en el onChanged del campo contraseña)
 
   Future<void> resetPassword() async {
-    try {
-      if (_emailController.text.trim().isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Por favor, ingresa tu correo electrónico.'),
-            ),
-          );
-        }
-        return;
-      }
+    if (_emailController.text.trim().isEmpty) {
+      _showSnackBar('Por favor, ingresa tu correo electrónico.');
+      return;
+    }
 
+    try {
       await context.read<AuthProvider>().sendPasswordReset(
         _emailController.text.trim(),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Se ha enviado un correo para restablecer tu contraseña.',
-            ),
-          ),
-        );
-      }
+      _showSnackBar('Se ha enviado un correo para restablecer tu contraseña.');
     } on DomainException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      _showSnackBar(e.message);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      _showSnackBar('Error: $e');
     }
   }
 

@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:frescorden/domain/entities/activity_log_entry.dart';
 import 'package:frescorden/domain/entities/admin_stats.dart';
 import 'package:frescorden/domain/entities/analytics_summary.dart';
+import 'package:frescorden/domain/entities/app_user.dart';
 import 'package:frescorden/domain/entities/budget_tier.dart';
 import 'package:frescorden/domain/entities/household.dart';
 import 'package:frescorden/domain/entities/product.dart';
@@ -19,6 +20,7 @@ import 'package:frescorden/domain/entities/shopping_item.dart';
 import 'package:frescorden/domain/repositories/i_activity_log_repository.dart';
 import 'package:frescorden/domain/repositories/i_admin_repository.dart';
 import 'package:frescorden/domain/repositories/i_analytics_repository.dart';
+import 'package:frescorden/domain/repositories/i_auth_repository.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_history_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_repository.dart';
@@ -280,5 +282,59 @@ class FakeAnalyticsRepository implements IAnalyticsRepository {
   Future<AnalyticsSummary> getSummary(String householdId) async {
     if (error != null) throw error!;
     return summaryToReturn;
+  }
+}
+
+/// Fake de [IAuthRepository]: cada método `*Error` inyecta la excepción a
+/// lanzar (típicamente una subclase de `DomainException`); sin error,
+/// registra la llamada en `calls` y no hace nada más. `currentUser`/
+/// `authStateChanges` no se usan en los tests de LoginScreen (esa pantalla
+/// no los consulta) pero completan la interfaz.
+class FakeAuthRepository implements IAuthRepository {
+  final List<String> calls = [];
+
+  Object? signInError;
+  Object? registerError;
+  Object? signInWithGoogleError;
+  Object? sendPasswordResetError;
+
+  @override
+  AppUser? currentUser;
+
+  @override
+  Stream<AppUser?> authStateChanges() => const Stream.empty();
+
+  @override
+  Future<void> signInWithEmail(String email, String password) async {
+    calls.add('signInWithEmail');
+    if (signInError != null) throw signInError!;
+  }
+
+  @override
+  Future<void> registerWithEmail(String email, String password) async {
+    calls.add('registerWithEmail');
+    if (registerError != null) throw registerError!;
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    calls.add('signInWithGoogle');
+    if (signInWithGoogleError != null) throw signInWithGoogleError!;
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    calls.add('sendPasswordReset');
+    if (sendPasswordResetError != null) throw sendPasswordResetError!;
+  }
+
+  @override
+  Future<void> signOut() async {
+    calls.add('signOut');
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    calls.add('deleteAccount');
   }
 }
