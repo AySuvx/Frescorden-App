@@ -115,8 +115,19 @@ void main() async {
   // el arranque. Se disparan en paralelo, sin esperar su resultado.
   unawaited(_initNonCriticalServices());
 
-  runApp(
-    MultiProvider(
+  runApp(const FrescordenApp());
+}
+
+/// Árbol de Providers + MaterialApp, extraído de main() para que las pruebas
+/// E2E (integration_test/) puedan montar exactamente la misma app —
+/// apuntando a Firebase.initializeApp() ya redirigido al Emulator Suite en
+/// setUpAll — sin duplicar la lista de Providers.
+class FrescordenApp extends StatelessWidget {
+  const FrescordenApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
       providers: [
         // Tema oscuro/claro
         ChangeNotifierProvider<ThemeProvider>(
@@ -262,8 +273,8 @@ void main() async {
         ),
       ],
       child: const MyApp(),
-    ),
-  );
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {

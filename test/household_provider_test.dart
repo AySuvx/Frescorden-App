@@ -163,4 +163,233 @@ void main() {
       },
     );
   });
+
+  group('Historia de Usuario: Como usuario, quiero que mi sesión determine '
+      'mi hogar activo automáticamente', () {
+    late FakeHouseholdRepository repo;
+
+    setUp(() => repo = FakeHouseholdRepository());
+    tearDown(() => repo.dispose());
+
+    test(
+      'Escenario: un usuario recién autenticado sin hogar previo dispara '
+      'el bootstrap de un hogar personal',
+      () async {
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+
+        provider.setUid('nuevo-uid');
+        repo.emitActiveId(null);
+        await pumpEventQueue();
+
+        expect(repo.bootstrappedUids, ['nuevo-uid']);
+        expect(provider.hasHousehold, isFalse);
+        expect(provider.isLoading, isFalse);
+      },
+    );
+
+    test(
+      'Escenario: recibir el mismo activeHouseholdId dos veces no dispara '
+      'un segundo bootstrap ni relee el hogar',
+      () async {
+        final hogar = _household(createdBy: 'uid-1', members: ['uid-1']);
+        final provider = await _providerWithHousehold(repo, hogar, 'uid-1');
+        addTearDown(provider.dispose);
+
+        repo.emitActiveId(hogar.id);
+        await pumpEventQueue();
+
+        expect(provider.household, hogar);
+        expect(repo.bootstrappedUids, isEmpty);
+      },
+    );
+
+    test(
+      'Escenario: cerrar sesión (uid null) limpia el hogar activo',
+      () async {
+        final hogar = _household(createdBy: 'uid-1', members: ['uid-1']);
+        final provider = await _providerWithHousehold(repo, hogar, 'uid-1');
+        addTearDown(provider.dispose);
+
+        provider.setUid(null);
+
+        expect(provider.hasHousehold, isFalse);
+        expect(provider.household, isNull);
+        expect(provider.isLoading, isFalse);
+        expect(provider.currentUid, isNull);
+      },
+    );
+
+    test(
+      'Escenario: si watchActiveHouseholdId falla, se expone el error y '
+      'deja de cargar',
+      () async {
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+
+        provider.setUid('uid-1');
+        repo.emitActiveIdError(Exception('sin conexión'));
+        await pumpEventQueue();
+
+        expect(provider.error, isNotNull);
+        expect(provider.isLoading, isFalse);
+      },
+    );
+
+    test(
+      'Escenario: si watchHousehold falla, se expone el error y deja de '
+      'cargar',
+      () async {
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+
+        provider.setUid('uid-1');
+        repo.emitActiveId('hogar-1');
+        await pumpEventQueue();
+        repo.emitHouseholdError(Exception('permiso denegado'));
+        await pumpEventQueue();
+
+        expect(provider.error, isNotNull);
+        expect(provider.isLoading, isFalse);
+      },
+    );
+
+    test(
+      'Escenario: si me expulsaron del hogar (ya no soy miembro), se limpia '
+      'mi activeHouseholdId automáticamente',
+      () async {
+        final hogar = _household(createdBy: 'admin-uid', members: ['admin-uid']);
+        final provider = await _providerWithHousehold(repo, hogar, 'expulsado-uid');
+        addTearDown(provider.dispose);
+
+        expect(repo.clearedActiveHouseholdUids, ['expulsado-uid']);
+      },
+    );
+  });
+
+  group('Historia de Usuario: Como usuario, quiero crear o unirme a un '
+      'hogar', () {
+    late FakeHouseholdRepository repo;
+
+    setUp(() => repo = FakeHouseholdRepository());
+    tearDown(() => repo.dispose());
+
+    test(
+      'Escenario: crear un hogar sin sesión iniciada lanza HouseholdException',
+      () async {
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+
+        await expectLater(
+          () => provider.createHousehold('Mi Hogar'),
+          throwsA(isA<HouseholdException>()),
+        );
+      },
+    );
+
+    test(
+      'Escenario: si el repositorio falla al crear el hogar, se expone el '
+      'error y se relanza',
+      () async {
+        repo.createHouseholdError = Exception('nombre duplicado');
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+        provider.setUid('uid-1');
+        repo.emitActiveId(null);
+        await pumpEventQueue();
+
+        await expectLater(
+          () => provider.createHousehold('Mi Hogar'),
+          throwsException,
+        );
+        expect(provider.error, isNotNull);
+        expect(provider.isLoading, isFalse);
+      },
+    );
+
+    test(
+      'Escenario: unirse a un hogar sin sesión iniciada lanza HouseholdException',
+      () async {
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+
+        await expectLater(
+          () => provider.joinHousehold('ABC123'),
+          throwsA(isA<HouseholdException>()),
+        );
+      },
+    );
+
+    test(
+      'Escenario: si el código de invitación es inválido, se expone el '
+      'error y se relanza',
+      () async {
+        repo.joinHouseholdError = Exception('código inválido');
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+        provider.setUid('uid-1');
+        repo.emitActiveId(null);
+        await pumpEventQueue();
+
+        await expectLater(
+          () => provider.joinHousehold('XXXXXX'),
+          throwsException,
+        );
+        expect(provider.error, isNotNull);
+      },
+    );
+  });
+
+  group('Historia de Usuario: Como miembro de un hogar, quiero renovar el '
+      'código de invitación', () {
+    late FakeHouseholdRepository repo;
+
+    setUp(() => repo = FakeHouseholdRepository());
+    tearDown(() => repo.dispose());
+
+    test(
+      'Escenario: sin hogar activo, generar un código nuevo lanza '
+      'HouseholdException',
+      () async {
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+
+        await expectLater(
+          () => provider.generateNewInviteCode(),
+          throwsA(isA<HouseholdException>()),
+        );
+      },
+    );
+
+    test(
+      'Escenario: con hogar activo, se devuelve el código nuevo generado',
+      () async {
+        final hogar = _household(createdBy: 'uid-1', members: ['uid-1']);
+        final provider = await _providerWithHousehold(repo, hogar, 'uid-1');
+        addTearDown(provider.dispose);
+        repo.inviteCodeToReturn = 'NUEVO1';
+
+        final code = await provider.generateNewInviteCode();
+
+        expect(code, 'NUEVO1');
+      },
+    );
+
+    test(
+      'Escenario: si el repositorio falla al generar el código, se expone '
+      'el error y se relanza',
+      () async {
+        final hogar = _household(createdBy: 'uid-1', members: ['uid-1']);
+        final provider = await _providerWithHousehold(repo, hogar, 'uid-1');
+        addTearDown(provider.dispose);
+        repo.generateInviteCodeError = Exception('fallo de red');
+
+        await expectLater(
+          () => provider.generateNewInviteCode(),
+          throwsException,
+        );
+        expect(provider.error, isNotNull);
+      },
+    );
+  });
 }

@@ -1,16 +1,5 @@
 import '../entities/app_user.dart';
 
-/// Excepción de dominio para casos que no vienen directamente de Firebase
-/// (p. ej. correo no verificado), para que la capa de presentación pueda
-/// mostrar el mismo mensaje sin conocer el tipo de excepción original.
-class AuthException implements Exception {
-  final String message;
-  const AuthException(this.message);
-
-  @override
-  String toString() => message;
-}
-
 abstract interface class IAuthRepository {
   /// Emite el usuario autenticado actual, o `null` si no hay sesión.
   Stream<AppUser?> authStateChanges();
@@ -19,8 +8,11 @@ abstract interface class IAuthRepository {
   AppUser? get currentUser;
 
   /// Inicia sesión con correo y contraseña.
-  /// Lanza [Exception] si el correo no ha sido verificado (y cierra la
-  /// sesión recién iniciada, igual que el comportamiento original).
+  /// Lanza [UnverifiedEmailException] si el correo no ha sido verificado
+  /// (y cierra la sesión recién iniciada, igual que el comportamiento
+  /// original) — u otra subclase de `DomainException` (ver
+  /// `lib/core/errors/auth_exceptions.dart`) si Firebase rechaza las
+  /// credenciales.
   Future<void> signInWithEmail(String email, String password);
 
   /// Registra una cuenta nueva con correo y contraseña, envía el correo
