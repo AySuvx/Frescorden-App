@@ -6,6 +6,9 @@
 // demo-frescorden "flutter test integration_test/... -d <device-id>
 // --dart-define=EMULATOR_HOST=<ip>"` (ver integration_test/README.md).
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -15,6 +18,15 @@ const _demoOptions = FirebaseOptions(
   appId: '1:000000000000:web:0000000000000000000000',
   messagingSenderId: '000000000000',
   projectId: 'demo-frescorden',
+);
+
+/// Host del Emulator Suite — mismo valor que usa
+/// [initializeFirebaseForEmulatorTests], expuesto para que otras pruebas
+/// (ej. [markEmailVerified]) puedan armar su propia URL sin repetir el
+/// `String.fromEnvironment`.
+const emulatorHost = String.fromEnvironment(
+  'EMULATOR_HOST',
+  defaultValue: '10.0.2.2',
 );
 
 Future<void> initializeFirebaseForEmulatorTests() async {
@@ -41,7 +53,6 @@ Future<void> initializeFirebaseForEmulatorTests() async {
   // "0.0.0.0" (ver firebase.json) para aceptar esa conexión entrante.
   // Configurable con `--dart-define=EMULATOR_HOST=<ip>` — cambia con la
   // red Wi-Fi de quien corra la suite. Default: la IP típica de un AVD.
-  const emulatorHost = String.fromEnvironment('EMULATOR_HOST', defaultValue: '10.0.2.2');
   FirebaseFirestore.instance.useFirestoreEmulator(emulatorHost, 8080);
   await FirebaseAuth.instance.useAuthEmulator(emulatorHost, 9099);
 }
@@ -54,4 +65,39 @@ Future<String> signInAsNewAnonymousUser() async {
   await FirebaseAuth.instance.signOut();
   final credential = await FirebaseAuth.instance.signInAnonymously();
   return credential.user!.uid;
+}
+
+/// Marca `emailVerified: true` para [uid] directo en el Auth Emulator, sin
+/// pasar por el correo real — el flujo normal (registro → click en el
+/// enlace de verificación) no es viable en un test automatizado. El SDK de
+/// Firebase para Dart no expone esta operación (solo el propio usuario
+/// puede verificarse a sí mismo); hace falta el endpoint REST de
+/// administración de Identity Toolkit que expone el emulador,
+/// autenticado con el token fijo "Bearer owner" (mismo que usa
+/// `firebase-tools` internamente para export/import de cuentas — nunca
+/// funciona contra el backend real, solo el emulador lo acepta).
+Future<void> markEmailVerified(String uid) async {
+  final client = HttpClient();
+  try {
+    final request = await client.postUrl(
+      Uri.http(
+        '$emulatorHost:9099',
+        '/identitytoolkit.googleapis.com/v1/projects/demo-frescorden/accounts:update',
+      ),
+    );
+    request.headers.set(HttpHeaders.authorizationHeader, 'Bearer owner');
+    request.headers.contentType = ContentType.json;
+    request.add(utf8.encode(jsonEncode({'localId': uid, 'emailVerified': true})));
+    final response = await request.close();
+    if (response.statusCode != 200) {
+      final body = await response.transform(utf8.decoder).join();
+      throw StateError(
+        'No se pudo marcar emailVerified en el Auth Emulator '
+        '(HTTP ${response.statusCode}): $body',
+      );
+    }
+    await response.drain<void>();
+  } finally {
+    client.close();
+  }
 }
