@@ -1,0 +1,34 @@
+name: SonarQube Cloud
+
+on:
+  push:
+    branches: [main, preprod, dev]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarqube:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: 'stable'
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      # Solo test/ (unitarias + widget) — integration_test/ necesita un
+      # dispositivo real/emulador Android + Firebase Emulator Suite, no
+      # disponible en un runner ubuntu-latest estándar.
+      - name: Ejecutar pruebas con cobertura
+        run: flutter test --coverage
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
