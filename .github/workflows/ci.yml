@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main, preprod, dev]
+    tags: ['v*']
+  pull_request:
+    branches: [preprod, main]
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-and-test:
+    name: Formato, análisis y pruebas unitarias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      # Informativo: 76 de 156 archivos de lib/ y test/ no cumplen dart format
+      # todavía; formatearlos de una vez convertiría esas líneas en "código
+      # nuevo" para SonarQube. Quitar continue-on-error cuando se formatee.
+      - name: Formato (dart format)
+        run: dart format --output=none --set-exit-if-changed lib test
+        continue-on-error: true
+
+      - name: Análisis estático
+        run: flutter analyze
+
+      - name: Pruebas unitarias y de widget
+        run: flutter test
+
+  security-rules:
+    name: Pruebas de seguridad de Firestore Rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: firestore-tests/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Instalar dependencias de la suite
+        run: npm --prefix firestore-tests ci
+
+      - name: Ejecutar reglas contra el Firebase Emulator
+        run: >
+          npx --yes firebase-tools@14.1.0 emulators:exec
+          --only firestore --project demo-frescorden
+          "npm --prefix firestore-tests test"
+
+  build-apk:
+    name: Build de APK release
+    needs: [analyze-and-test, security-rules]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Compilar APK
+        run: flutter build apk --release --obfuscate --split-debug-info=build/symbols
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: frescorden-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Guardar símbolos de depuración
+        uses: actions/upload-artifact@v4
+        with:
+          name: frescorden-symbols
+          path: build/symbols
+
+  release:
+    name: Publicar release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: frescorden-apk
+
+      - name: Crear release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app-release.apk
+          generate_release_notes: true
