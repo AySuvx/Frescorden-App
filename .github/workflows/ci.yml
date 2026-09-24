@@ -62,7 +62,7 @@ jobs:
       - name: Ejecutar reglas contra el Firebase Emulator
         run: >
           npx --yes firebase-tools@14.1.0 emulators:exec
-          --only firestore --project demo-frescorden
+          --only firestore,storage --project demo-frescorden
           "npm --prefix firestore-tests test"
 
   build-apk:
