@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Ningún módulo de la app usa Firebase Storage (las fotos de productos se
+    // guardan en el dispositivo). Denegar todo evita que el bucket herede las
+    // reglas por defecto del proyecto; si un módulo futuro sube archivos, se
+    // abre solo su ruta con una regla específica y su prueba.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
