@@ -7,6 +7,7 @@ import '../../entities/product.dart';
 import '../../repositories/i_product_repository.dart';
 import '../../requests/save_product_request.dart';
 import '../../services/i_notification_service.dart';
+import '../../utils/expiration_alert_policy.dart';
 
 class UpdateProductUseCase {
   final IProductRepository _repository;
@@ -48,6 +49,16 @@ class UpdateProductUseCase {
     await _repository.updateProduct(householdId, updated);
 
     await _notificationService.scheduleExpirationAlert(updated);
+    if (previous != null &&
+        previous.expirationDate != updated.expirationDate) {
+      final daysLeft = ExpirationAlertPolicy.daysLeftInsideWindow(
+        updated.expirationDate,
+        DateTime.now(),
+      );
+      if (daysLeft != null) {
+        await _notificationService.showExpirationSoonAlert(updated, daysLeft);
+      }
+    }
     await _notificationService.scheduleBulkStorageAlert(updated);
     final wasLowStock = previous?.isLowStock ?? false;
     if (!wasLowStock && updated.isLowStock) {
