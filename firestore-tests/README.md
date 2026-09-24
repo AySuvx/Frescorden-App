@@ -1,6 +1,6 @@
-# Pruebas de seguridad de Firestore Rules
+# Pruebas de seguridad de Firestore y Storage Rules
 
-Suite de `@firebase/rules-unit-testing` que valida `firestore.rules` contra el Firestore Emulator — nunca contra el proyecto real.
+Suite de `@firebase/rules-unit-testing` que valida `firestore.rules` (37 escenarios) y `storage.rules` (6 escenarios, deniega todo) contra los emuladores de Firestore y Storage — nunca contra el proyecto real.
 
 ## Requisitos
 
@@ -22,7 +22,7 @@ npm --prefix firestore-tests install
 Desde la raíz del repo:
 
 ```bash
-firebase emulators:exec --only firestore --project demo-frescorden "npm --prefix firestore-tests test"
+firebase emulators:exec --only firestore,storage --project demo-frescorden "npm --prefix firestore-tests test"
 ```
 
 `--project demo-frescorden` usa un projectId "demo-" (no el real `frescorden` de `firebase.json`) — convención de Firebase para garantizar que ninguna llamada pueda alcanzar el backend real por accidente.
