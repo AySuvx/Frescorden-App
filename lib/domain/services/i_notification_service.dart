@@ -9,6 +9,10 @@ abstract interface class INotificationService {
   /// Alerta 3 días antes de `expirationDate`.
   Future<void> scheduleExpirationAlert(Product product);
 
+  /// Alerta inmediata para un producto que ya está dentro de los 3 días
+  /// previos al vencimiento cuando se registra o se le cambia la fecha.
+  Future<void> showExpirationSoonAlert(Product product, int daysLeft);
+
   /// Alerta a los `storageCriticalDays` de `entryDate`, solo productos a granel.
   Future<void> scheduleBulkStorageAlert(Product product);
 

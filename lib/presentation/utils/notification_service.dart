@@ -3,6 +3,8 @@
 // punto del ciclo de vida (guardar, editar, eliminar) sin guardar el ID
 // aparte.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -10,6 +12,8 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/entities/product.dart';
 import '../../domain/services/i_notification_service.dart';
+import '../../domain/utils/expiration_alert_policy.dart';
+import 'notification_permission_gate.dart';
 
 class NotificationService implements INotificationService {
   NotificationService._();
@@ -27,6 +31,26 @@ class NotificationService implements INotificationService {
     const settings = InitializationSettings(android: androidSettings);
     await _plugin.initialize(settings);
     _initialized = true;
+    unawaited(_requestPermission());
+  }
+
+  late final _permissionGate = NotificationPermissionGate(
+    isEnabled: () async => await _android?.areNotificationsEnabled() ?? true,
+    request: () async =>
+        await _android?.requestNotificationsPermission() ?? true,
+  );
+
+  AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  Future<void> _requestPermission() async {
+    try {
+      await _permissionGate.ensure();
+    } catch (e) {
+      debugPrint('NotificationService._requestPermission error: $e');
+    }
   }
 
   // Tres IDs por producto (vencimiento / almacenamiento / stock bajo),
@@ -68,6 +92,31 @@ class NotificationService implements INotificationService {
       );
     } catch (e) {
       debugPrint('NotificationService.scheduleExpirationAlert error: $e');
+    }
+  }
+
+  @override
+  Future<void> showExpirationSoonAlert(Product product, int daysLeft) async {
+    await initialize();
+    try {
+      await _plugin.show(
+        _expirationId(product.id),
+        'Producto por vencer',
+        'El producto "${product.name}" vence '
+            '${ExpirationAlertPolicy.describe(daysLeft)}.',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'vencimiento_channel',
+            'Notificaciones de Vencimiento',
+            channelDescription:
+                'Avisos de productos cercanos a su fecha de vencimiento',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('NotificationService.showExpirationSoonAlert error: $e');
     }
   }
 
