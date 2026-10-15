@@ -16,6 +16,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frescorden/core/errors/ai_exceptions.dart';
 import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/domain/entities/recipe.dart';
 import 'package:frescorden/domain/entities/recipe_ingredient.dart';
@@ -196,7 +197,8 @@ void main() {
         final receta = _recipe('ai-1', 'Sopa Express', ['Papa']);
         final repo = FakeRecipeRepository([])..aiRecipeToReturn = receta;
         final quota = FakeQuotaService();
-        final provider = RecipeProvider(repo, quota);
+        final globalQuota = FakeGlobalAiQuotaRepository();
+        final provider = RecipeProvider(repo, quota, globalQuota);
 
         final resultado = await provider.generateAiRecipe([]);
 
@@ -213,7 +215,8 @@ void main() {
       () async {
         final repo = FakeRecipeRepository([])..aiRecipeError = Exception('Gemini caído');
         final quota = FakeQuotaService();
-        final provider = RecipeProvider(repo, quota);
+        final globalQuota = FakeGlobalAiQuotaRepository();
+        final provider = RecipeProvider(repo, quota, globalQuota);
 
         final resultado = await provider.generateAiRecipe([]);
 
@@ -227,6 +230,28 @@ void main() {
     );
 
     test(
+      'Escenario: si se agotó la cuota gratuita de Gemini, se informa ese '
+      'motivo (no el error genérico) y tampoco se descuenta la cuota local',
+      () async {
+        final repo = FakeRecipeRepository([])
+          ..aiRecipeError = const AiQuotaExceededException();
+        final quota = FakeQuotaService();
+        final globalQuota = FakeGlobalAiQuotaRepository();
+        final provider = RecipeProvider(repo, quota, globalQuota);
+
+        final resultado = await provider.generateAiRecipe([]);
+
+        expect(resultado, isNull);
+        expect(
+          provider.aiError,
+          'El asistente de IA alcanzó su límite de uso por ahora. '
+          'Vuelve a intentarlo en un rato.',
+        );
+        expect(quota.recordedQueries, 0);
+      },
+    );
+
+    test(
       'Escenario: una generación ya en curso ignora un segundo llamado '
       'concurrente',
       () async {
@@ -234,7 +259,8 @@ void main() {
         final completer = Completer<Recipe>();
         final repo = FakeRecipeRepository([])..aiRecipeFuture = completer.future;
         final quota = FakeQuotaService();
-        final provider = RecipeProvider(repo, quota);
+        final globalQuota = FakeGlobalAiQuotaRepository();
+        final provider = RecipeProvider(repo, quota, globalQuota);
 
         // La primera llamada queda "en curso": ya pasó el await de la
         // cuota (que marca _isGeneratingAiRecipe = true) pero sigue

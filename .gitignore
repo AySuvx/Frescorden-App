@@ -83,9 +83,23 @@ graphify-out/
 # Documentación de la monografía: se maneja fuera del repo de código.
 docs/
 
+# Proyectos de video (HyperFrames): metraje crudo, renders y caché de
+# transcode — pesados y no son código fuente de la app.
+videos/
+
 # firestore-tests: dependencias npm de la suite de seguridad de Firestore
 # Rules (Entregable 4 / Cap. 11-12) — se reinstalan con `npm install`.
 firestore-tests/node_modules/
 
 # Reporte de cobertura generado por `flutter test --coverage` (CI lo regenera)
 coverage/
+
+# HyperFrames (heygen-com/hyperframes): skills instaladas localmente con
+# `npx skills add` para trabajo de video/motion graphics — no son parte del
+# código ni de las skills propias del proyecto, se reinstalan con el mismo
+# comando. Se excluye todo excepto la skill propia de APA/IEEE que ya vivía
+# en .claude/Skills/ antes de esta instalación.
+.agents/
+skills-lock.json
+.claude/Skills/*
+!.claude/Skills/APA Y IEEE SKILL.md

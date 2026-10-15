@@ -23,6 +23,7 @@ import 'package:frescorden/domain/repositories/i_analytics_repository.dart';
 import 'package:frescorden/domain/repositories/i_assistant_repository.dart';
 import 'package:frescorden/domain/repositories/i_assistant_usage_repository.dart';
 import 'package:frescorden/domain/repositories/i_auth_repository.dart';
+import 'package:frescorden/domain/repositories/i_global_ai_quota_repository.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_history_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_repository.dart';
@@ -175,6 +176,27 @@ class FakeQuotaService implements IQuotaService {
   DateTime nextResetAt() => DateTime.now().add(const Duration(days: 1));
 }
 
+/// Fake de [IGlobalAiQuotaRepository]: mismo criterio que
+/// [FakeQuotaService], pero representa la cuota COMPARTIDA entre todos los
+/// dispositivos del piloto, no la cuota por dispositivo.
+class FakeGlobalAiQuotaRepository implements IGlobalAiQuotaRepository {
+  int remaining = 15;
+  int recordedQueries = 0;
+
+  @override
+  Future<int> getRemaining() async => remaining;
+
+  @override
+  Future<int> recordSuccessfulQuery() async {
+    recordedQueries++;
+    remaining = remaining > 0 ? remaining - 1 : 0;
+    return remaining;
+  }
+
+  @override
+  DateTime nextResetAt() => DateTime.now().add(const Duration(days: 1));
+}
+
 /// Fake de [IHouseholdRepository]: `watchActiveHouseholdId`/`watchHousehold`
 /// son streams controlables a mano ([emitActiveId]/[emitHousehold]) para
 /// simular la cadena reactiva real de HouseholdProvider. Las acciones
@@ -200,6 +222,8 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   Object? createHouseholdError;
   Household? joinHouseholdResult;
   Object? joinHouseholdError;
+  Household? previewHouseholdResult;
+  Object? previewHouseholdError;
 
   void emitActiveId(String? householdId) => _activeIdController.add(householdId);
   void emitHousehold(Household? household) => _householdController.add(household);
@@ -232,6 +256,13 @@ class FakeHouseholdRepository implements IHouseholdRepository {
     if (joinHouseholdError != null) throw joinHouseholdError!;
     return joinHouseholdResult ??
         (throw UnimplementedError('Configura joinHouseholdResult.'));
+  }
+
+  @override
+  Future<Household> previewHouseholdByCode(String code) async {
+    if (previewHouseholdError != null) throw previewHouseholdError!;
+    return previewHouseholdResult ??
+        (throw UnimplementedError('Configura previewHouseholdResult.'));
   }
 
   @override

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import '../../config/app_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme/app_spacing.dart';
 import '../../routes.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
+import '../utils/notification_service.dart';
 import 'recetas_screen.dart';
 import 'productos_screen.dart';
 import 'add_product_screen.dart';
@@ -18,8 +20,12 @@ import 'about_screen.dart';
 import 'household_screen.dart';
 import 'assistant_screen.dart';
 import 'category_picker_screen.dart';
+import 'preset_food_picker_screen.dart';
 import 'admin_dashboard_screen.dart';
+import 'ai_coming_soon_screen.dart';
+import 'home_tutorial_screen.dart';
 import '../../domain/entities/food_category.dart';
+import '../../domain/entities/preset_food.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -29,13 +35,48 @@ class InicioScreen extends StatefulWidget {
 }
 
 class _InicioScreenState extends State<InicioScreen> {
+  static const _tutorialSeenKey = 'home_tutorial_seen';
+
   @override
   void initState() {
     super.initState();
     // Carga inicial delegada al provider; no hay Firestore directo aquí.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().loadProducts();
+      _requestStartupPermissions();
+      _showTutorialIfFirstVisit();
     });
+  }
+
+  /// Pide cámara y notificaciones apenas el usuario llega a Inicio, en vez
+  /// de dejar que las pida recién cuando use la cámara o registre su primer
+  /// producto — así sabe desde el principio si quedaron habilitadas. Si ya
+  /// están concedidas o el usuario ya las rechazó antes, el sistema no
+  /// vuelve a mostrar el diálogo nativo (no es molesto en visitas futuras).
+  Future<void> _requestStartupPermissions() async {
+    await Permission.camera.request();
+    await NotificationService.instance.initialize();
+  }
+
+  Future<void> _showTutorialIfFirstVisit() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_tutorialSeenKey) ?? false) return;
+    await prefs.setBool(_tutorialSeenKey, true);
+    if (!mounted) return;
+    _openTutorial();
+  }
+
+  void _openTutorial() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black54,
+        settings: const RouteSettings(name: AppRoutes.homeTutorial),
+        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (_, animation, __) =>
+            FadeTransition(opacity: animation, child: const HomeTutorialScreen()),
+      ),
+    );
   }
 
   Future<void> cerrarSesion() async {
@@ -53,7 +94,6 @@ class _InicioScreenState extends State<InicioScreen> {
     }
   }
 
-
   Future<void> _navegarAgregarPorCategoria() async {
     final categoria = await Navigator.push<FoodCategory>(
       context,
@@ -64,6 +104,23 @@ class _InicioScreenState extends State<InicioScreen> {
     );
     if (categoria == null || !mounted) return;
 
+    // Paso intermedio: catálogo curado para esa categoría (ver
+    // PresetFoodPickerScreen). `null` = canceló con el botón atrás, no
+    // avanzar; `manualEntry` = "no lo encuentro", seguir con el formulario
+    // en blanco de siempre; cualquier otro valor es el PresetFood elegido.
+    final resultado = await Navigator.push<Object?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PresetFoodPickerScreen(category: categoria),
+        settings: const RouteSettings(name: AppRoutes.presetFoodPicker),
+      ),
+    );
+    if (resultado == null || !mounted) return;
+    final preset =
+        resultado == PresetFoodPickerScreen.manualEntry
+            ? null
+            : resultado as PresetFood;
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -71,6 +128,9 @@ class _InicioScreenState extends State<InicioScreen> {
             (_) => AddProductScreen(
               onSave: (_) {},
               initialCategory: categoria,
+              initialName: preset?.name,
+              initialUnit: preset?.unit,
+              hideStorageDate: preset != null,
             ),
         settings: const RouteSettings(name: AppRoutes.addProduct),
       ),
@@ -83,11 +143,7 @@ class _InicioScreenState extends State<InicioScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (_) => AddProductScreen(
-              onSave: (_) {},
-              isBulkEntry: true,
-            ),
+        builder: (_) => AddProductScreen(onSave: (_) {}, isBulkEntry: true),
         settings: const RouteSettings(name: AppRoutes.addProduct),
       ),
     );
@@ -117,20 +173,32 @@ class _InicioScreenState extends State<InicioScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Fresc(o)rden')),
+      appBar: AppBar(
+        title: const Text('Fresc(o)rden'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Ayuda y tutorial de la app',
+            onPressed: _openTutorial,
+          ),
+        ],
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
                     colorScheme.primary,
-                    Color.lerp(colorScheme.primary, colorScheme.tertiary, 0.35)!,
+                    Color.lerp(
+                      colorScheme.primary,
+                      colorScheme.tertiary,
+                      0.35,
+                    )!,
                   ],
                 ),
               ),
@@ -182,9 +250,7 @@ class _InicioScreenState extends State<InicioScreen> {
                   context,
                   MaterialPageRoute(
                     builder:
-                        (_) => ProductosScreen(
-                          onEdit: _navegarEditarProducto,
-                        ),
+                        (_) => ProductosScreen(onEdit: _navegarEditarProducto),
                     settings: const RouteSettings(name: AppRoutes.productos),
                   ),
                 );
@@ -204,17 +270,56 @@ class _InicioScreenState extends State<InicioScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.smart_toy),
-              title: const Text('Asistente Culinario'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AssistantScreen(),
-                    settings: const RouteSettings(name: AppRoutes.assistant),
+            Builder(
+              builder: (context) {
+                final canUseAi = context.watch<AuthProvider>().canUseLiveAi;
+                final colorScheme = Theme.of(context).colorScheme;
+                return ListTile(
+                  leading: Icon(
+                    Icons.smart_toy,
+                    color: canUseAi ? null : colorScheme.onSurfaceVariant,
                   ),
+                  title: Text(
+                    'Asistente Culinario',
+                    style:
+                        canUseAi
+                            ? null
+                            : TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                  trailing:
+                      canUseAi
+                          ? null
+                          : Text(
+                            'Pronto',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) =>
+                                canUseAi
+                                    ? const AssistantScreen()
+                                    : const AiComingSoonScreen(
+                                      title: 'Asistente Culinario',
+                                      description:
+                                          'Pronto vas a poder conversar con el '
+                                          'asistente de IA sobre tus recetas, '
+                                          'conservación de alimentos y cómo usar '
+                                          'la app.',
+                                    ),
+                        settings: const RouteSettings(
+                          name: AppRoutes.assistant,
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -303,8 +408,8 @@ class _InicioScreenState extends State<InicioScreen> {
               },
             ),
             // Entrada al Panel Administrativo, visible únicamente si el
-            // usuario autenticado es el admin (ver kAdminUid).
-            if (context.watch<AuthProvider>().currentUser?.uid == kAdminUid)
+            // usuario autenticado es el admin (ver AuthProvider.isAdmin).
+            if (context.watch<AuthProvider>().isAdmin)
               ListTile(
                 leading: const Icon(Icons.admin_panel_settings),
                 title: const Text('Panel Administrativo'),
@@ -314,7 +419,9 @@ class _InicioScreenState extends State<InicioScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const AdminDashboardScreen(),
-                      settings: const RouteSettings(name: AppRoutes.adminDashboard),
+                      settings: const RouteSettings(
+                        name: AppRoutes.adminDashboard,
+                      ),
                     ),
                   );
                 },
@@ -356,12 +463,9 @@ class _InicioScreenState extends State<InicioScreen> {
                         'Tu despensa está lista para que empieces a '
                         'organizarla y dejes de desperdiciar comida.',
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium
-                            ?.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       const Textos(),

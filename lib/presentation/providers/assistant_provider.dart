@@ -2,9 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../core/errors/ai_exceptions.dart';
+import '../../data/datasources/global_ai_quota_firestore_datasource.dart';
+import '../../data/repositories/global_ai_quota_repository_impl.dart';
 import '../../domain/entities/chat_message.dart';
 import '../../domain/repositories/i_assistant_repository.dart';
 import '../../domain/repositories/i_assistant_usage_repository.dart';
+import '../../domain/repositories/i_global_ai_quota_repository.dart';
 import '../../domain/services/i_assistant_analytics_service.dart';
 import '../../domain/services/i_quota_service.dart';
 import '../utils/analytics_service.dart';
@@ -28,12 +32,21 @@ class AssistantProvider extends ChangeNotifier {
   late final IAssistantAnalyticsService _analytics =
       _injectedAnalyticsService ?? AnalyticsService.instance;
 
+  // Cuota compartida entre TODOS los dispositivos del piloto (ver
+  // IGlobalAiQuotaRepository) — se consulta ADEMÁS de `_quota` (que es
+  // solo por dispositivo), nunca en su lugar.
+  final IGlobalAiQuotaRepository? _injectedGlobalQuota;
+  late final IGlobalAiQuotaRepository _globalQuota =
+      _injectedGlobalQuota ??
+      GlobalAiQuotaRepositoryImpl(GlobalAiQuotaFirestoreDataSource());
+
   AssistantProvider(
     this._repository,
     this._productProvider, [
     this._usageRepository,
     this._injectedQuotaService,
     this._injectedAnalyticsService,
+    this._injectedGlobalQuota,
   ]) {
     _loadQuota();
   }
@@ -43,6 +56,7 @@ class AssistantProvider extends ChangeNotifier {
   String? _error;
 
   int _remainingQueries = QuotaService.dailyLimit;
+  int _globalRemainingQueries = GlobalAiQuotaRepositoryImpl.cap;
   Timer? _countdownTimer;
   Duration _timeUntilReset = Duration.zero;
 
@@ -50,12 +64,20 @@ class AssistantProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  int get remainingQueries => _remainingQueries;
-  bool get isLimitReached => _remainingQueries <= 0;
+  // El menor de los dos: lo que de verdad queda disponible, no solo lo
+  // que permite el dispositivo — si la cuota global del piloto está más
+  // ajustada, mostrar el número del dispositivo sería engañoso.
+  int get remainingQueries =>
+      _remainingQueries < _globalRemainingQueries
+          ? _remainingQueries
+          : _globalRemainingQueries;
+  bool get isLimitReached =>
+      _remainingQueries <= 0 || _globalRemainingQueries <= 0;
   Duration get timeUntilReset => _timeUntilReset;
 
   Future<void> _loadQuota() async {
     _remainingQueries = await _quota.getRemaining();
+    _globalRemainingQueries = await _globalQuota.getRemaining();
     if (isLimitReached) _startCountdown();
     notifyListeners();
   }
@@ -78,8 +100,12 @@ class AssistantProvider extends ChangeNotifier {
       // Se descuenta SOLO tras una respuesta real — un fallo de red cae
       // en el catch de abajo y nunca llega hasta acá.
       await _recordSuccessfulQuery();
+    } on AiQuotaExceededException catch (e) {
+      _error = e.message;
+      _messages.add(ChatMessage(role: ChatRole.model, text: e.message));
     } catch (e) {
       _error = e.toString();
+      debugPrint('AssistantProvider.sendMessage error: $e');
       _messages.add(
         const ChatMessage(
           role: ChatRole.model,
@@ -94,6 +120,7 @@ class AssistantProvider extends ChangeNotifier {
 
   Future<void> _recordSuccessfulQuery() async {
     _remainingQueries = await _quota.recordSuccessfulQuery();
+    _globalRemainingQueries = await _globalQuota.recordSuccessfulQuery();
     if (isLimitReached) _startCountdown();
     unawaited(_analytics.logAssistantQuery());
 
@@ -120,8 +147,21 @@ class AssistantProvider extends ChangeNotifier {
     );
   }
 
+  /// El reinicio que realmente importa para el contador visible: el más
+  /// tardío entre los dos límites que están actualmente en cero. La cuota
+  /// por dispositivo resetea a medianoche LOCAL, la global a medianoche
+  /// UTC — no son la misma hora, así que no basta con mirar una sola.
+  DateTime _effectiveNextReset() {
+    final resets = <DateTime>[
+      if (_remainingQueries <= 0) _quota.nextResetAt(),
+      if (_globalRemainingQueries <= 0) _globalQuota.nextResetAt(),
+    ];
+    if (resets.isEmpty) return DateTime.now();
+    return resets.reduce((a, b) => a.isAfter(b) ? a : b);
+  }
+
   void _tickCountdown() {
-    final remaining = _quota.nextResetAt().difference(DateTime.now());
+    final remaining = _effectiveNextReset().difference(DateTime.now());
 
     if (!remaining.isNegative && remaining > Duration.zero) {
       _timeUntilReset = remaining;
@@ -129,12 +169,13 @@ class AssistantProvider extends ChangeNotifier {
       return;
     }
 
-    // Medianoche: se acabó la espera.
+    // Se acabó la espera: se vuelve a consultar ambas cuotas en vez de
+    // asumir el valor máximo, porque la global es compartida y puede que
+    // otro dispositivo ya haya usado parte del nuevo día.
     _countdownTimer?.cancel();
     _countdownTimer = null;
     _timeUntilReset = Duration.zero;
-    _remainingQueries = QuotaService.dailyLimit;
-    notifyListeners();
+    unawaited(_loadQuota());
   }
 
   void clearConversation() {

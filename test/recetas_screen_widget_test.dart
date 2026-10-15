@@ -11,11 +11,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:frescorden/config/app_config.dart';
+import 'package:frescorden/domain/entities/app_user.dart';
 import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/domain/entities/recipe.dart';
 import 'package:frescorden/domain/entities/recipe_ingredient.dart';
+import 'package:frescorden/presentation/providers/auth_provider.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
 import 'package:frescorden/presentation/providers/recipe_provider.dart';
+import 'package:frescorden/presentation/widgets/common/ai_coming_soon_card.dart';
 import 'package:frescorden/presentation/widgets/common/glass_card.dart';
 import 'package:frescorden/presentation/widgets/common/pressable_scale.dart';
 import 'package:frescorden/presentation/screens/recetas_screen.dart';
@@ -46,12 +50,24 @@ Recipe _recipe(String id, String name, List<String> ingredientNames) {
   );
 }
 
-Widget _wrap(ProductProvider productProvider, RecipeProvider recipeProvider) {
+Widget _wrap(
+  ProductProvider productProvider,
+  RecipeProvider recipeProvider, {
+  bool isAdmin = false,
+}) {
+  final authRepo = FakeAuthRepository()
+    ..currentUser = AppUser(
+      uid: isAdmin ? kAdminUid : 'usuario-normal',
+      emailVerified: true,
+    );
   return MaterialApp(
     home: MultiProvider(
       providers: [
         ChangeNotifierProvider<ProductProvider>.value(value: productProvider),
         ChangeNotifierProvider<RecipeProvider>.value(value: recipeProvider),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(authRepo),
+        ),
       ],
       child: const RecetasScreen(),
     ),
@@ -120,13 +136,13 @@ void main() {
     );
 
     testWidgets(
-      'Escenario: con coincidencia baja, se ofrece el fallback de IA en '
-      'un GlassCard',
+      'Escenario: con coincidencia baja y usuario admin, se ofrece el '
+      'fallback de IA en un GlassCard',
       (tester) async {
         useRealisticPhoneViewport(tester);
 
         // Dado un catálogo donde ninguna receta llega al 50% de
-        // disponibilidad
+        // disponibilidad, con un usuario admin (ver AuthProvider.isAdmin)
         final recipeRepo = FakeRecipeRepository([
           _recipe('r1', 'Sancocho', ['Pollo', 'Papa', 'Yuca', 'Mazorca']),
         ]);
@@ -135,7 +151,9 @@ void main() {
         productRepo.emit('hogar-1', [_product('Pollo')]); // 1/4 = 25%
 
         // Cuando se renderiza la pantalla
-        await tester.pumpWidget(_wrap(productProvider, recipeProvider));
+        await tester.pumpWidget(
+          _wrap(productProvider, recipeProvider, isAdmin: true),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 700));
 
@@ -146,6 +164,44 @@ void main() {
         expect(find.byType(GlassCard), findsOneWidget);
         expect(find.byType(PressableScale), findsWidgets);
         expect(find.text('Tienes 1 de 4 ingredientes'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Escenario: con coincidencia baja y usuario normal, se muestra '
+      '"Muy pronto" en vez del fallback real de IA',
+      (tester) async {
+        useRealisticPhoneViewport(tester);
+
+        // Dado el mismo catálogo de coincidencia baja, con un usuario que
+        // no es admin. kAiPilotModeEnabled (app_config.dart) decide si eso
+        // sigue restringiendo la IA (false, fuera del piloto) o si
+        // cualquier usuario autenticado ya puede usarla (true, durante el
+        // piloto de Validación con usuarios) — ver AuthProvider.canUseLiveAi.
+        final recipeRepo = FakeRecipeRepository([
+          _recipe('r1', 'Sancocho', ['Pollo', 'Papa', 'Yuca', 'Mazorca']),
+        ]);
+        final recipeProvider = RecipeProvider(recipeRepo);
+        addTearDown(recipeProvider.dispose);
+        productRepo.emit('hogar-1', [_product('Pollo')]);
+
+        // Cuando se renderiza la pantalla (isAdmin: false por defecto)
+        await tester.pumpWidget(_wrap(productProvider, recipeProvider));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+
+        // Entonces el resultado sigue el valor actual del flag del
+        // piloto: con el piloto activo, un usuario normal también ve el
+        // GlassCard real; fuera del piloto, ve el aviso "Muy pronto".
+        if (kAiPilotModeEnabled) {
+          expect(find.byType(GlassCard), findsOneWidget);
+          expect(find.byType(AiComingSoonCard), findsNothing);
+        } else {
+          expect(find.byType(AiComingSoonCard), findsOneWidget);
+          expect(find.byType(GlassCard), findsNothing);
+          expect(find.text('MUY PRONTO'), findsOneWidget);
+        }
         expect(tester.takeException(), isNull);
       },
     );

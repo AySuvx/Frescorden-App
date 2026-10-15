@@ -1,13 +1,3 @@
-// firestore-tests/storage-rules.test.mjs
-//
-// Pruebas de seguridad de storage.rules (Sección 12.7 de la Guía / Cap. 11
-// del documento final). Corren contra el Storage Emulator, nunca contra el
-// proyecto real — ver README.md de esta carpeta para el comando de arranque.
-//
-// Ningún módulo de la app usa Storage, así que la regla es denegar todo: la
-// matriz verifica que ni un usuario autenticado, ni el dueño de una ruta con
-// su propio uid, ni el administrador puedan leer o escribir.
-
 import { before, after, describe, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

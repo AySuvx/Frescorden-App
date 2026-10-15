@@ -8,6 +8,7 @@
 // pantalla de la lista de compras haya cargado la canasta base.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frescorden/domain/entities/budget_tier.dart';
 import 'package:frescorden/domain/entities/food_category.dart';
 import 'package:frescorden/domain/entities/nutrition_group.dart';
@@ -39,6 +40,12 @@ Product _product(String name, {FoodCategory category = FoodCategory.otros}) {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('Historia de Usuario: Como usuario, quiero agregar los ingredientes '
       'faltantes de una receta a mi lista de compras sin duplicados', () {
     test(

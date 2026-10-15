@@ -10,7 +10,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_config.dart';
 import '../../domain/entities/admin_stats.dart';
 import '../providers/admin_provider.dart';
 import '../providers/auth_provider.dart';
@@ -20,7 +19,7 @@ class AdminDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = context.watch<AuthProvider>().currentUser?.uid == kAdminUid;
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Panel Administrativo')),

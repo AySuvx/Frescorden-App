@@ -17,7 +17,10 @@
 // daría una falsa sensación de precisión; comparar presencia es honesto con
 // los datos disponibles.
 
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/models/shopping_item_model.dart';
 import '../../domain/entities/budget_tier.dart';
 import '../../domain/entities/nutrition_group.dart';
 import '../../domain/entities/product.dart';
@@ -30,7 +33,22 @@ class ShoppingProvider extends ChangeNotifier {
 
   static const _generateShoppingList = GenerateShoppingListUseCase();
 
-  ShoppingProvider(this._repository);
+  static const _kTierKey = 'shopping_tier';
+  static const _kBudgetKey = 'shopping_custom_budget';
+  static const _kPersonCountKey = 'shopping_person_count';
+  static const _kExtraItemsKey = 'shopping_extra_items';
+  static const _kDismissedKey = 'shopping_dismissed_names';
+
+  /// Resuelve cuando el estado guardado (tier, presupuesto, personas,
+  /// extraItems, ítems quitados) ya se restauró desde SharedPreferences.
+  /// `loadBasket` espera esto primero para no pisar el estado persistido
+  /// con los valores default si la pantalla llama a `loadBasket` antes de
+  /// que termine de cargar.
+  late final Future<void> _ready;
+
+  ShoppingProvider(this._repository) {
+    _ready = _loadPersistedState();
+  }
 
   BudgetTier _selectedTier = BudgetTier.basica;
   List<ShoppingItem> _basket = [];
@@ -42,6 +60,12 @@ class ShoppingProvider extends ChangeNotifier {
   /// se suman por encima de la canasta del nivel elegido (ver
   /// addBalancedPlateItems / missingItems).
   final List<ShoppingItem> _extraItems = [];
+
+  /// Nombres (en minúsculas) de ítems que el usuario quitó manualmente de
+  /// "Por comprar" ("Ya lo tengo") sin registrarlos en el inventario real.
+  /// Se limpia al cambiar de nivel de presupuesto (ver `selectTier`), igual
+  /// criterio que la poda de `_extraItems` en `loadBasket`.
+  final Set<String> _dismissedNames = {};
 
   /// Presupuesto escrito a mano por el usuario, si lo hay. Cuando está
   /// definido, gana sobre `BudgetTier.budgetCap` (ver `budgetCap`) — los
@@ -70,22 +94,28 @@ class ShoppingProvider extends ChangeNotifier {
   void setCustomBudget(int? amount) {
     _customBudget = (amount != null && amount > 0) ? amount : null;
     notifyListeners();
+    _persist();
   }
 
   /// Ajusta la cantidad de personas/comensales; nunca baja de 1.
   void setPersonCount(int count) {
     _personCount = count < 1 ? 1 : count;
     notifyListeners();
+    _persist();
   }
 
-  /// Cambia de nivel de presupuesto y recarga su canasta.
+  /// Cambia de nivel de presupuesto y recarga su canasta. Una canasta nueva
+  /// vuelve a empezar: los ítems que el usuario había quitado de la
+  /// anterior ("Ya lo tengo") no aplican a esta.
   Future<void> selectTier(BudgetTier tier) async {
     if (_selectedTier == tier && _basket.isNotEmpty) return;
     _selectedTier = tier;
+    _dismissedNames.clear();
     await loadBasket();
   }
 
   Future<void> loadBasket() async {
+    await _ready;
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -114,6 +144,7 @@ class ShoppingProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      _persist();
     }
   }
 
@@ -129,7 +160,42 @@ class ShoppingProvider extends ChangeNotifier {
       extraItems: _extraItems,
       inventory: inventory,
       personCount: _personCount,
-    );
+    ).where((item) => !_dismissedNames.contains(item.name.toLowerCase()))
+        .toList();
+  }
+
+  /// Último ítem quitado con `removeFromMissing`, para poder revertirlo
+  /// con `undoLastRemoval` (SnackBar "Deshacer" en ShoppingListScreen).
+  ShoppingItem? _lastRemoved;
+
+  /// Quita manualmente [item] de "Por comprar" ("Ya lo tengo") sin pasar
+  /// por el inventario real. Si venía de "Plato Equilibrado" o de una
+  /// receta (`_extraItems`) se elimina del todo; si es parte de la canasta
+  /// base, se oculta hasta el próximo cambio de nivel (ver `selectTier`).
+  void removeFromMissing(ShoppingItem item) {
+    final lower = item.name.toLowerCase();
+    _extraItems.removeWhere((i) => i.name.toLowerCase() == lower);
+    _dismissedNames.add(lower);
+    _lastRemoved = item;
+    notifyListeners();
+    _persist();
+  }
+
+  /// Revierte el último `removeFromMissing`: si el ítem venía de
+  /// `_extraItems` lo vuelve a agregar ahí; si era de la canasta base,
+  /// basta con sacarlo de `_dismissedNames` para que vuelva a aparecer.
+  void undoLastRemoval() {
+    final item = _lastRemoved;
+    if (item == null) return;
+    final lower = item.name.toLowerCase();
+    _dismissedNames.remove(lower);
+    final inBasket = _basket.any((i) => i.name.toLowerCase() == lower);
+    if (!inBasket) {
+      _extraItems.add(item);
+    }
+    _lastRemoved = null;
+    notifyListeners();
+    _persist();
   }
 
   // ─── 'Plato Equilibrado' ────────────────────────────────────────────────
@@ -160,12 +226,15 @@ class ShoppingProvider extends ChangeNotifier {
 
     for (final group in missingGroups) {
       for (final item in group.suggestedItems) {
-        if (existingNames.add(item.name.toLowerCase())) {
+        final lower = item.name.toLowerCase();
+        _dismissedNames.remove(lower);
+        if (existingNames.add(lower)) {
           _extraItems.add(item);
         }
       }
     }
     notifyListeners();
+    _persist();
   }
 
   /// Agrega ítems arbitrarios a la lista (botón
@@ -185,14 +254,19 @@ class ShoppingProvider extends ChangeNotifier {
     final existingNames = {
       for (final item in [..._basket, ..._extraItems]) item.name.toLowerCase(),
     };
-    var added = false;
+    var changed = false;
     for (final item in items) {
-      if (existingNames.add(item.name.toLowerCase())) {
+      final lower = item.name.toLowerCase();
+      if (_dismissedNames.remove(lower)) changed = true;
+      if (existingNames.add(lower)) {
         _extraItems.add(item);
-        added = true;
+        changed = true;
       }
     }
-    if (added) notifyListeners();
+    if (changed) {
+      notifyListeners();
+      _persist();
+    }
   }
 
   /// Suma de `estimatedPrice` de los ítems que faltan por comprar (ya
@@ -216,4 +290,36 @@ class ShoppingProvider extends ChangeNotifier {
   /// superó el techo).
   int remainingBudget(List<Product> inventory) =>
       budgetCap - estimatedTotal(inventory);
+
+  // ─── Persistencia (SharedPreferences) ──────────────────────────────────
+
+  Future<void> _loadPersistedState() async {
+    final prefs = await SharedPreferences.getInstance();
+    _selectedTier = BudgetTier.fromName(prefs.getString(_kTierKey));
+    final storedBudget = prefs.getInt(_kBudgetKey);
+    _customBudget = (storedBudget != null && storedBudget > 0) ? storedBudget : null;
+    _personCount = prefs.getInt(_kPersonCountKey) ?? _defaultPersonCount;
+    _extraItems.addAll(
+      (prefs.getStringList(_kExtraItemsKey) ?? const [])
+          .map((raw) => ShoppingItemModel.fromJson(jsonDecode(raw) as Map<String, dynamic>)),
+    );
+    _dismissedNames.addAll(prefs.getStringList(_kDismissedKey) ?? const []);
+    notifyListeners();
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kTierKey, _selectedTier.name);
+    if (_customBudget == null) {
+      await prefs.remove(_kBudgetKey);
+    } else {
+      await prefs.setInt(_kBudgetKey, _customBudget!);
+    }
+    await prefs.setInt(_kPersonCountKey, _personCount);
+    await prefs.setStringList(
+      _kExtraItemsKey,
+      _extraItems.map((item) => jsonEncode(ShoppingItemModel.toJson(item))).toList(),
+    );
+    await prefs.setStringList(_kDismissedKey, _dismissedNames.toList());
+  }
 }

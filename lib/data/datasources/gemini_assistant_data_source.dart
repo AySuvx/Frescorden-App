@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:firebase_ai/firebase_ai.dart';
 
+import '../../core/errors/ai_exceptions.dart';
 import '../../domain/entities/product.dart';
 
 const _systemInstruction = '''
@@ -110,7 +111,12 @@ class GeminiAssistantDataSource {
         'prioritariamente estos ingredientes disponibles en el hogar:\n'
         '${_inventoryContext(inventory)}';
 
-    final response = await _recipeModel.generateContent([Content.text(prompt)]);
+    final GenerateContentResponse response;
+    try {
+      response = await _recipeModel.generateContent([Content.text(prompt)]);
+    } on QuotaExceeded {
+      throw const AiQuotaExceededException();
+    }
     final text = response.text;
     if (text == null || text.isEmpty) {
       throw StateError('Gemini no devolvió una receta.');
@@ -164,8 +170,16 @@ class GeminiAssistantDataSource {
     // eso le ocultaba a AssistantProvider si la consulta falló, y con la
     // cuota diaria necesita saberlo para NO descontarla en un fallo de
     // red). El mensaje amigable ahora se arma en AssistantProvider.
+    // Excepción: QuotaExceeded sí se traduce acá — es la única causa de
+    // falla que Presentation necesita distinguir para no mostrarla como
+    // un error genérico (ver AiQuotaExceededException).
     _chat ??= _model.startChat();
-    final response = await _chat!.sendMessage(Content.text(fullPrompt));
+    final GenerateContentResponse response;
+    try {
+      response = await _chat!.sendMessage(Content.text(fullPrompt));
+    } on QuotaExceeded {
+      throw const AiQuotaExceededException();
+    }
     return response.text ?? 'No obtuve una respuesta. Intenta de nuevo.';
   }
 

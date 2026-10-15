@@ -126,6 +126,11 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     }
   }
 
+  /// Antes de unirse de verdad, resuelve el código a su hogar y le
+  /// pregunta al usuario si es el correcto — unirse "a ciegas" (sin ver a
+  /// dónde) era confuso: el código es fácil de transcribir mal (6
+  /// caracteres) y antes no había forma de notar el error hasta después de
+  /// ya estar dentro del hogar equivocado.
   Future<void> _joinHousehold() async {
     final code = _joinCodeController.text.trim().toUpperCase();
     if (code.length != 6) {
@@ -136,7 +141,33 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _isJoining = true);
     try {
-      await context.read<HouseholdProvider>().joinHousehold(code);
+      final provider = context.read<HouseholdProvider>();
+      final preview = await provider.previewHousehold(code);
+      if (!mounted) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('¿Es este tu hogar?'),
+          content: Text(
+            '"${preview.name}" — ${preview.members.length} '
+            '${preview.members.length == 1 ? 'miembro' : 'miembros'}.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Sí, unirme'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+
+      await provider.joinHousehold(code);
       _joinCodeController.clear();
       _showSnack('Te uniste al hogar correctamente.');
     } catch (e) {

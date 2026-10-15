@@ -1,18 +1,3 @@
-// MultiProvider registra ProductProvider y AuthProvider con su cadena de
-// dependencias inyectadas:
-//
-//   ProductProvider
-//     └─ ProductRepositoryImpl
-//          └─ FirestoreProductDataSource
-//               └─ FirebaseFirestore.instance (externo)
-//
-//   AuthProvider
-//     └─ AuthRepositoryImpl
-//          └─ FirebaseAuth.instance / GoogleSignIn() / FirebaseFirestore.instance (externos)
-//
-// Ninguna pantalla instancia estas clases directamente; las obtienen a
-// través de context.read<...>() / context.watch<...>().
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -27,7 +12,7 @@ import 'config/theme/app_theme.dart';
 import 'config/theme/theme_provider.dart';
 import 'presentation/screens/splash/splash_screen.dart';
 
-// Capa de datos (instanciada aquí, no en las pantallas)
+// Capa de datos
 import 'data/datasources/firestore_product_datasource.dart';
 import 'data/repositories/product_repository_impl.dart';
 import 'data/repositories/auth_repository_impl.dart';
@@ -50,11 +35,14 @@ import 'data/datasources/firestore_assistant_usage_datasource.dart';
 import 'data/repositories/assistant_usage_repository_impl.dart';
 import 'data/datasources/gemini_product_recognition_data_source.dart';
 import 'data/repositories/product_recognition_repository_impl.dart';
+import 'data/datasources/preset_food_local_datasource.dart';
+import 'data/repositories/preset_food_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/repositories/i_activity_log_repository.dart';
 import 'domain/repositories/i_assistant_usage_repository.dart';
 import 'domain/repositories/i_product_recognition_repository.dart';
+import 'domain/repositories/i_preset_food_repository.dart';
 import 'domain/usecases/get_analytics_usecase.dart';
 import 'domain/usecases/get_admin_stats_usecase.dart';
 
@@ -80,9 +68,10 @@ Future<void> _initNonCriticalServices() async {
     // (requiere registrar el token que imprime logcat en la consola de
     // Firebase); en release, Play Integrity.
     await FirebaseAppCheck.instance.activate(
-      providerAndroid: kDebugMode
-          ? const AndroidDebugProvider()
-          : const AndroidPlayIntegrityProvider(),
+      providerAndroid:
+          kDebugMode
+              ? const AndroidDebugProvider()
+              : const AndroidPlayIntegrityProvider(),
     );
   } catch (e) {
     debugPrint('FirebaseAppCheck.activate error: $e');
@@ -130,9 +119,7 @@ class FrescordenApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Tema oscuro/claro
-        ChangeNotifierProvider<ThemeProvider>(
-          create: (_) => ThemeProvider(),
-        ),
+        ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
 
         // AuthProvider con inyección de dependencias
         ChangeNotifierProvider<AuthProvider>(
@@ -145,10 +132,11 @@ class FrescordenApp extends StatelessWidget {
         // activo mostrar apenas resuelve la sesión. Debe registrarse antes
         // que ProductProvider: este último lo lee vía ProxyProvider.
         ChangeNotifierProvider<HouseholdProvider>(
-          create: (context) => HouseholdProvider(
-            HouseholdRepositoryImpl(FirestoreHouseholdDataSource()),
-            context.read<AuthProvider>().authStateChanges,
-          ),
+          create:
+              (context) => HouseholdProvider(
+                HouseholdRepositoryImpl(FirestoreHouseholdDataSource()),
+                context.read<AuthProvider>().authStateChanges,
+              ),
         ),
 
         // IActivityLogRepository — log de auditoría del inventario.
@@ -158,9 +146,9 @@ class FrescordenApp extends StatelessWidget {
         // lo leen las pantallas directamente (ver HouseholdScreen) para
         // mostrar el historial de actividad con un StreamBuilder.
         Provider<IActivityLogRepository>(
-          create: (_) => ActivityLogRepositoryImpl(
-            FirestoreActivityLogDataSource(),
-          ),
+          create:
+              (_) =>
+                  ActivityLogRepositoryImpl(FirestoreActivityLogDataSource()),
         ),
 
         // IAssistantUsageRepository — adopción del asistente culinario.
@@ -168,9 +156,10 @@ class FrescordenApp extends StatelessWidget {
         // provider simple, se registra antes que AssistantProvider para
         // poder inyectarlo ahí.
         Provider<IAssistantUsageRepository>(
-          create: (_) => AssistantUsageRepositoryImpl(
-            FirestoreAssistantUsageDataSource(),
-          ),
+          create:
+              (_) => AssistantUsageRepositoryImpl(
+                FirestoreAssistantUsageDataSource(),
+              ),
         ),
 
         // IProductRecognitionRepository — identifica un producto (nombre,
@@ -178,9 +167,18 @@ class FrescordenApp extends StatelessWidget {
         // Provider simple, sin estado propio: AddProductScreen la consulta
         // directo y maneja su propio loading/error con setState.
         Provider<IProductRecognitionRepository>(
-          create: (_) => ProductRecognitionRepositoryImpl(
-            GeminiProductRecognitionDataSource(),
-          ),
+          create:
+              (_) => ProductRecognitionRepositoryImpl(
+                GeminiProductRecognitionDataSource(),
+              ),
+        ),
+
+        // IPresetFoodRepository — catálogo curado de alimentos ya
+        // clasificados (ver PresetFoodLocalDataSource), para
+        // PresetFoodPickerScreen. Mismo criterio que RecipeLocalDataSource:
+        // contenido estático, provider simple sin estado propio.
+        Provider<IPresetFoodRepository>(
+          create: (_) => PresetFoodRepositoryImpl(PresetFoodLocalDataSource()),
         ),
 
         // ProductProvider con inyección de dependencias.
@@ -196,16 +194,15 @@ class FrescordenApp extends StatelessWidget {
         // se unió a un hogar) para (re)suscribir su stream al hogar
         // correcto — ver ProductProvider.setActiveHousehold.
         ChangeNotifierProxyProvider<HouseholdProvider, ProductProvider>(
-          create: (context) => ProductProvider(
-            ProductRepositoryImpl(
-              FirestoreProductDataSource(),
-            ),
-            ProductHistoryRepositoryImpl(
-              FirestoreProductHistoryDataSource(),
-              ShoppingLocalDataSource(), // Opción A: catálogo de precios
-            ),
-            context.read<IActivityLogRepository>(),
-          ),
+          create:
+              (context) => ProductProvider(
+                ProductRepositoryImpl(FirestoreProductDataSource()),
+                ProductHistoryRepositoryImpl(
+                  FirestoreProductHistoryDataSource(),
+                  ShoppingLocalDataSource(), // Opción A: catálogo de precios
+                ),
+                context.read<IActivityLogRepository>(),
+              ),
           update: (_, householdProvider, productProvider) {
             return productProvider!
               ..setActiveHousehold(householdProvider.activeHouseholdId);
@@ -217,20 +214,22 @@ class FrescordenApp extends StatelessWidget {
         // GeminiAssistantDataSource() propia, independiente de la del
         // AssistantProvider de más abajo (esta no mantiene conversación).
         ChangeNotifierProvider<RecipeProvider>(
-          create: (_) => RecipeProvider(
-            RecipeRepositoryImpl(
-              RecipeLocalDataSource(),
-              GeminiAssistantDataSource(),
-            ),
-          ),
+          create:
+              (_) => RecipeProvider(
+                RecipeRepositoryImpl(
+                  RecipeLocalDataSource(),
+                  GeminiAssistantDataSource(),
+                ),
+              ),
         ),
 
         // ShoppingProvider — canastas por nivel de presupuesto (fuente
         // local) cruzadas dinámicamente contra el inventario real.
         ChangeNotifierProvider<ShoppingProvider>(
-          create: (_) => ShoppingProvider(
-            ShoppingRepositoryImpl(ShoppingLocalDataSource()),
-          ),
+          create:
+              (_) => ShoppingProvider(
+                ShoppingRepositoryImpl(ShoppingLocalDataSource()),
+              ),
         ),
 
         // AnalyticsProvider — KPIs calculados a partir del historial de
@@ -239,11 +238,12 @@ class FrescordenApp extends StatelessWidget {
         // ProductProvider: el resumen es por-hogar, así que necesita
         // enterarse cada vez que cambia `activeHouseholdId`.
         ChangeNotifierProxyProvider<HouseholdProvider, AnalyticsProvider>(
-          create: (_) => AnalyticsProvider(
-            GetAnalyticsUseCase(
-              AnalyticsRepositoryImpl(FirestoreProductHistoryDataSource()),
-            ),
-          ),
+          create:
+              (_) => AnalyticsProvider(
+                GetAnalyticsUseCase(
+                  AnalyticsRepositoryImpl(FirestoreProductHistoryDataSource()),
+                ),
+              ),
           update: (_, householdProvider, analyticsProvider) {
             return analyticsProvider!
               ..setActiveHousehold(householdProvider.activeHouseholdId);
@@ -252,11 +252,12 @@ class FrescordenApp extends StatelessWidget {
 
         // AssistantProvider — asistente culinario (Gemini vía firebase_ai).
         ChangeNotifierProvider<AssistantProvider>(
-          create: (context) => AssistantProvider(
-            AssistantRepositoryImpl(GeminiAssistantDataSource()),
-            context.read<ProductProvider>(),
-            context.read<IAssistantUsageRepository>(),
-          ),
+          create:
+              (context) => AssistantProvider(
+                AssistantRepositoryImpl(GeminiAssistantDataSource()),
+                context.read<ProductProvider>(),
+                context.read<IAssistantUsageRepository>(),
+              ),
         ),
 
         // AdminProvider — Panel Administrativo Global.
@@ -265,11 +266,12 @@ class FrescordenApp extends StatelessWidget {
         // kAdminUid antes de hacerlo) — ningún costo para el resto de
         // usuarios.
         ChangeNotifierProvider<AdminProvider>(
-          create: (_) => AdminProvider(
-            GetAdminStatsUseCase(
-              AdminRepositoryImpl(FirestoreAdminDataSource()),
-            ),
-          ),
+          create:
+              (_) => AdminProvider(
+                GetAdminStatsUseCase(
+                  AdminRepositoryImpl(FirestoreAdminDataSource()),
+                ),
+              ),
         ),
       ],
       child: const MyApp(),

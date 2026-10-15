@@ -236,6 +236,14 @@ class HouseholdProvider extends ChangeNotifier {
     }
   }
 
+  /// Resuelve [code] a su hogar SIN unirse todavía — para que la pantalla
+  /// le muestre al usuario a qué hogar se va a unir (nombre, cantidad de
+  /// miembros) antes de confirmar. No toca `_isLoading`/`_error`: es una
+  /// consulta de apoyo a un diálogo, no una acción de estado del provider.
+  Future<Household> previewHousehold(String code) {
+    return _repository.previewHouseholdByCode(code);
+  }
+
   Future<void> joinHousehold(String code) async {
     final uid = _uid;
     if (uid == null) {

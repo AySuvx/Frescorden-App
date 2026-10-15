@@ -6,3 +6,5 @@
 // las consultas agregadas de métricas globales.
 
 const String kAdminUid = 'YMpWzkKQFiMvCqJdYDYX9fZe5Ow2';
+
+const bool kAiPilotModeEnabled = true;

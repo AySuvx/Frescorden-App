@@ -5,6 +5,7 @@
 // qué SnackBar mostrar.
 
 import 'package:flutter/foundation.dart';
+import '../../config/app_config.dart';
 import '../../domain/entities/app_user.dart';
 import '../../domain/repositories/i_auth_repository.dart';
 
@@ -21,6 +22,19 @@ class AuthProvider extends ChangeNotifier {
   Stream<AppUser?> get authStateChanges => _repository.authStateChanges();
 
   AppUser? get currentUser => _repository.currentUser;
+
+  /// Único punto de verdad para "es el admin" (antes duplicado inline con
+  /// `== kAdminUid` en admin_dashboard_screen.dart e inicio_screen.dart).
+  /// Sigue controlando el Panel Administrativo — eso NO se abre durante el
+  /// piloto, solo la IA (ver canUseLiveAi).
+  bool get isAdmin => currentUser?.uid == kAdminUid;
+
+  /// Punto de verdad para "puede usar la IA en vivo ahora" (asistente,
+  /// receta con IA, reconocimiento de producto): el admin siempre puede, y
+  /// mientras kAiPilotModeEnabled esté en true (piloto de Validación con
+  /// usuarios) cualquier usuario autenticado también. Fuera del piloto,
+  /// vuelve a ser solo el admin — ver AiComingSoonCard / ADR-004.
+  bool get canUseLiveAi => isAdmin || kAiPilotModeEnabled;
 
   Future<void> _run(Future<void> Function() action) async {
     _isLoading = true;
