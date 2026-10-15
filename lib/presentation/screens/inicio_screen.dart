@@ -7,10 +7,16 @@ import '../../routes.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../utils/notification_service.dart';
+import '../providers/recipe_provider.dart';
+import '../providers/restock_prediction_provider.dart';
+import '../../domain/entities/restock_prediction.dart';
+import '../utils/food_category_ui.dart';
 import 'recetas_screen.dart';
+import 'detalle_receta_screen.dart';
 import 'productos_screen.dart';
 import 'add_product_screen.dart';
 import '../widgets/button_plus.dart';
+import '../widgets/common/custom_card.dart';
 import 'login_screen.dart';
 import 'shopping_list_screen.dart';
 import 'analytics_screen.dart';
@@ -26,6 +32,8 @@ import 'ai_coming_soon_screen.dart';
 import 'home_tutorial_screen.dart';
 import '../../domain/entities/food_category.dart';
 import '../../domain/entities/preset_food.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/utils/expiration_alert_policy.dart';
 
 class InicioScreen extends StatefulWidget {
   const InicioScreen({super.key});
@@ -43,6 +51,7 @@ class _InicioScreenState extends State<InicioScreen> {
     // Carga inicial delegada al provider; no hay Firestore directo aquí.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().loadProducts();
+      context.read<RecipeProvider>().loadRecipes();
       _requestStartupPermissions();
       _showTutorialIfFirstVisit();
     });
@@ -161,6 +170,280 @@ class _InicioScreenState extends State<InicioScreen> {
               onSave: (_) {},
             ),
         settings: const RouteSettings(name: AppRoutes.addProduct),
+      ),
+    );
+  }
+
+  /// "Agregar de nuevo" desde una predicción de reposición: precarga
+  /// nombre, categoría y unidad de la última vez (así el usuario no tiene
+  /// que volver a buscarlo en el catálogo ni escribirlo) — solo falta
+  /// confirmar cantidad y fecha de vencimiento, que sí cambian cada compra.
+  void _navegarAgregarDeNuevo(RestockPrediction prediction) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddProductScreen(
+          onSave: (_) {},
+          initialCategory: prediction.category,
+          initialName: prediction.productName,
+          initialUnit: prediction.unit,
+        ),
+        settings: const RouteSettings(name: AppRoutes.addProduct),
+      ),
+    );
+  }
+
+  void _navegarAProductos() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductosScreen(onEdit: _navegarEditarProducto),
+        settings: const RouteSettings(name: AppRoutes.productos),
+      ),
+    );
+  }
+
+  List<Product> _expiringSoon(List<Product> products) {
+    final now = DateTime.now();
+    return products
+        .where(
+          (p) =>
+              ExpirationAlertPolicy.daysLeftInsideWindow(
+                p.expirationDate,
+                now,
+              ) !=
+              null,
+        )
+        .toList();
+  }
+
+  /// Dashboard real (vencimientos, stock bajo, receta sugerida) — antes
+  /// Inicio era solo un mensaje de bienvenida sin información útil del
+  /// hogar. Solo se muestra cuando ya hay inventario; un hogar recién
+  /// creado sigue viendo el mensaje de bienvenida de siempre (ver `build`).
+  Widget _buildDashboard(
+    BuildContext context,
+    ProductProvider productProvider,
+  ) {
+    final recipeProvider = context.watch<RecipeProvider>();
+    final inventory = productProvider.products;
+    final expiringSoon = _expiringSoon(inventory);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.timer_outlined,
+                iconColor: expiringSoon.isEmpty
+                    ? colorScheme.primary
+                    : colorScheme.error,
+                label: 'Vencen pronto',
+                value: '${expiringSoon.length}',
+                onTap: _navegarAProductos,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.inventory_2_outlined,
+                iconColor: productProvider.lowStockCount == 0
+                    ? colorScheme.primary
+                    : colorScheme.error,
+                label: 'Stock bajo',
+                value: '${productProvider.lowStockCount}',
+                onTap: _navegarAProductos,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _buildRestockPredictionsCard(context, inventory),
+        const SizedBox(height: AppSpacing.sm),
+        _buildSuggestedRecipeCard(recipeProvider, inventory),
+      ],
+    );
+  }
+
+  /// "Se te puede estar acabando X" — basado en cada cuánto el hogar suele
+  /// volver a comprar ese producto (ver PredictRestockUseCase), no en IA:
+  /// pura aritmética sobre el historial que la app ya guarda.
+  Widget _buildRestockPredictionsCard(
+    BuildContext context,
+    List<Product> inventory,
+  ) {
+    final predictions = context
+        .watch<RestockPredictionProvider>()
+        .predict(inventory);
+    if (predictions.isEmpty) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final top = predictions.take(3).toList();
+
+    return CustomCard(
+      onTap: _navegarAProductos,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_graph, color: colorScheme.tertiary),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Se te puede estar acabando',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Según cada cuánto sueles comprarlo',
+            style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          for (final prediction in top)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Image.asset(
+                    prediction.category.iconAsset,
+                    width: 18,
+                    height: 18,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      prediction.productName,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  Text(
+                    'cada ~${prediction.averageCycleDays}d',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Agregar de nuevo',
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      size: 20,
+                      color: colorScheme.primary,
+                    ),
+                    onPressed: () => _navegarAgregarDeNuevo(prediction),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return CustomCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 28),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  /// Mejor coincidencia del catálogo contra el inventario actual — misma
+  /// regla que RecetasScreen (RecipeProvider.sortedByMatch), solo que acá
+  /// se muestra una sola, como sugerencia del día.
+  Widget _buildSuggestedRecipeCard(
+    RecipeProvider recipeProvider,
+    List<Product> inventory,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (recipeProvider.recipes.isEmpty) return const SizedBox.shrink();
+
+    final receta = recipeProvider.sortedByMatch(inventory).first;
+    final faltantes = recipeProvider.missingIngredientsFor(receta, inventory);
+
+    return CustomCard(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              DetalleRecetaScreen(receta: receta, faltantes: faltantes),
+          settings: const RouteSettings(name: AppRoutes.detalleReceta),
+        ),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              receta.imagePath,
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Receta sugerida de hoy',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  receta.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  faltantes.isEmpty
+                      ? 'Ya tienes todo lo que necesitas'
+                      : 'Te faltan ${faltantes.length} ingrediente'
+                          '${faltantes.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+        ],
       ),
     );
   }
@@ -438,7 +721,11 @@ class _InicioScreenState extends State<InicioScreen> {
       body:
           provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Center(
+              : provider.products.isEmpty
+              // Hogar recién creado, sin inventario todavía: el dashboard
+              // no tendría nada que mostrar, así que se mantiene el
+              // mensaje de bienvenida de siempre como guía inicial.
+              ? Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg,
@@ -472,7 +759,8 @@ class _InicioScreenState extends State<InicioScreen> {
                     ],
                   ),
                 ),
-              ),
+              )
+              : _buildDashboard(context, provider),
       floatingActionButton: ButtonPlus(
         onManualAdd: _navegarAgregarPorCategoria,
         onBulkAdd: _navegarAgregarAGranel,

@@ -3,6 +3,11 @@
 // JSON estructurado en vez de parsear texto libre. La diferencia acá es
 // que el prompt incluye una imagen (InlineDataPart) además de texto —
 // ver documentación oficial de firebase_ai para InlineDataPart/Content.multi.
+//
+// Backend Vertex AI vía FirebaseAI.agentPlatform() (no Gemini Developer
+// API) — ver nota en
+// GeminiAssistantDataSource sobre por qué (crédito de prueba gratuita +
+// cuota compartida en vez del tope fijo de 20/día).
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -39,7 +44,7 @@ const _modelName = 'gemini-3.5-flash';
 const _validUnits = ['unidad', 'kg', 'g', 'L', 'ml', 'lbs', 'oz'];
 
 class GeminiProductRecognitionDataSource {
-  late final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
+  late final GenerativeModel _model = FirebaseAI.agentPlatform().generativeModel(
     model: _modelName,
     systemInstruction: Content.system(_visionSystemInstruction),
     generationConfig: GenerationConfig(

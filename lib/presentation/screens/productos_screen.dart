@@ -409,6 +409,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ? null
                   : () {
                       HapticFeedback.lightImpact();
+                      // Si esta es la última unidad, descontar lo dejaría
+                      // en 0 "flotando" en la lista sin registrar qué pasó
+                      // con él — en vez de eso, se ofrece de una vez el
+                      // mismo diálogo de retirar (Consumido/Desperdiciado),
+                      // que sí queda en el historial y en Analíticas.
+                      if (_cantidadActual(producto) == 1) {
+                        _eliminarProductoConConfirmacion(producto);
+                        return;
+                      }
                       final id = producto['id'] as String?;
                       if (id != null) {
                         context.read<ProductProvider>().decrementQuantity(id);

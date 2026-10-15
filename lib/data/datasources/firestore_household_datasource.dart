@@ -220,7 +220,20 @@ class FirestoreHouseholdDataSource {
   // hacia el hogar nuevo. Los documentos originales NO se borran — quedan
   // como respaldo hasta que se confirme que la migración funcionó bien.
 
+  /// Si [uid] ya tiene un hogar personal (campo `personalHouseholdId`,
+  /// nunca se pisa — ver UserModel), simplemente lo reactiva como
+  /// `activeHouseholdId`. Solo si NUNCA tuvo uno (usuario genuinamente
+  /// nuevo) crea uno desde cero y copia el inventario legacy.
+  ///
+  /// Corrige un bug real del piloto: antes, "Salir del Hogar" siempre
+  /// terminaba acá y creaba un hogar "Mi hogar" NUEVO y vacío — el
+  /// inventario personal original (con productos reales) quedaba
+  /// huérfano, en un hogar al que la app ya no sabía volver, aunque el
+  /// usuario siguiera siendo su único miembro.
   Future<void> bootstrapPersonalHousehold(String uid, {String? email}) async {
+    final reactivated = await _reactivateExistingPersonalHousehold(uid);
+    if (reactivated) return;
+
     // El código de invitación se genera fuera de la transacción: Firestore
     // no permite queries (where) dentro de una transacción, solo lecturas
     // de documentos puntuales.
@@ -248,11 +261,10 @@ class FirestoreHouseholdDataSource {
         createdAt: now,
       );
       tx.set(householdRef, model.toJson());
-      tx.set(
-        _userDoc(uid),
-        UserModel(uid: uid, activeHouseholdId: householdRef.id).toJson(),
-        SetOptions(merge: true),
-      );
+      tx.set(_userDoc(uid), {
+        'activeHouseholdId': householdRef.id,
+        'personalHouseholdId': householdRef.id,
+      }, SetOptions(merge: true));
       return true;
     });
 
@@ -281,5 +293,28 @@ class FirestoreHouseholdDataSource {
       }
       await batch.commit();
     }
+  }
+
+  /// `true` si [uid] ya tenía un `personalHouseholdId` registrado y ese
+  /// hogar todavía existe — en ese caso lo reactiva y no hace falta crear
+  /// nada. `false` si nunca tuvo uno, o si el que tenía fue borrado (caso
+  /// borde: se cae al flujo de creación normal, igual que un usuario nuevo).
+  Future<bool> _reactivateExistingPersonalHousehold(String uid) async {
+    return _db.runTransaction<bool>((tx) async {
+      final userSnap = await tx.get(_userDoc(uid));
+      final data = userSnap.data();
+      if (data?['activeHouseholdId'] != null) return false;
+
+      final personalId = data?['personalHouseholdId'] as String?;
+      if (personalId == null) return false;
+
+      final personalSnap = await tx.get(_householdsCol.doc(personalId));
+      if (!personalSnap.exists) return false;
+
+      tx.set(_userDoc(uid), {
+        'activeHouseholdId': personalId,
+      }, SetOptions(merge: true));
+      return true;
+    });
   }
 }

@@ -52,6 +52,7 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/recipe_provider.dart';
 import 'presentation/providers/shopping_provider.dart';
 import 'presentation/providers/analytics_provider.dart';
+import 'presentation/providers/restock_prediction_provider.dart';
 import 'presentation/providers/household_provider.dart';
 import 'presentation/providers/assistant_provider.dart';
 import 'presentation/providers/admin_provider.dart';
@@ -246,6 +247,20 @@ class FrescordenApp extends StatelessWidget {
               ),
           update: (_, householdProvider, analyticsProvider) {
             return analyticsProvider!
+              ..setActiveHousehold(householdProvider.activeHouseholdId);
+          },
+        ),
+
+        // RestockPredictionProvider — "se te puede estar acabando X", sobre
+        // el mismo historial que Analíticas pero sin IA. Household-aware,
+        // igual patrón que AnalyticsProvider.
+        ChangeNotifierProxyProvider<HouseholdProvider, RestockPredictionProvider>(
+          create:
+              (_) => RestockPredictionProvider(
+                FirestoreProductHistoryDataSource(),
+              ),
+          update: (_, householdProvider, restockProvider) {
+            return restockProvider!
               ..setActiveHousehold(householdProvider.activeHouseholdId);
           },
         ),

@@ -1,10 +1,16 @@
 // Traduce el contador crudo de Firestore (GlobalAiQuotaFirestoreDataSource)
 // al contrato de dominio IGlobalAiQuotaRepository: "cuántas consultas
-// quedan hoy", no "cuántas van". `cap` se queda deliberadamente por debajo
-// del límite real de Google (20/día en el plan Spark, ver docs/API.docx)
-// para dejar margen a solicitudes que no pasan por este contador
-// (depuración directa desde la consola, pequeños desfases de red entre el
-// incremento y la lectura de confirmación).
+// quedan hoy", no "cuántas van".
+//
+// `cap` es una red de seguridad contra un bug que dispare llamadas sin
+// control, NO el límite real del día a día — ese lo pone QuotaService (20
+// por dispositivo/persona). Mientras el proyecto use Vertex AI + Blaze
+// (crédito de prueba gratuita, cuota dinámica, ver GeminiAssistantDataSource),
+// no hay un tope fijo de Google que proteger, así que este valor puede ser
+// generoso. Si el proyecto alguna vez vuelve al backend Gemini Developer
+// API en el plan Spark (tope fijo real de 20/día para TODO el proyecto,
+// ver docs/API.docx), hay que bajar esto de nuevo a algo como 15 para no
+// pasarse de ese límite.
 
 import '../../domain/repositories/i_global_ai_quota_repository.dart';
 import '../datasources/global_ai_quota_firestore_datasource.dart';
@@ -14,7 +20,7 @@ class GlobalAiQuotaRepositoryImpl implements IGlobalAiQuotaRepository {
 
   GlobalAiQuotaRepositoryImpl(this._dataSource);
 
-  static const cap = 15;
+  static const cap = 300;
 
   String _todayId() => DateTime.now().toUtc().toIso8601String().substring(0, 10);
 

@@ -8,6 +8,7 @@
 import '../../domain/entities/analytics_summary.dart';
 import '../../domain/entities/category_waste_stats.dart';
 import '../../domain/entities/food_category.dart';
+import '../../domain/entities/monthly_analytics.dart';
 import '../../domain/entities/product_history_entry.dart';
 import '../../domain/entities/product_ranking_entry.dart';
 import '../../domain/repositories/i_analytics_repository.dart';
@@ -20,9 +21,24 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
 
   static const _windowDuration = Duration(days: 30);
 
+  /// Cuántos meses hacia atrás cubre `monthlyHistory` (incluyendo el mes
+  /// actual) — suficiente para una línea de tendencia legible sin saturar
+  /// el gráfico en un hogar con mucho historial.
+  static const _monthlyHistoryMonths = 6;
+
   @override
   Future<AnalyticsSummary> getSummary(String householdId) async {
     final allHistory = await _dataSource.getAll(householdId);
+    if (allHistory.isEmpty) return AnalyticsSummary.empty();
+
+    // A diferencia del resto del resumen (acotado al último mes),
+    // `totalMoneySavedAllTimeCop` y `monthlyHistory` miran TODO el
+    // historial — por eso se calculan sobre `allHistory`, no sobre
+    // `history` (la ventana de 30 días de abajo).
+    final totalMoneySavedAllTimeCop = allHistory
+        .where((e) => e.outcome == ProductOutcome.consumedOnTime)
+        .fold<int>(0, (sum, e) => sum + (e.estimatedPrice ?? 0));
+    final monthlyHistory = _monthlyHistory(allHistory);
 
     final cutoff = DateTime.now().subtract(_windowDuration);
     final history =
@@ -61,7 +77,46 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
       topConsumedProduct: _topProduct(consumedOnTime),
       topDiscardedProduct: _topProduct(discarded),
       discardedBreakdown: discardedBreakdown,
+      totalMoneySavedAllTimeCop: totalMoneySavedAllTimeCop,
+      monthlyHistory: monthlyHistory,
     );
+  }
+
+  /// Agrupa TODO el historial (no solo el último mes) por mes calendario,
+  /// y devuelve hasta [_monthlyHistoryMonths] puntos, del más antiguo al
+  /// más reciente — un mes sin ninguna entrada simplemente no aparece (no
+  /// se rellenan huecos con ceros, para no sugerir actividad que no hubo).
+  List<MonthlyAnalytics> _monthlyHistory(List<ProductHistoryEntry> allHistory) {
+    final byMonth = <DateTime, List<ProductHistoryEntry>>{};
+    for (final entry in allHistory) {
+      final local = entry.resolvedAt.toLocal();
+      final key = DateTime(local.year, local.month);
+      (byMonth[key] ??= []).add(entry);
+    }
+
+    final sortedMonths = byMonth.keys.toList()..sort();
+    final recentMonths = sortedMonths.length > _monthlyHistoryMonths
+        ? sortedMonths.sublist(sortedMonths.length - _monthlyHistoryMonths)
+        : sortedMonths;
+
+    return [
+      for (final month in recentMonths)
+        () {
+          final entries = byMonth[month]!;
+          final consumed = entries
+              .where((e) => e.outcome == ProductOutcome.consumedOnTime);
+          final consumedCount = consumed.length;
+          return MonthlyAnalytics(
+            month: month,
+            moneySavedCop: consumed.fold<int>(
+              0,
+              (sum, e) => sum + (e.estimatedPrice ?? 0),
+            ),
+            wasteReductionPercentage: consumedCount / entries.length * 100,
+            totalResolved: entries.length,
+          );
+        }(),
+    ];
   }
 
   /// Agrupa el historial por categoría, contando consumidos a tiempo vs.

@@ -10,8 +10,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:frescorden/core/errors/auth_exceptions.dart';
+import 'package:frescorden/data/datasources/firestore_product_history_datasource.dart';
 import 'package:frescorden/presentation/providers/auth_provider.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
+import 'package:frescorden/presentation/providers/recipe_provider.dart';
+import 'package:frescorden/presentation/providers/restock_prediction_provider.dart';
 import 'package:frescorden/presentation/screens/login_screen.dart';
 
 import 'support/fake_repositories.dart';
@@ -26,6 +29,15 @@ Widget _wrap(AuthProvider authProvider, {ProductProvider? productProvider}) {
       ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
       ChangeNotifierProvider<ProductProvider>.value(
         value: productProvider ?? ProductProvider(FakeProductRepository()),
+      ),
+      // InicioScreen (destino tras login exitoso) las necesita en su
+      // initState/dashboard — ver inicio_screen.dart.
+      ChangeNotifierProvider<RecipeProvider>(
+        create: (_) => RecipeProvider(FakeRecipeRepository([])),
+      ),
+      ChangeNotifierProvider<RestockPredictionProvider>(
+        create: (_) =>
+            RestockPredictionProvider(FirestoreProductHistoryDataSource()),
       ),
     ],
     child: const MaterialApp(home: LoginScreen()),
