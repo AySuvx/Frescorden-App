@@ -149,64 +149,81 @@ class _TutorialSlideView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.85, end: 1.0),
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOutBack,
-            builder: (_, scale, child) =>
-                Transform.scale(scale: scale, child: child),
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: slide.isImportant
-                  ? BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      shape: BoxShape.circle,
-                    )
-                  : null,
-              child: Image.asset(slide.sticker, width: 160, height: 160),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          if (slide.isImportant) ...[
-            Chip(
-              avatar: Icon(
-                Icons.priority_high,
-                size: 18,
-                color: colorScheme.onErrorContainer,
+    // LayoutBuilder + ConstrainedBox/IntrinsicHeight: centra el contenido
+    // cuando sí cabe (como antes), pero deja hacer scroll cuando no — la
+    // ficha "Importante" (chip extra + descripción más larga) se salía de
+    // la pantalla en celulares con menos alto disponible.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.85, end: 1.0),
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeOutBack,
+                    builder: (_, scale, child) =>
+                        Transform.scale(scale: scale, child: child),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      decoration: slide.isImportant
+                          ? BoxDecoration(
+                              color: colorScheme.errorContainer,
+                              shape: BoxShape.circle,
+                            )
+                          : null,
+                      child: Image.asset(
+                        slide.sticker,
+                        width: 160,
+                        height: 160,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  if (slide.isImportant) ...[
+                    Chip(
+                      avatar: Icon(
+                        Icons.priority_high,
+                        size: 18,
+                        color: colorScheme.onErrorContainer,
+                      ),
+                      label: Text(
+                        'Importante',
+                        style: TextStyle(
+                          color: colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      backgroundColor: colorScheme.errorContainer,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                  Text(
+                    slide.title,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    slide.description,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
-              label: Text(
-                'Importante',
-                style: TextStyle(
-                  color: colorScheme.onErrorContainer,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              backgroundColor: colorScheme.errorContainer,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          Text(
-            slide.title,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            slide.description,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 15,
-              height: 1.4,
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

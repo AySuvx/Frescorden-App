@@ -210,6 +210,16 @@ class FirestoreHouseholdDataSource {
     return code;
   }
 
+  /// Cambia el nombre del hogar [householdId]. Cubierta por la misma regla
+  /// que [removeMember] (cualquier miembro puede actualizar el documento
+  /// del hogar).
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  }) {
+    return _householdsCol.doc(householdId).update({'name': name});
+  }
+
   // ─── Migración: hogar personal + copia de inventario legacy ────────────
   //
   // Antes del módulo de Household, cada usuario tenía su propio inventario

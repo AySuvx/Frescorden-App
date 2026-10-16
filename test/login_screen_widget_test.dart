@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:frescorden/core/errors/auth_exceptions.dart';
 import 'package:frescorden/data/datasources/firestore_product_history_datasource.dart';
@@ -15,6 +16,7 @@ import 'package:frescorden/presentation/providers/auth_provider.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
 import 'package:frescorden/presentation/providers/recipe_provider.dart';
 import 'package:frescorden/presentation/providers/restock_prediction_provider.dart';
+import 'package:frescorden/presentation/providers/user_banner_provider.dart';
 import 'package:frescorden/presentation/screens/login_screen.dart';
 
 import 'support/fake_repositories.dart';
@@ -39,6 +41,9 @@ Widget _wrap(AuthProvider authProvider, {ProductProvider? productProvider}) {
         create: (_) =>
             RestockPredictionProvider(FirestoreProductHistoryDataSource()),
       ),
+      ChangeNotifierProvider<UserBannerProvider>(
+        create: (_) => UserBannerProvider(),
+      ),
     ],
     child: const MaterialApp(home: LoginScreen()),
   );
@@ -50,6 +55,9 @@ void main() {
     late AuthProvider authProvider;
 
     setUp(() {
+      // UserBannerProvider (lo necesita InicioScreen, destino tras login
+      // exitoso) lee SharedPreferences en su constructor.
+      SharedPreferences.setMockInitialValues({});
       repo = FakeAuthRepository();
       authProvider = AuthProvider(repo);
     });

@@ -302,20 +302,26 @@ class _ProductosScreenState extends State<ProductosScreen> {
         // leading/title/trailing al inicio, consistente sin importar cuántas
         // líneas tenga el subtítulo.
         titleAlignment: ListTileTitleAlignment.top,
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(AppSpacing.sm),
-          child:
-              (imagePath != null &&
-                      imagePath.isNotEmpty &&
-                      File(imagePath).existsSync())
-                  ? Image.file(
-                    File(imagePath),
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholderIcon(),
-                  )
-                  : _placeholderIcon(),
+        // Hero: la foto "vuela" hasta AddProductScreen al editar (ver
+        // tag gemelo ahí) — solo tiene a dónde volar cuando sí hay foto,
+        // así que el tag por id no choca entre productos sin imagen.
+        leading: Hero(
+          tag: 'product-photo-${producto['id']}',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+            child:
+                (imagePath != null &&
+                        imagePath.isNotEmpty &&
+                        File(imagePath).existsSync())
+                    ? Image.file(
+                      File(imagePath),
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _placeholderIcon(),
+                    )
+                    : _placeholderIcon(),
+          ),
         ),
         title: Row(
           children: [

@@ -45,6 +45,15 @@ class AdminStats {
   final int assistantQueriesLast30Days;
   final int householdsUsingAssistantLast30Days;
 
+  /// Encuesta de usabilidad (ver UsabilitySurveyResponse) — cuántas
+  /// personas respondieron, su puntaje SUS promedio (0-100, instrumento
+  /// académico estándar) y el índice NPS (-100 a 100, fórmula estándar:
+  /// % promotores - % detractores, NO un simple promedio). `null` en
+  /// ambos si todavía nadie respondió.
+  final int usabilitySurveyResponses;
+  final double? averageSusScore;
+  final double? netPromoterScore;
+
   const AdminStats({
     required this.totalUsers,
     required this.newUsersLast7Days,
@@ -58,6 +67,9 @@ class AdminStats {
     required this.globalDiscardedLast30Days,
     required this.assistantQueriesLast30Days,
     required this.householdsUsingAssistantLast30Days,
+    this.usabilitySurveyResponses = 0,
+    this.averageSusScore,
+    this.netPromoterScore,
   });
 
   /// Promedio de miembros por hogar. `0` si todavía no hay hogares.

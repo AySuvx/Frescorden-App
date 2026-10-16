@@ -2,7 +2,7 @@ name: frescorden
 description: "Gestión integral de alimentos en el hogar."
 publish_to: 'none'
 
-version: 1.18.0+25
+version: 1.19.0+26
 
 environment:
   sdk: ^3.7.0
@@ -13,9 +13,9 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2
-  firebase_core: ^4.14.0
-  firebase_auth: ^6.6.1
-  cloud_firestore: ^6.9.0
+  firebase_core: ^5.0.0
+  firebase_auth: ^7.0.0
+  cloud_firestore: ^7.0.0
   google_sign_in: ^7.2.0
   flutter_local_notifications: ^19.0.0
   timezone: ^0.10.0
@@ -32,11 +32,13 @@ dependencies:
   path_provider: ^2.1.5
   fl_chart: ^1.2.0
   intl: ^0.20.3
-  firebase_ai: ^4.0.0
-  firebase_app_check: ^0.4.7
+  firebase_ai: ^5.0.0
+  firebase_app_check: ^0.5.0
   connectivity_plus: ^7.3.1
-  firebase_analytics: ^12.5.0
+  firebase_analytics: ^13.0.0
   flutter_animate: ^4.5.2
+  pdf: ^3.11.3
+  printing: ^5.14.2
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +48,14 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
   mocktail: ^1.0.4
+
+# image 4.11.0 (pulled transitively by pdf/printing) calls
+# ZLibDecoder.decodeLazy, un método que no existe en archive 4.0.9 — la
+# versión mínima que `image: ^4.1.0 <=5.0.0` permite y que el resolver de
+# pub elige por defecto. Se fuerza una versión de archive más nueva que sí
+# lo tiene.
+dependency_overrides:
+  archive: ^4.5.2
 
 flutter:
   uses-material-design: true
@@ -57,6 +67,7 @@ flutter:
     - assets/Frescorden-logo/banners/
     - assets/iconos/
     - assets/iconos/pequenos/
+    - assets/banners-usuario/
 
 flutter_launcher_icons:
   image_path: "assets/Frescorden-logo/app-icon-1024.png"

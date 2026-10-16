@@ -622,7 +622,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     height: 18,
                                   ),
                                   const SizedBox(width: 10),
-                                  Text(cat.label),
+                                  Expanded(
+                                    child: Text(
+                                      cat.label,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -736,18 +741,33 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             ),
                             child: Row(
                               children: [
-                                Text(
-                                  _entryDate == null
-                                      ? 'Seleccionar fecha de entrada al hogar'
-                                      : 'Guardado el: ${_entryDate!.day}/${_entryDate!.month}/${_entryDate!.year}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color:
-                                        _entryDate == null
-                                            ? colorScheme.onSurfaceVariant
-                                            : colorScheme.onSurface,
+                                // Solo el estado "sin fecha" necesita Expanded:
+                                // su texto es largo y, sin Spacer en este
+                                // Row (a diferencia de la rama con fecha, que
+                                // sí tiene uno más abajo), desbordaba en
+                                // anchos de teléfono reales (~360dp). La rama
+                                // "Guardado el: ..." es corta y no lo necesita
+                                // — envolverla igual correría el Spacer y
+                                // cambiaría dónde queda el ícono de limpiar.
+                                if (_entryDate == null)
+                                  Expanded(
+                                    child: Text(
+                                      'Seleccionar fecha de entrada al hogar',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    'Guardado el: ${_entryDate!.day}/${_entryDate!.month}/${_entryDate!.year}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colorScheme.onSurface,
+                                    ),
                                   ),
-                                ),
                                 if (_entryDate != null) ...[
                                   const SizedBox(width: 8),
                                   Text(
@@ -800,19 +820,26 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 const SizedBox(width: 16),
                 if (_imageFile != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      _imageFile!,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (_, __, ___) => const Icon(
-                            Icons.broken_image,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
+                  // Hero gemelo del leading de ProductosScreen: solo aplica
+                  // al editar (hay un id real al que atar el tag); un
+                  // producto nuevo todavía no tiene id, así que no hay
+                  // tag del que "volar" y Hero simplemente no anima.
+                  Hero(
+                    tag: 'product-photo-${widget.initialProduct?['id']}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        _imageFile!,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (_, __, ___) => const Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
+                      ),
                     ),
                   ),
               ],

@@ -23,6 +23,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/admin_stats.dart';
 import '../../domain/entities/product_history_entry.dart';
 import '../models/product_history_model.dart';
+import '../models/usability_survey_model.dart';
 
 class FirestoreAdminDataSource {
   final FirebaseFirestore _db;
@@ -41,11 +42,13 @@ class FirestoreAdminDataSource {
         await _db.collectionGroup('product_history').get();
     final assistantSnap =
         await _db.collectionGroup('assistant_usage').get();
+    final surveysSnap = await _db.collection('usability_surveys').get();
 
     final (wastePercentage, consumed, discarded) =
         _globalWasteReduction(historySnap, cutoff30);
     final (assistantQueries, assistantHouseholds) =
         _assistantAdoption(assistantSnap, cutoff30);
+    final (susScore, npsScore) = _usabilitySurvey(surveysSnap);
 
     return AdminStats(
       totalUsers: usersSnap.docs.length,
@@ -60,6 +63,9 @@ class FirestoreAdminDataSource {
       globalDiscardedLast30Days: discarded,
       assistantQueriesLast30Days: assistantQueries,
       householdsUsingAssistantLast30Days: assistantHouseholds,
+      usabilitySurveyResponses: surveysSnap.docs.length,
+      averageSusScore: susScore,
+      netPromoterScore: npsScore,
     );
   }
 
@@ -138,5 +144,38 @@ class FirestoreAdminDataSource {
       if (householdRef != null) households.add(householdRef.id);
     }
     return (queries, households.length);
+  }
+
+  /// (SUS promedio, índice NPS) sobre todas las respuestas recibidas.
+  /// `null` en ambos si [surveysSnap] está vacío.
+  ///
+  /// El NPS NO es un promedio de las notas 0-10 — es la fórmula estándar:
+  /// % de promotores (9-10) menos % de detractores (0-6), ignorando a los
+  /// pasivos (7-8) en el cálculo (sí cuentan para el total). Promediar las
+  /// notas crudas es un error común que no corresponde al NPS real.
+  (double?, double?) _usabilitySurvey(
+    QuerySnapshot<Map<String, dynamic>> surveysSnap,
+  ) {
+    if (surveysSnap.docs.isEmpty) return (null, null);
+
+    final responses =
+        surveysSnap.docs.map(UsabilitySurveyModel.fromFirestore).toList();
+
+    final susScores = responses.map((r) => r.susScore).toList();
+    final averageSus = susScores.reduce((a, b) => a + b) / susScores.length;
+
+    var promoters = 0;
+    var detractors = 0;
+    final total = responses.length;
+    for (final response in responses) {
+      if (response.npsScore >= 9) {
+        promoters++;
+      } else if (response.npsScore <= 6) {
+        detractors++;
+      }
+    }
+    final nps = (promoters - detractors) / total * 100;
+
+    return (averageSus, nps);
   }
 }

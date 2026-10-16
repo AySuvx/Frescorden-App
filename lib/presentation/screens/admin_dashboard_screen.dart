@@ -8,11 +8,15 @@
 // código de invitación vencido) — ver AdminRepositoryImpl.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/entities/admin_stats.dart';
 import '../providers/admin_provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/admin_report_generator.dart';
+import '../widgets/common/animated_counter.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -22,8 +26,32 @@ class AdminDashboardScreen extends StatelessWidget {
     final isAdmin = context.watch<AuthProvider>().isAdmin;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Panel Administrativo')),
+      appBar: AppBar(
+        title: const Text('Panel Administrativo'),
+        actions: [
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: 'Generar reporte PDF',
+              onPressed: () => _generateReport(context),
+            ),
+        ],
+      ),
       body: isAdmin ? const _AdminStatsView() : const _AccessDenied(),
+    );
+  }
+
+  /// Arma el PDF del lado del celular (sin servidor, ver
+  /// AdminReportGenerator) a partir de las métricas que ya están cargadas
+  /// en pantalla, y abre el selector nativo de Android para que el
+  /// administrador elija dónde guardarlo o a quién compartirlo.
+  Future<void> _generateReport(BuildContext context) async {
+    final stats = context.read<AdminProvider>().stats;
+    final bytes = await AdminReportGenerator.generate(stats);
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename:
+          'frescorden-reporte-${DateTime.now().toIso8601String().substring(0, 10)}.pdf',
     );
   }
 }
@@ -123,6 +151,7 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             color: Colors.blue,
             label: 'Usuarios registrados',
             value: '${stats.totalUsers}',
+            numericValue: stats.totalUsers,
             subtitle: '+${stats.newUsersLast7Days} en los últimos 7 días',
           ),
           _buildStatCard(
@@ -130,6 +159,7 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             color: Colors.amber.shade800,
             label: 'Usuarios activos',
             value: '${stats.activeUsersLast7Days}',
+            numericValue: stats.activeUsersLast7Days,
             subtitle:
                 'Últimos 7 días — ${stats.activeUsersLast30Days} en 30 días',
           ),
@@ -143,12 +173,14 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             color: Colors.green,
             label: 'Hogares creados',
             value: '${stats.totalHouseholds}',
+            numericValue: stats.totalHouseholds,
           ),
           _buildStatCard(
             icon: Icons.groups,
             color: Colors.teal,
             label: 'Miembros totales en hogares',
             value: '${stats.totalHouseholdMembers}',
+            numericValue: stats.totalHouseholdMembers,
             subtitle:
                 'Promedio: ${stats.averageMembersPerHousehold.toStringAsFixed(1)} por hogar',
           ),
@@ -157,6 +189,7 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             color: Colors.deepOrange,
             label: 'Hogares con código vencido',
             value: '${stats.householdsWithExpiredInviteCode}',
+            numericValue: stats.householdsWithExpiredInviteCode,
             subtitle: 'Código de invitación sin renovar',
           ),
           const SizedBox(height: 8),
@@ -171,6 +204,8 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             value: stats.globalWasteReductionPercentageLast30Days == null
                 ? 'Sin datos'
                 : '${stats.globalWasteReductionPercentageLast30Days!.toStringAsFixed(0)}%',
+            numericValue: stats.globalWasteReductionPercentageLast30Days,
+            numericSuffix: '%',
             subtitle:
                 '${stats.globalConsumedLast30Days} consumidos vs. '
                 '${stats.globalDiscardedLast30Days} desperdiciados',
@@ -185,10 +220,46 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             color: Colors.purple,
             label: 'Consultas exitosas',
             value: '${stats.assistantQueriesLast30Days}',
+            numericValue: stats.assistantQueriesLast30Days,
             subtitle:
                 '${stats.householdsUsingAssistantLast30Days} hogares distintos lo usaron',
           ),
-        ],
+          const SizedBox(height: 8),
+          _buildSectionHeader(
+            'Usabilidad (SUS + NPS)',
+            '${stats.usabilitySurveyResponses} '
+                '${stats.usabilitySurveyResponses == 1 ? "respuesta" : "respuestas"} '
+                'recibidas',
+          ),
+          _buildStatCard(
+            icon: Icons.fact_check,
+            color: Colors.indigo,
+            label: 'Puntaje SUS promedio',
+            value: stats.averageSusScore == null
+                ? 'Sin datos'
+                : stats.averageSusScore!.toStringAsFixed(1),
+            numericValue: stats.averageSusScore,
+            subtitle: stats.averageSusScore == null
+                ? 'Nadie ha respondido la encuesta todavía'
+                : '0-100 · arriba de 68 se considera por encima del '
+                    'promedio (escala académica estándar)',
+          ),
+          _buildStatCard(
+            icon: Icons.thumb_up_alt_outlined,
+            color: Colors.pink,
+            label: 'Net Promoter Score (NPS)',
+            value: stats.netPromoterScore == null
+                ? 'Sin datos'
+                : stats.netPromoterScore!.toStringAsFixed(0),
+            numericValue: stats.netPromoterScore,
+            subtitle: stats.netPromoterScore == null
+                ? 'Nadie ha respondido la encuesta todavía'
+                : '-100 a 100 · % promotores menos % detractores',
+          ),
+        ]
+            .animate(interval: 60.ms)
+            .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+            .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
       ),
     );
   }
@@ -219,7 +290,12 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
     required String label,
     required String value,
     String? subtitle,
+    // Igual criterio que AnalyticsScreen._buildKpiCard: si se da, el valor
+    // se anima contando desde 0 — solo para KPIs genuinamente numéricos.
+    num? numericValue,
+    String numericSuffix = '',
   }) {
+    const valueStyle = TextStyle(fontSize: 22, fontWeight: FontWeight.bold);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -245,13 +321,13 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  numericValue == null
+                      ? Text(value, style: valueStyle)
+                      : AnimatedCounter(
+                          value: numericValue,
+                          suffix: numericSuffix,
+                          style: valueStyle,
+                        ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(

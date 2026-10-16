@@ -27,4 +27,5 @@ class AppRoutes {
   static const about = '/about';
   static const adminDashboard = '/admin-dashboard';
   static const homeTutorial = '/home-tutorial';
+  static const usabilitySurvey = '/usability-survey';
 }

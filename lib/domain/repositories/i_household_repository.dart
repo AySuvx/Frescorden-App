@@ -62,6 +62,14 @@ abstract interface class IHouseholdRepository {
   /// Devuelve el código nuevo.
   Future<String> generateNewInviteCode(String householdId);
 
+  /// Cambia el nombre del hogar [householdId] a [name]. Cualquier miembro
+  /// puede renombrarlo (mismo criterio de autorización que
+  /// [generateNewInviteCode]: no se restringe solo al administrador).
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  });
+
   /// Migración desde el modelo anterior (inventario por usuario individual)
   /// hacia el modelo de hogares compartidos: si [uid] todavía no tiene
   /// `activeHouseholdId`, le crea un hogar personal ("Mi hogar") y copia

@@ -41,20 +41,24 @@ class ContactScreen extends StatelessWidget {
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.email),
-              title: const Text('contacto@frescorden.com'),
+              title: const Text('Contáctanos'),
               subtitle:
                   const Text('Envíanos un correo para cualquier consulta.'),
-              onTap: () =>
-                  _launchEmail(context, 'brayans011@outlook.com'),
+              onTap: () => _launchEmail(
+                context,
+                'jsotalora@ucundinamarca.edu.co',
+              ),
             ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.bug_report),
-              title: const Text('bugs@frescorden.com'),
+              title: const Text('Reporta un problema'),
               subtitle: const Text(
                   'Reporta errores o problemas en la aplicación.'),
-              onTap: () =>
-                  _launchEmail(context, 'brayans011@outlook.com'),
+              onTap: () => _launchEmail(
+                context,
+                'bryannsgomez@ucundinamarca.edu.co',
+              ),
             ),
           ],
         ),

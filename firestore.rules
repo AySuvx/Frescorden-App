@@ -182,5 +182,18 @@ service cloud.firestore {
         && request.resource.data.count == resource.data.count + 1;
       allow delete: if false;
     }
+
+    // Encuesta de usabilidad del piloto (SUS + NPS, ver
+    // UsabilitySurveyResponse). Un documento por usuario (el uid es el ID
+    // del documento): cada quien solo puede leer/escribir el suyo propio
+    // — ni su respuesta individual es visible para otros usuarios
+    // normales. El admin SÍ puede listar la colección completa para
+    // calcular el promedio del Panel Administrativo.
+    match /usability_surveys/{uid} {
+      allow get, create, update: if request.auth != null
+        && request.auth.uid == uid;
+      allow list: if isAdmin();
+      allow delete: if false;
+    }
   }
 }

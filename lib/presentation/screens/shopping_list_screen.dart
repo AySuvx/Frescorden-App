@@ -313,9 +313,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             children: [
               Icon(Icons.balance, color: colorScheme.primary),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                'Plato Equilibrado',
-                style: Theme.of(context).textTheme.titleMedium,
+              Expanded(
+                child: Text(
+                  'Plato Equilibrado',
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
             ],
           ),
@@ -640,9 +643,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   children: [
                     Icon(Icons.storefront, color: colorScheme.primary),
                     const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Compara precios antes de comprar',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Expanded(
+                      child: Text(
+                        'Compara precios antes de comprar',
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                     ),
                   ],
                 ),

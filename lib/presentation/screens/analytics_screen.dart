@@ -23,6 +23,7 @@ import '../widgets/analytics/waste_category_pie_chart.dart';
 import '../widgets/analytics/savings_trend_chart.dart';
 import '../utils/currency_format.dart';
 import '../widgets/common/skeleton_loader.dart';
+import '../widgets/common/animated_counter.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -71,6 +72,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         label: 'Aprovechamiento del último mes',
                         value:
                             '${summary.wasteReductionPercentage.toStringAsFixed(0)}%',
+                        numericValue: summary.wasteReductionPercentage,
+                        numericSuffix: '%',
                         subtitle: 'Consumidos vs. desperdiciados',
                       ),
                       _buildKpiCard(
@@ -86,6 +89,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         label: 'Rotación promedio',
                         value:
                             '${summary.averageRotationDays.toStringAsFixed(1)} días',
+                        numericValue: summary.averageRotationDays,
+                        numericSuffix: ' días',
                         subtitle: 'Tiempo promedio en tu inventario',
                       ),
                       _buildKpiCard(
@@ -337,7 +342,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     required String label,
     required String value,
     required String subtitle,
+    // Si se da, el valor se anima contando desde 0 (ver AnimatedCounter) en
+    // vez de mostrarse estático — solo aplica a KPIs genuinamente
+    // numéricos (no a "value", que puede ser texto como el nombre de una
+    // categoría).
+    num? numericValue,
+    String numericSuffix = '',
   }) {
+    const valueStyle = TextStyle(fontSize: 22, fontWeight: FontWeight.bold);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -363,13 +375,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  numericValue == null
+                      ? Text(value, style: valueStyle)
+                      : AnimatedCounter(
+                          value: numericValue,
+                          suffix: numericSuffix,
+                          style: valueStyle,
+                        ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,

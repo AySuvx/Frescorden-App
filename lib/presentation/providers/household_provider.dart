@@ -278,6 +278,31 @@ class HouseholdProvider extends ChangeNotifier {
     }
   }
 
+  /// Cambia el nombre del hogar activo. [name] se recorta y valida no
+  /// vacío acá (no en la pantalla) para que cualquier otro llamador futuro
+  /// quede protegido igual.
+  Future<void> renameHousehold(String name) async {
+    final householdId = _activeHouseholdId;
+    final trimmed = name.trim();
+    if (householdId == null) {
+      throw const HouseholdException('No hay un hogar activo.');
+    }
+    if (trimmed.isEmpty) {
+      throw const HouseholdException('El nombre no puede estar vacío.');
+    }
+
+    try {
+      await _repository.updateHouseholdName(
+        householdId: householdId,
+        name: trimmed,
+      );
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   /// Expulsa a [memberUid] del hogar activo — reglas de autorización en
   /// [RemoveMemberUseCase] (solo el administrador puede expulsar a otros;
   /// no puede expulsarse a sí mismo por esta vía, ver [leaveHousehold]).

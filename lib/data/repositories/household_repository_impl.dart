@@ -55,6 +55,14 @@ class HouseholdRepositoryImpl implements IHouseholdRepository {
   }
 
   @override
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  }) {
+    return _dataSource.updateHouseholdName(householdId: householdId, name: name);
+  }
+
+  @override
   Future<void> bootstrapPersonalHousehold(String uid, {String? email}) {
     return _dataSource.bootstrapPersonalHousehold(uid, email: email);
   }

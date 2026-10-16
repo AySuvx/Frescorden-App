@@ -28,7 +28,9 @@ import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_history_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_repository.dart';
 import 'package:frescorden/domain/repositories/i_recipe_repository.dart';
+import 'package:frescorden/domain/entities/usability_survey_response.dart';
 import 'package:frescorden/domain/repositories/i_shopping_repository.dart';
+import 'package:frescorden/domain/repositories/i_usability_survey_repository.dart';
 import 'package:frescorden/domain/services/i_assistant_analytics_service.dart';
 import 'package:frescorden/domain/services/i_quota_service.dart';
 
@@ -214,6 +216,8 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   Object? bootstrapError;
   Object? generateInviteCodeError;
   String inviteCodeToReturn = 'ABC123';
+  final List<String> renamedHouseholdNames = [];
+  Object? updateHouseholdNameError;
 
   /// Configurables para CreateHouseholdUseCase/JoinHouseholdUseCase: por
   /// defecto lanzan `UnimplementedError` (no usados en los escenarios de
@@ -269,6 +273,15 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   Future<String> generateNewInviteCode(String householdId) async {
     if (generateInviteCodeError != null) throw generateInviteCodeError!;
     return inviteCodeToReturn;
+  }
+
+  @override
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  }) async {
+    if (updateHouseholdNameError != null) throw updateHouseholdNameError!;
+    renamedHouseholdNames.add(name);
   }
 
   @override
@@ -470,4 +483,32 @@ class FakeAssistantAnalyticsService implements IAssistantAnalyticsService {
   Future<void> logAssistantQuery() async {
     loggedQueries++;
   }
+}
+
+/// Fake de [IUsabilitySurveyRepository]: registra las respuestas
+/// enviadas en [submittedResponses] y sigue el mismo criterio de
+/// "doc por uid" que la implementación real (un envío nuevo del mismo uid
+/// no se acumula aparte, se trata como la respuesta vigente de ese uid).
+class FakeUsabilitySurveyRepository implements IUsabilitySurveyRepository {
+  final List<UsabilitySurveyResponse> submittedResponses = [];
+  final Set<String> _submittedUids = {};
+  Object? submitError;
+  Object? hasSubmittedError;
+  List<UsabilitySurveyResponse> getAllResult = [];
+
+  @override
+  Future<bool> hasSubmitted(String uid) async {
+    if (hasSubmittedError != null) throw hasSubmittedError!;
+    return _submittedUids.contains(uid);
+  }
+
+  @override
+  Future<void> submit(UsabilitySurveyResponse response) async {
+    if (submitError != null) throw submitError!;
+    submittedResponses.add(response);
+    _submittedUids.add(response.uid);
+  }
+
+  @override
+  Future<List<UsabilitySurveyResponse>> getAll() async => getAllResult;
 }

@@ -10,6 +10,8 @@ import 'package:provider/provider.dart';
 
 import 'config/theme/app_theme.dart';
 import 'config/theme/theme_provider.dart';
+import 'presentation/providers/notification_settings_provider.dart';
+import 'presentation/providers/user_banner_provider.dart';
 import 'presentation/screens/splash/splash_screen.dart';
 
 // Capa de datos
@@ -37,6 +39,8 @@ import 'data/datasources/gemini_product_recognition_data_source.dart';
 import 'data/repositories/product_recognition_repository_impl.dart';
 import 'data/datasources/preset_food_local_datasource.dart';
 import 'data/repositories/preset_food_repository_impl.dart';
+import 'data/datasources/firestore_usability_survey_datasource.dart';
+import 'data/repositories/usability_survey_repository_impl.dart';
 
 // Capa de dominio
 import 'domain/repositories/i_activity_log_repository.dart';
@@ -56,6 +60,7 @@ import 'presentation/providers/restock_prediction_provider.dart';
 import 'presentation/providers/household_provider.dart';
 import 'presentation/providers/assistant_provider.dart';
 import 'presentation/providers/admin_provider.dart';
+import 'presentation/providers/usability_survey_provider.dart';
 
 /// App Check (protege Firestore/Storage/Gemini) y AlarmManager (solo lo usa
 /// SettingsScreen) — ninguno hace falta para el primer frame. Se corren en
@@ -121,6 +126,18 @@ class FrescordenApp extends StatelessWidget {
       providers: [
         // Tema oscuro/claro
         ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
+
+        // Días de antelación de las alertas de vencimiento, configurable
+        // desde Ajustes — ver NotificationSettingsProvider.
+        ChangeNotifierProvider<NotificationSettingsProvider>(
+          create: (_) => NotificationSettingsProvider(),
+        ),
+
+        // Banner del encabezado del menú, elegido por el usuario — ver
+        // UserBannerProvider.
+        ChangeNotifierProvider<UserBannerProvider>(
+          create: (_) => UserBannerProvider(),
+        ),
 
         // AuthProvider con inyección de dependencias
         ChangeNotifierProvider<AuthProvider>(
@@ -288,6 +305,18 @@ class FrescordenApp extends StatelessWidget {
                 ),
               ),
         ),
+
+        // UsabilitySurveyProvider — encuesta SUS + NPS del piloto (ver
+        // usability_survey_screen.dart). No depende del hogar activo: es
+        // por usuario, no por inventario.
+        ChangeNotifierProvider<UsabilitySurveyProvider>(
+          create:
+              (_) => UsabilitySurveyProvider(
+                UsabilitySurveyRepositoryImpl(
+                  FirestoreUsabilitySurveyDataSource(),
+                ),
+              ),
+        ),
       ],
       child: const MyApp(),
     );
@@ -304,8 +333,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Frescorden',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme(seedColor: themeProvider.seedColor),
+      darkTheme: AppTheme.darkTheme(seedColor: themeProvider.seedColor),
       themeMode: themeProvider.themeMode,
       // Rutas nombradas (ver lib/routes.dart): cada Navigator.push de la
       // app pasa un RouteSettings.name explícito — el observer de Analytics
