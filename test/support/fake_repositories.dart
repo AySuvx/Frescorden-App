@@ -338,6 +338,15 @@ class FakeActivityLogRepository implements IActivityLogRepository {
   final List<ActivityAction> logged = [];
   Object? logActivityError;
 
+  final _activityController =
+      StreamController<List<ActivityLogEntry>>.broadcast();
+
+  /// Simula un snapshot nuevo del stream de actividad reciente — sin
+  /// llamar a esto, el stream nunca emite (mismo comportamiento que antes,
+  /// cuando era un `Stream.empty()` fijo).
+  void emitActivity(List<ActivityLogEntry> entries) =>
+      _activityController.add(entries);
+
   @override
   Future<void> logActivity({
     required String householdId,
@@ -352,7 +361,9 @@ class FakeActivityLogRepository implements IActivityLogRepository {
   Stream<List<ActivityLogEntry>> watchRecentActivity(
     String householdId, {
     int limit = 20,
-  }) => const Stream.empty();
+  }) => _activityController.stream;
+
+  void dispose() => unawaited(_activityController.close());
 }
 
 /// Fake de [IAdminRepository]: [statsToReturn] configura el resultado de
@@ -394,6 +405,7 @@ class FakeAuthRepository implements IAuthRepository {
   Object? registerError;
   Object? signInWithGoogleError;
   Object? sendPasswordResetError;
+  Object? deleteAccountError;
 
   @override
   AppUser? currentUser;
@@ -433,6 +445,7 @@ class FakeAuthRepository implements IAuthRepository {
   @override
   Future<void> deleteAccount() async {
     calls.add('deleteAccount');
+    if (deleteAccountError != null) throw deleteAccountError!;
   }
 }
 

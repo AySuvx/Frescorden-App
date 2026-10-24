@@ -8,8 +8,7 @@
 // (crédito de prueba gratuita, cuota dinámica, ver GeminiAssistantDataSource),
 // no hay un tope fijo de Google que proteger, así que este valor puede ser
 // generoso. Si el proyecto alguna vez vuelve al backend Gemini Developer
-// API en el plan Spark (tope fijo real de 20/día para TODO el proyecto,
-// ver docs/API.docx), hay que bajar esto de nuevo a algo como 15 para no
+// API en el plan Spark, hay que bajar esto de nuevo a algo como 15 para no
 // pasarse de ese límite.
 
 import '../../domain/repositories/i_global_ai_quota_repository.dart';

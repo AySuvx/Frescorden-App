@@ -16,6 +16,9 @@ import '../../domain/entities/admin_stats.dart';
 import '../providers/admin_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/admin_report_generator.dart';
+import '../widgets/admin/nps_breakdown_chart.dart';
+import '../widgets/admin/sus_histogram_chart.dart';
+import '../widgets/admin/sus_item_averages_chart.dart';
 import '../widgets/common/animated_counter.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -256,6 +259,13 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
                 ? 'Nadie ha respondido la encuesta todavía'
                 : '-100 a 100 · % promotores menos % detractores',
           ),
+          SusHistogramChart(histogram: stats.susScoreHistogram),
+          NpsBreakdownChart(
+            promoters: stats.npsPromoters,
+            passives: stats.npsPassives,
+            detractors: stats.npsDetractors,
+          ),
+          SusItemAveragesChart(itemAverages: stats.susItemAverages),
         ]
             .animate(interval: 60.ms)
             .fadeIn(duration: 300.ms, curve: Curves.easeOut)

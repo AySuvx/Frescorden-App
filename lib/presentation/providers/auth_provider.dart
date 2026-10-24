@@ -26,8 +26,16 @@ class AuthProvider extends ChangeNotifier {
   /// Único punto de verdad para "es el admin" (antes duplicado inline con
   /// `== kAdminUid` en admin_dashboard_screen.dart e inicio_screen.dart).
   /// Sigue controlando el Panel Administrativo — eso NO se abre durante el
-  /// piloto, solo la IA (ver canUseLiveAi).
-  bool get isAdmin => currentUser?.uid == kAdminUid;
+  /// piloto, solo la IA (ver canUseLiveAi). Además del UID principal,
+  /// cualquier cuenta que inicie sesión con un correo de kAdminEmails
+  /// recibe el mismo acceso (ver nota en app_config.dart).
+  bool get isAdmin {
+    final user = currentUser;
+    if (user == null) return false;
+    if (user.uid == kAdminUid) return true;
+    final email = user.email?.toLowerCase().trim();
+    return email != null && kAdminEmails.contains(email);
+  }
 
   /// Punto de verdad para "puede usar la IA en vivo ahora" (asistente,
   /// receta con IA, reconocimiento de producto): el admin siempre puede, y

@@ -1,12 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Panel Administrativo Global: UID único con acceso a métricas
-    // agregadas de toda la app (ver lib/config/app_config.dart kAdminUid —
-    // las reglas no pueden importar ese valor, se repite acá literal).
+    // Panel Administrativo Global: UID principal + correos adicionales con
+    // acceso a métricas agregadas de toda la app (ver
+    // lib/config/app_config.dart kAdminUid/kAdminEmails — las reglas no
+    // pueden importar esos valores, se repiten acá literales).
     function isAdmin() {
       return request.auth != null
-        && request.auth.uid == 'YMpWzkKQFiMvCqJdYDYX9fZe5Ow2';
+        && (request.auth.uid == 'YMpWzkKQFiMvCqJdYDYX9fZe5Ow2'
+            || request.auth.token.email == 'familiaotalora98@gmail.com');
     }
 
     // Permitir acceso a los documentos de la colección "usuarios"

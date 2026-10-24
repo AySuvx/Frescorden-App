@@ -84,11 +84,114 @@ class AdminReportGenerator {
               stats.netPromoterScore?.toStringAsFixed(0) ?? 'Sin datos',
             ),
           ]),
+          if (stats.usabilitySurveyResponses > 0) ...[
+            _chartSection(
+              'Distribución de puntajes SUS',
+              labels: const ['0-20', '20-40', '40-60', '60-80', '80-100'],
+              values: stats.susScoreHistogram
+                  .map((e) => e.toDouble())
+                  .toList(),
+              colors: List.filled(
+                stats.susScoreHistogram.length,
+                PdfColors.indigo300,
+              ),
+            ),
+            _chartSection(
+              'Desglose del Net Promoter Score',
+              labels: const ['Detractores', 'Pasivos', 'Promotores'],
+              values: [
+                stats.npsDetractors.toDouble(),
+                stats.npsPassives.toDouble(),
+                stats.npsPromoters.toDouble(),
+              ],
+              colors: [PdfColors.red300, PdfColors.amber300, PdfColors.green300],
+            ),
+            _chartSection(
+              'Promedio por ítem del SUS (escala 1-5)',
+              labels: [
+                for (var i = 1; i <= stats.susItemAverages.length; i++) '$i',
+              ],
+              values: stats.susItemAverages,
+              colors: List.filled(
+                stats.susItemAverages.length,
+                PdfColors.teal300,
+              ),
+            ),
+          ],
         ],
       ),
     );
 
     return doc.save();
+  }
+
+  /// Título + gráfico de barras simple dibujado a mano con primitivas del
+  /// paquete `pdf` (Row/Column/Container proporcionales) — no depende de
+  /// fl_chart (que requiere un árbol de widgets Flutter en pantalla, no
+  /// disponible al generar el PDF en segundo plano).
+  static pw.Widget _chartSection(
+    String title, {
+    required List<String> labels,
+    required List<double> values,
+    required List<PdfColor> colors,
+  }) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 16),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title,
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Divider(color: PdfColors.grey400),
+          pw.SizedBox(height: 8),
+          _barChart(labels: labels, values: values, colors: colors),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _barChart({
+    required List<String> labels,
+    required List<double> values,
+    required List<PdfColor> colors,
+  }) {
+    const chartHeight = 70.0;
+    final maxValue = values.fold<double>(0, (a, b) => a > b ? a : b);
+    final safeMax = maxValue <= 0 ? 1.0 : maxValue;
+
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
+      children: [
+        for (var i = 0; i < labels.length; i++)
+          pw.Expanded(
+            child: pw.Column(
+              children: [
+                pw.Text(
+                  values[i] == values[i].roundToDouble()
+                      ? values[i].toInt().toString()
+                      : values[i].toStringAsFixed(1),
+                  style: const pw.TextStyle(fontSize: 8),
+                ),
+                pw.SizedBox(height: 3),
+                pw.Container(
+                  height: chartHeight * (values[i] / safeMax),
+                  margin: const pw.EdgeInsets.symmetric(horizontal: 3),
+                  color: colors[i],
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  labels[i],
+                  style: const pw.TextStyle(fontSize: 7),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
   }
 
   static pw.Widget _section(String title, List<pw.Widget> rows) {

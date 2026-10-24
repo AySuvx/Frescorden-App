@@ -54,6 +54,23 @@ class AdminStats {
   final double? averageSusScore;
   final double? netPromoterScore;
 
+  /// Distribución de puntajes SUS (0-100) en 5 franjas de 20 puntos —
+  /// [0-20), [20-40), [40-60), [60-80), [80-100] — para el histograma del
+  /// Panel Administrativo. Lista vacía si nadie ha respondido todavía.
+  final List<int> susScoreHistogram;
+
+  /// Desglose NPS por categoría (fórmula estándar: promotor 9-10, pasivo
+  /// 7-8, detractor 0-6) — netPromoterScore ya es la resta de porcentajes;
+  /// estos tres conteos son para el gráfico de barras del Panel.
+  final int npsPromoters;
+  final int npsPassives;
+  final int npsDetractors;
+
+  /// Promedio (escala Likert 1-5) de cada uno de los 10 ítems del SUS, en
+  /// el mismo orden del instrumento — permite identificar qué aspecto de
+  /// usabilidad puntúa peor/mejor. Lista vacía si nadie ha respondido.
+  final List<double> susItemAverages;
+
   const AdminStats({
     required this.totalUsers,
     required this.newUsersLast7Days,
@@ -70,6 +87,11 @@ class AdminStats {
     this.usabilitySurveyResponses = 0,
     this.averageSusScore,
     this.netPromoterScore,
+    this.susScoreHistogram = const [],
+    this.npsPromoters = 0,
+    this.npsPassives = 0,
+    this.npsDetractors = 0,
+    this.susItemAverages = const [],
   });
 
   /// Promedio de miembros por hogar. `0` si todavía no hay hogares.

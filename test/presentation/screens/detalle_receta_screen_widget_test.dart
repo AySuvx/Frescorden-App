@@ -15,7 +15,7 @@ import 'package:frescorden/presentation/providers/shopping_provider.dart';
 import 'package:frescorden/presentation/screens/detalle_receta_screen.dart';
 import 'package:frescorden/presentation/widgets/common/primary_button.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 final _receta = const Recipe(
   id: 'receta-1',

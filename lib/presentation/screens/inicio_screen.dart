@@ -711,12 +711,15 @@ class _InicioScreenState extends State<InicioScreen> {
             children: [
               Icon(Icons.auto_graph, color: colorScheme.tertiary),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                'Se te puede estar acabando',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: colorScheme.onSurface,
+              Expanded(
+                child: Text(
+                  'Se te puede estar acabando',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -744,11 +747,14 @@ class _InicioScreenState extends State<InicioScreen> {
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
-                  Text(
-                    'cada ~${prediction.averageCycleDays}d',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
+                  Flexible(
+                    child: Text(
+                      'cada ~${prediction.averageCycleDays}d',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                   IconButton(

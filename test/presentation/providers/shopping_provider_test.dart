@@ -16,7 +16,7 @@ import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/domain/entities/shopping_item.dart';
 import 'package:frescorden/presentation/providers/shopping_provider.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 ShoppingItem _item(String name, {int? estimatedPrice}) {
   return ShoppingItem(

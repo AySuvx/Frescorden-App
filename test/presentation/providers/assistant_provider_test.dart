@@ -12,7 +12,7 @@ import 'package:frescorden/domain/entities/chat_message.dart';
 import 'package:frescorden/presentation/providers/assistant_provider.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 void main() {
   late FakeAssistantRepository repo;

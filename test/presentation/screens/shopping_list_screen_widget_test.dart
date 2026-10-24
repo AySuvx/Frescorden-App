@@ -16,7 +16,7 @@ import 'package:frescorden/presentation/providers/product_provider.dart';
 import 'package:frescorden/presentation/providers/shopping_provider.dart';
 import 'package:frescorden/presentation/screens/shopping_list_screen.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 void _useTallViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(1080, 6000);

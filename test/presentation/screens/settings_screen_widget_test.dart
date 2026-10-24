@@ -18,9 +18,10 @@ import 'package:frescorden/config/theme/theme_provider.dart';
 import 'package:frescorden/presentation/providers/auth_provider.dart';
 import 'package:frescorden/presentation/providers/notification_settings_provider.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
+import 'package:frescorden/presentation/screens/login_screen.dart';
 import 'package:frescorden/presentation/screens/settings_screen.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 /// Responde `granted` (1) a cualquier `checkPermissionStatus` del canal de
 /// permission_handler — evita que `_requestNotificationPermission` (ver
@@ -38,6 +39,7 @@ void _mockNotificationPermissionGranted() {
 Widget _wrap({
   required ThemeProvider themeProvider,
   required NotificationSettingsProvider notificationSettings,
+  AuthProvider? authProvider,
 }) {
   return MaterialApp(
     home: MultiProvider(
@@ -46,8 +48,8 @@ Widget _wrap({
         ChangeNotifierProvider<NotificationSettingsProvider>.value(
           value: notificationSettings,
         ),
-        ChangeNotifierProvider<AuthProvider>(
-          create: (_) => AuthProvider(FakeAuthRepository()),
+        ChangeNotifierProvider<AuthProvider>.value(
+          value: authProvider ?? AuthProvider(FakeAuthRepository()),
         ),
         ChangeNotifierProvider<ProductProvider>(
           create: (_) => ProductProvider(FakeProductRepository()),
@@ -154,6 +156,135 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('3 días antes de que venza'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Escenario: elegir un modo de tema distinto lo aplica',
+      (tester) async {
+        final themeProvider = ThemeProvider();
+        await tester.pumpWidget(
+          _wrap(
+            themeProvider: themeProvider,
+            notificationSettings: NotificationSettingsProvider(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Oscuro'));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(themeProvider.themeMode, ThemeMode.dark);
+      },
+    );
+
+    testWidgets(
+      'Escenario: el selector de idioma permite cambiar entre Español e '
+      'Inglés',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            themeProvider: ThemeProvider(),
+            notificationSettings: NotificationSettingsProvider(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Idioma actual: Español'), findsOneWidget);
+
+        await tester.tap(find.text('Idioma'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Inglés'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Idioma actual: Inglés'), findsOneWidget);
+
+        await tester.tap(find.text('Idioma'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Español'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Idioma actual: Español'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Escenario: cancelar el diálogo de "Eliminar cuenta" no elimina '
+      'nada',
+      (tester) async {
+        final repo = FakeAuthRepository();
+        await tester.pumpWidget(
+          _wrap(
+            themeProvider: ThemeProvider(),
+            notificationSettings: NotificationSettingsProvider(),
+            authProvider: AuthProvider(repo),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Eliminar cuenta'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancelar'));
+        await tester.pumpAndSettle();
+
+        expect(repo.calls, isNot(contains('deleteAccount')));
+        expect(find.byType(SettingsScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Escenario: confirmar "Eliminar cuenta" la elimina y navega al '
+      'login',
+      (tester) async {
+        final repo = FakeAuthRepository();
+        await tester.pumpWidget(
+          _wrap(
+            themeProvider: ThemeProvider(),
+            notificationSettings: NotificationSettingsProvider(),
+            authProvider: AuthProvider(repo),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Eliminar cuenta'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Eliminar'));
+        await tester.pumpAndSettle();
+
+        expect(repo.calls, contains('deleteAccount'));
+        expect(find.byType(LoginScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Escenario: si falla la eliminación de la cuenta, se informa el '
+      'error y no se navega',
+      (tester) async {
+        final repo = FakeAuthRepository()
+          ..deleteAccountError = Exception('sin conexión');
+        await tester.pumpWidget(
+          _wrap(
+            themeProvider: ThemeProvider(),
+            notificationSettings: NotificationSettingsProvider(),
+            authProvider: AuthProvider(repo),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Eliminar cuenta'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Eliminar'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Error al eliminar la cuenta. Intenta nuevamente.'),
+          findsOneWidget,
+        );
+        expect(find.byType(SettingsScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
       },
     );
   });

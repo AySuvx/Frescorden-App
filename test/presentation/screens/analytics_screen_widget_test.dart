@@ -16,7 +16,7 @@ import 'package:frescorden/domain/usecases/get_analytics_usecase.dart';
 import 'package:frescorden/presentation/providers/analytics_provider.dart';
 import 'package:frescorden/presentation/screens/analytics_screen.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Widget _wrap(AnalyticsProvider provider) {
   return MaterialApp(

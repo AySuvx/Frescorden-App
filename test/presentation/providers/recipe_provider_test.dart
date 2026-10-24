@@ -22,7 +22,7 @@ import 'package:frescorden/domain/entities/recipe.dart';
 import 'package:frescorden/domain/entities/recipe_ingredient.dart';
 import 'package:frescorden/presentation/providers/recipe_provider.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Product _product(String name) {
   return Product(

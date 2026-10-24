@@ -19,7 +19,7 @@ import 'package:frescorden/presentation/providers/restock_prediction_provider.da
 import 'package:frescorden/presentation/providers/user_banner_provider.dart';
 import 'package:frescorden/presentation/screens/login_screen.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 // El MultiProvider envuelve el MaterialApp (no solo `home`): las rutas que
 // LoginScreen empuja con Navigator.pushReplacement (InicioScreen) son

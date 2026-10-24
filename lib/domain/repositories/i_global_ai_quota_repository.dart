@@ -8,7 +8,7 @@
 // reutilizan la misma lógica, solo que contra esta segunda fuente.
 
 abstract interface class IGlobalAiQuotaRepository {
-  /// Consultas que quedan disponibles hoy para TODO el proyecto.
+  /// Consultas que quedan disponibles hoy para el proyecto.
   Future<int> getRemaining();
 
   /// Registra una consulta ya respondida con éxito (suma al contador

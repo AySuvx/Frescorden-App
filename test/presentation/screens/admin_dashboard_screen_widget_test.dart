@@ -16,7 +16,7 @@ import 'package:frescorden/presentation/providers/admin_provider.dart';
 import 'package:frescorden/presentation/providers/auth_provider.dart';
 import 'package:frescorden/presentation/screens/admin_dashboard_screen.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Widget _wrap(AdminProvider adminProvider, AuthProvider authProvider) {
   return MaterialApp(

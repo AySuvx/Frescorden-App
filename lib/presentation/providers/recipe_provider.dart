@@ -138,7 +138,7 @@ class RecipeProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
-    // Cuota compartida por TODO el piloto (ver IGlobalAiQuotaRepository):
+    // Cuota compartida por el piloto (ver IGlobalAiQuotaRepository):
     // se revisa además de la cuota por dispositivo, porque esta última no
     // evita que varios testers juntos agoten el límite real de Google.
     final globalRemaining = await _globalQuota.getRemaining();

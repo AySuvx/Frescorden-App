@@ -15,7 +15,7 @@ import 'package:frescorden/presentation/providers/usability_survey_provider.dart
 import 'package:frescorden/presentation/screens/usability_survey_screen.dart';
 import 'package:frescorden/presentation/widgets/common/primary_button.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Widget _wrap(AuthProvider authProvider, UsabilitySurveyProvider surveyProvider) {
   return MaterialApp(

@@ -364,20 +364,36 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // badge de stock bajo
-                if (_esStockBajo(producto)) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(Icons.error_outline, size: 14, color: colorScheme.error),
-                  const SizedBox(width: 2),
-                  Text(
-                    'Stock bajo',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.error,
-                      fontWeight: FontWeight.w600,
+                // badge de stock bajo — también Flexible: con el ancho ya
+                // repartido con "Cantidad: ..." arriba, este grupo (ícono +
+                // texto) podía seguir exigiendo su ancho natural completo y
+                // desbordar por su cuenta.
+                if (_esStockBajo(producto))
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(width: AppSpacing.xs),
+                        Icon(
+                          Icons.error_outline,
+                          size: 14,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            'Stock bajo',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
               ],
             ),
             Padding(
@@ -603,10 +619,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 height: 28,
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                isConsumed
-                    ? 'Producto marcado como consumido'
-                    : 'Producto marcado como desperdiciado',
+              Expanded(
+                child: Text(
+                  isConsumed
+                      ? 'Producto marcado como consumido'
+                      : 'Producto marcado como desperdiciado',
+                ),
               ),
             ],
           ),

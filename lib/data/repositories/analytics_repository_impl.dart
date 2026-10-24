@@ -31,10 +31,7 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
     final allHistory = await _dataSource.getAll(householdId);
     if (allHistory.isEmpty) return AnalyticsSummary.empty();
 
-    // A diferencia del resto del resumen (acotado al último mes),
-    // `totalMoneySavedAllTimeCop` y `monthlyHistory` miran TODO el
-    // historial — por eso se calculan sobre `allHistory`, no sobre
-    // `history` (la ventana de 30 días de abajo).
+
     final totalMoneySavedAllTimeCop = allHistory
         .where((e) => e.outcome == ProductOutcome.consumedOnTime)
         .fold<int>(0, (sum, e) => sum + (e.estimatedPrice ?? 0));
@@ -82,7 +79,7 @@ class AnalyticsRepositoryImpl implements IAnalyticsRepository {
     );
   }
 
-  /// Agrupa TODO el historial (no solo el último mes) por mes calendario,
+  /// Agrupa el historial (no solo el último mes) por mes calendario,
   /// y devuelve hasta [_monthlyHistoryMonths] puntos, del más antiguo al
   /// más reciente — un mes sin ninguna entrada simplemente no aparece (no
   /// se rellenan huecos con ceros, para no sugerir actividad que no hubo).

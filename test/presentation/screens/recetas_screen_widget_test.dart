@@ -24,7 +24,7 @@ import 'package:frescorden/presentation/widgets/common/glass_card.dart';
 import 'package:frescorden/presentation/widgets/common/pressable_scale.dart';
 import 'package:frescorden/presentation/screens/recetas_screen.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Product _product(String name) {
   return Product(

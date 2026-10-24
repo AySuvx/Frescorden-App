@@ -20,7 +20,7 @@ import 'package:frescorden/domain/entities/household.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/presentation/providers/household_provider.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Household _household({
   required String createdBy,

@@ -741,14 +741,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             ),
                             child: Row(
                               children: [
-                                // Solo el estado "sin fecha" necesita Expanded:
-                                // su texto es largo y, sin Spacer en este
-                                // Row (a diferencia de la rama con fecha, que
-                                // sí tiene uno más abajo), desbordaba en
-                                // anchos de teléfono reales (~360dp). La rama
-                                // "Guardado el: ..." es corta y no lo necesita
-                                // — envolverla igual correría el Spacer y
-                                // cambiaría dónde queda el ícono de limpiar.
+                                // Ambas ramas necesitan flex: la rama con
+                                // fecha también desbordaba en anchos de
+                                // teléfono reales (~360dp) una vez sumados
+                                // "Guardado el: ..." + "(N días)" + el ícono
+                                // de limpiar — Flexible (no Expanded) para
+                                // no competir con el Spacer que empuja el
+                                // ícono al final.
                                 if (_entryDate == null)
                                   Expanded(
                                     child: Text(
@@ -761,11 +760,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     ),
                                   )
                                 else
-                                  Text(
-                                    'Guardado el: ${_entryDate!.day}/${_entryDate!.month}/${_entryDate!.year}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: colorScheme.onSurface,
+                                  Flexible(
+                                    child: Text(
+                                      'Guardado el: ${_entryDate!.day}/${_entryDate!.month}/${_entryDate!.year}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurface,
+                                      ),
                                     ),
                                   ),
                                 if (_entryDate != null) ...[
