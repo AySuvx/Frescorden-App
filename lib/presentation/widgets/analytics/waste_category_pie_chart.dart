@@ -23,6 +23,7 @@ class WasteCategoryPieChart extends StatelessWidget {
         .toList()
       ..sort((a, b) => b.expired.compareTo(a.expired));
     final totalExpired = wasteData.fold<int>(0, (sum, c) => sum + c.expired);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -31,14 +32,18 @@ class WasteCategoryPieChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Distribución de pérdidas por categoría',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               '% de productos vencidos, por categoría',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
             if (!summary.hasWasteData)
@@ -49,26 +54,55 @@ class WasteCategoryPieChart extends StatelessWidget {
             else ...[
               SizedBox(
                 height: 200,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 36,
-                    sections: [
-                      for (final stats in wasteData)
-                        PieChartSectionData(
-                          value: stats.expired.toDouble(),
-                          color: stats.category.chartColor,
-                          radius: 54,
-                          title:
-                              '${(stats.expired / totalExpired * 100).round()}%',
-                          titleStyle: const TextStyle(
-                            fontSize: 11,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PieChart(
+                      duration: const Duration(milliseconds: 600),
+                      PieChartData(
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 40,
+                        sections: [
+                          for (final stats in wasteData)
+                            PieChartSectionData(
+                              value: stats.expired.toDouble(),
+                              color: stats.category.chartColor,
+                              radius: 54,
+                              title:
+                                  '${(stats.expired / totalExpired * 100).round()}%',
+                              titleStyle: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Total en el centro de la dona: convierte un gráfico
+                    // puramente proporcional en uno que también da la
+                    // cifra absoluta de un vistazo.
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$totalExpired',
+                          style: TextStyle(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                           ),
                         ),
-                    ],
-                  ),
+                        Text(
+                          totalExpired == 1 ? 'vencido' : 'vencidos',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),

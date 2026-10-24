@@ -19,6 +19,7 @@ import '../../domain/requests/save_product_request.dart';
 import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../utils/food_category_ui.dart';
+import '../widgets/common/ai_coming_soon_card.dart';
 
 class AddProductScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
@@ -35,12 +36,28 @@ class AddProductScreen extends StatefulWidget {
   /// si [initialProduct] no es null (editar respeta la categoría guardada).
   final FoodCategory? initialCategory;
 
+  /// Flujo "Por Categoría" → PresetFoodPickerScreen: nombre y unidad del
+  /// PresetFood elegido, para no obligar al usuario a escribirlos cuando
+  /// ya están bien clasificados. Ambos null si vino de "No lo encuentro"
+  /// o directo desde CategoryPickerScreen (comportamiento sin cambios).
+  final String? initialName;
+  final String? initialUnit;
+
+  /// true cuando el producto viene de PresetFoodPickerScreen: es un
+  /// empacado/granel ya clasificado, no tiene sentido pedir fecha de
+  /// almacenamiento (esa fecha es para saber cuánto lleva guardado un
+  /// perecedero de plaza, no un paquete con fecha de vencimiento impresa).
+  final bool hideStorageDate;
+
   const AddProductScreen({
     super.key,
     required this.onSave,
     this.initialProduct,
     this.isBulkEntry = false,
     this.initialCategory,
+    this.initialName,
+    this.initialUnit,
+    this.hideStorageDate = false,
   });
 
   @override
@@ -58,7 +75,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _selectedUnit = 'unidad';
   File? _imageFile;
   DateTime? _expiryDate;
-  DateTime? _entryDate; // fecha de entrada al inventario (opcional en UI, obligatoria en el dominio)
+  DateTime?
+  _entryDate; // fecha de entrada al inventario (opcional en UI, obligatoria en el dominio)
   bool _isBulk = false; // registro a granel (perecederos de plaza/mercado)
   FoodCategory _selectedCategory = FoodCategory.otros;
   final TextEditingController _minStockController =
@@ -93,7 +111,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
       // cargar entryDate al editar (con fallback al nombre legacy
       // 'storedAt', igual criterio que ProductModel._fromMap).
-      final entryDateStr = widget.initialProduct!['entryDate'] as String? ??
+      final entryDateStr =
+          widget.initialProduct!['entryDate'] as String? ??
           widget.initialProduct!['storedAt'] as String?;
       if (entryDateStr != null) {
         _entryDate = DateTime.tryParse(entryDateStr);
@@ -116,6 +135,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
         _selectedUnit = 'kg';
       } else if (widget.initialCategory != null) {
         _selectedCategory = widget.initialCategory!;
+      }
+      // PresetFoodPickerScreen: nombre y unidad ya elegidos, el usuario
+      // solo completa cantidad y fecha de vencimiento.
+      if (widget.initialName != null) {
+        _nameController.text = widget.initialName!;
+      }
+      if (widget.initialUnit != null) {
+        _selectedUnit = widget.initialUnit!;
       }
     }
   }
@@ -220,7 +247,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
     // async sin verificar `mounted` no es seguro (el widget pudo
     // desmontarse mientras tanto).
     final recognitionRepository = context.read<IProductRecognitionRepository>();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    // maxWidth/imageQuality: la cámara nativa entrega fotos de varios MB a
+    // resolución completa, que no aportan nada a un modelo de visión y solo
+    // suman tiempo de subida. 1024px de lado mayor sigue siendo más que
+    // suficiente para leer una etiqueta de empaque.
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1024,
+      imageQuality: 85,
+    );
     if (pickedFile == null) return;
 
     setState(() => _isRecognizing = true);
@@ -387,7 +422,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 15),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+                border: Border(
+                  bottom: BorderSide(color: colorScheme.outlineVariant),
+                ),
               ),
               child: Row(
                 children: [
@@ -398,9 +435,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           : 'Vence el: ${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}',
                       style: TextStyle(
                         fontSize: 16,
-                        color: _expiryDate == null
-                            ? colorScheme.onSurfaceVariant
-                            : colorScheme.onSurface,
+                        color:
+                            _expiryDate == null
+                                ? colorScheme.onSurfaceVariant
+                                : colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -440,53 +478,66 @@ class _AddProductScreenState extends State<AddProductScreen> {
             // hay datos reales que no deberían reemplazarse por una
             // adivinanza de una foto nueva.
             if (widget.initialProduct == null) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+              if (context.watch<AuthProvider>().canUseLiveAi)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(
+                      AppSpacing.buttonRadius,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¿Prefieres que la IA llene el formulario?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Toma una foto del producto y completamos nombre, '
+                        'categoría y unidad por ti. Tú revisas y ajustas el '
+                        'resto.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        onPressed: _isRecognizing ? null : _reconocerConIA,
+                        icon:
+                            _isRecognizing
+                                ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : const Icon(Icons.auto_awesome),
+                        label: Text(
+                          _isRecognizing
+                              ? 'Reconociendo...'
+                              : 'Reconocer con IA',
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                const AiComingSoonCard(
+                  title: '¿Prefieres que la IA llene el formulario?',
+                  description:
+                      'Pronto vas a poder tomar una foto del producto y '
+                      'completar nombre, categoría y unidad automáticamente.',
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '¿Prefieres que la IA llene el formulario?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Toma una foto del producto y completamos nombre, '
-                      'categoría y unidad por ti. Tú revisas y ajustas el '
-                      'resto.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      onPressed: _isRecognizing ? null : _reconocerConIA,
-                      icon: _isRecognizing
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.auto_awesome),
-                      label: Text(
-                        _isRecognizing
-                            ? 'Reconociendo...'
-                            : 'Reconocer con IA',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 20),
             ],
             const Text(
@@ -571,7 +622,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     height: 18,
                                   ),
                                   const SizedBox(width: 10),
-                                  Text(cat.label),
+                                  Expanded(
+                                    child: Text(
+                                      cat.label,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -617,104 +673,135 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             Text(
               'Déjala vacía para productos a granel sin fecha impresa',
-              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
             _buildExpiryDatePicker(),
             const SizedBox(height: 16),
 
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.kitchen, color: colorScheme.onSurfaceVariant, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Fecha de almacenamiento (opcional)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Para saber cuántos días lleva guardado',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      InkWell(
-                        onTap: () async {
-                          final now = DateTime.now();
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _entryDate ?? now,
-                            firstDate: now.subtract(const Duration(days: 365)),
-                            lastDate: now,
-                          );
-                          if (picked != null) {
-                            setState(() => _entryDate = picked);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 4,
+            if (!widget.hideStorageDate) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.kitchen,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Fecha de almacenamiento (opcional)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                           ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: colorScheme.outlineVariant),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Para saber cuántos días lleva guardado',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _entryDate ?? now,
+                              firstDate: now.subtract(
+                                const Duration(days: 365),
+                              ),
+                              lastDate: now,
+                            );
+                            if (picked != null) {
+                              setState(() => _entryDate = picked);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 10,
+                              horizontal: 4,
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                _entryDate == null
-                                    ? 'Seleccionar fecha de entrada al hogar'
-                                    : 'Guardado el: ${_entryDate!.day}/${_entryDate!.month}/${_entryDate!.year}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color:
-                                      _entryDate == null
-                                          ? colorScheme.onSurfaceVariant
-                                          : colorScheme.onSurface,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: colorScheme.outlineVariant,
                                 ),
                               ),
-                              if (_entryDate != null) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  '(${DateTime.now().difference(_entryDate!).inDays} días)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
+                            ),
+                            child: Row(
+                              children: [
+                                // Ambas ramas necesitan flex: la rama con
+                                // fecha también desbordaba en anchos de
+                                // teléfono reales (~360dp) una vez sumados
+                                // "Guardado el: ..." + "(N días)" + el ícono
+                                // de limpiar — Flexible (no Expanded) para
+                                // no competir con el Spacer que empuja el
+                                // ícono al final.
+                                if (_entryDate == null)
+                                  Expanded(
+                                    child: Text(
+                                      'Seleccionar fecha de entrada al hogar',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Flexible(
+                                    child: Text(
+                                      'Guardado el: ${_entryDate!.day}/${_entryDate!.month}/${_entryDate!.year}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: () => setState(() => _entryDate = null),
-                                  child: Icon(
-                                    Icons.clear,
-                                    size: 16,
-                                    color: colorScheme.onSurfaceVariant,
+                                if (_entryDate != null) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '(${DateTime.now().difference(_entryDate!).inDays} días)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap:
+                                        () => setState(() => _entryDate = null),
+                                    child: Icon(
+                                      Icons.clear,
+                                      size: 16,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
             const Text(
               'Foto del producto (opcional)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -735,19 +822,26 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 const SizedBox(width: 16),
                 if (_imageFile != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      _imageFile!,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (_, __, ___) => const Icon(
-                            Icons.broken_image,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
+                  // Hero gemelo del leading de ProductosScreen: solo aplica
+                  // al editar (hay un id real al que atar el tag); un
+                  // producto nuevo todavía no tiene id, así que no hay
+                  // tag del que "volar" y Hero simplemente no anima.
+                  Hero(
+                    tag: 'product-photo-${widget.initialProduct?['id']}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        _imageFile!,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (_, __, ___) => const Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
+                      ),
                     ),
                   ),
               ],

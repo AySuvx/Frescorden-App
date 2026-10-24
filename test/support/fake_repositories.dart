@@ -23,11 +23,14 @@ import 'package:frescorden/domain/repositories/i_analytics_repository.dart';
 import 'package:frescorden/domain/repositories/i_assistant_repository.dart';
 import 'package:frescorden/domain/repositories/i_assistant_usage_repository.dart';
 import 'package:frescorden/domain/repositories/i_auth_repository.dart';
+import 'package:frescorden/domain/repositories/i_global_ai_quota_repository.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_history_repository.dart';
 import 'package:frescorden/domain/repositories/i_product_repository.dart';
 import 'package:frescorden/domain/repositories/i_recipe_repository.dart';
+import 'package:frescorden/domain/entities/usability_survey_response.dart';
 import 'package:frescorden/domain/repositories/i_shopping_repository.dart';
+import 'package:frescorden/domain/repositories/i_usability_survey_repository.dart';
 import 'package:frescorden/domain/services/i_assistant_analytics_service.dart';
 import 'package:frescorden/domain/services/i_quota_service.dart';
 
@@ -175,6 +178,27 @@ class FakeQuotaService implements IQuotaService {
   DateTime nextResetAt() => DateTime.now().add(const Duration(days: 1));
 }
 
+/// Fake de [IGlobalAiQuotaRepository]: mismo criterio que
+/// [FakeQuotaService], pero representa la cuota COMPARTIDA entre todos los
+/// dispositivos del piloto, no la cuota por dispositivo.
+class FakeGlobalAiQuotaRepository implements IGlobalAiQuotaRepository {
+  int remaining = 15;
+  int recordedQueries = 0;
+
+  @override
+  Future<int> getRemaining() async => remaining;
+
+  @override
+  Future<int> recordSuccessfulQuery() async {
+    recordedQueries++;
+    remaining = remaining > 0 ? remaining - 1 : 0;
+    return remaining;
+  }
+
+  @override
+  DateTime nextResetAt() => DateTime.now().add(const Duration(days: 1));
+}
+
 /// Fake de [IHouseholdRepository]: `watchActiveHouseholdId`/`watchHousehold`
 /// son streams controlables a mano ([emitActiveId]/[emitHousehold]) para
 /// simular la cadena reactiva real de HouseholdProvider. Las acciones
@@ -192,6 +216,8 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   Object? bootstrapError;
   Object? generateInviteCodeError;
   String inviteCodeToReturn = 'ABC123';
+  final List<String> renamedHouseholdNames = [];
+  Object? updateHouseholdNameError;
 
   /// Configurables para CreateHouseholdUseCase/JoinHouseholdUseCase: por
   /// defecto lanzan `UnimplementedError` (no usados en los escenarios de
@@ -200,6 +226,8 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   Object? createHouseholdError;
   Household? joinHouseholdResult;
   Object? joinHouseholdError;
+  Household? previewHouseholdResult;
+  Object? previewHouseholdError;
 
   void emitActiveId(String? householdId) => _activeIdController.add(householdId);
   void emitHousehold(Household? household) => _householdController.add(household);
@@ -235,9 +263,25 @@ class FakeHouseholdRepository implements IHouseholdRepository {
   }
 
   @override
+  Future<Household> previewHouseholdByCode(String code) async {
+    if (previewHouseholdError != null) throw previewHouseholdError!;
+    return previewHouseholdResult ??
+        (throw UnimplementedError('Configura previewHouseholdResult.'));
+  }
+
+  @override
   Future<String> generateNewInviteCode(String householdId) async {
     if (generateInviteCodeError != null) throw generateInviteCodeError!;
     return inviteCodeToReturn;
+  }
+
+  @override
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  }) async {
+    if (updateHouseholdNameError != null) throw updateHouseholdNameError!;
+    renamedHouseholdNames.add(name);
   }
 
   @override
@@ -294,6 +338,15 @@ class FakeActivityLogRepository implements IActivityLogRepository {
   final List<ActivityAction> logged = [];
   Object? logActivityError;
 
+  final _activityController =
+      StreamController<List<ActivityLogEntry>>.broadcast();
+
+  /// Simula un snapshot nuevo del stream de actividad reciente — sin
+  /// llamar a esto, el stream nunca emite (mismo comportamiento que antes,
+  /// cuando era un `Stream.empty()` fijo).
+  void emitActivity(List<ActivityLogEntry> entries) =>
+      _activityController.add(entries);
+
   @override
   Future<void> logActivity({
     required String householdId,
@@ -308,7 +361,9 @@ class FakeActivityLogRepository implements IActivityLogRepository {
   Stream<List<ActivityLogEntry>> watchRecentActivity(
     String householdId, {
     int limit = 20,
-  }) => const Stream.empty();
+  }) => _activityController.stream;
+
+  void dispose() => unawaited(_activityController.close());
 }
 
 /// Fake de [IAdminRepository]: [statsToReturn] configura el resultado de
@@ -350,6 +405,7 @@ class FakeAuthRepository implements IAuthRepository {
   Object? registerError;
   Object? signInWithGoogleError;
   Object? sendPasswordResetError;
+  Object? deleteAccountError;
 
   @override
   AppUser? currentUser;
@@ -389,6 +445,7 @@ class FakeAuthRepository implements IAuthRepository {
   @override
   Future<void> deleteAccount() async {
     calls.add('deleteAccount');
+    if (deleteAccountError != null) throw deleteAccountError!;
   }
 }
 
@@ -439,4 +496,32 @@ class FakeAssistantAnalyticsService implements IAssistantAnalyticsService {
   Future<void> logAssistantQuery() async {
     loggedQueries++;
   }
+}
+
+/// Fake de [IUsabilitySurveyRepository]: registra las respuestas
+/// enviadas en [submittedResponses] y sigue el mismo criterio de
+/// "doc por uid" que la implementación real (un envío nuevo del mismo uid
+/// no se acumula aparte, se trata como la respuesta vigente de ese uid).
+class FakeUsabilitySurveyRepository implements IUsabilitySurveyRepository {
+  final List<UsabilitySurveyResponse> submittedResponses = [];
+  final Set<String> _submittedUids = {};
+  Object? submitError;
+  Object? hasSubmittedError;
+  List<UsabilitySurveyResponse> getAllResult = [];
+
+  @override
+  Future<bool> hasSubmitted(String uid) async {
+    if (hasSubmittedError != null) throw hasSubmittedError!;
+    return _submittedUids.contains(uid);
+  }
+
+  @override
+  Future<void> submit(UsabilitySurveyResponse response) async {
+    if (submitError != null) throw submitError!;
+    submittedResponses.add(response);
+    _submittedUids.add(response.uid);
+  }
+
+  @override
+  Future<List<UsabilitySurveyResponse>> getAll() async => getAllResult;
 }

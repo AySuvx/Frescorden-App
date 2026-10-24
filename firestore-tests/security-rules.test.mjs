@@ -79,6 +79,20 @@ function dbFor(uid) {
   return firestoreCache.get(key);
 }
 
+// Mismo cache que dbFor, pero para un UID cualquiera autenticado con el
+// correo admin secundario (ver firestore.rules isAdmin() / kAdminEmails en
+// app_config.dart) — el UID en sí no es admin, solo el claim de correo.
+function dbForAdminEmail() {
+  const key = '__admin_email__';
+  if (!firestoreCache.has(key)) {
+    const ctx = testEnv.authenticatedContext('uid-correo-admin-secundario', {
+      email: 'familiaotalora98@gmail.com',
+    });
+    firestoreCache.set(key, ctx.firestore());
+  }
+  return firestoreCache.get(key);
+}
+
 // ─── usuarios/{userId} ──────────────────────────────────────────────────
 
 describe('Historia de seguridad: documento de usuario', () => {
@@ -101,6 +115,18 @@ describe('Historia de seguridad: documento de usuario', () => {
   test('Escenario: el UID admin SÍ puede listar la colección de usuarios', async () => {
     const db = dbFor(ADMIN_UID);
     await assertSucceeds(getDocs(query(collection(db, 'usuarios'))));
+  });
+
+  test('Escenario: el correo admin secundario SÍ puede listar la colección de usuarios', async () => {
+    const db = dbForAdminEmail();
+    await assertSucceeds(getDocs(query(collection(db, 'usuarios'))));
+  });
+
+  test('Escenario: un UID y correo cualquiera NO puede listar la colección de usuarios', async () => {
+    const ctx = testEnv.authenticatedContext('uid-sin-relacion', {
+      email: 'nadie-en-particular@example.com',
+    });
+    await assertFails(getDocs(query(collection(ctx.firestore(), 'usuarios'))));
   });
 
   test('Escenario: un usuario normal NO puede listar la colección de usuarios', async () => {

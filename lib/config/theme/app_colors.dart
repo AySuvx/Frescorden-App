@@ -38,4 +38,19 @@ class AppColors {
   /// Superficie de tarjeta en modo claro. Blanco puro sobre
   /// [backgroundLight]: mismo criterio que arriba, aplicado al modo claro.
   static const Color cardLight = Colors.white;
+
+  /// Colores de acento curados para Ajustes (ver ThemeProvider.setSeedColor):
+  /// un selector de color libre no se ofrece a propósito — cada entrada ya
+  /// viene probada contra el `contrastLevel` 0.5 de AppTheme en claro y
+  /// oscuro, así ningún usuario puede elegir una semilla que rompa el
+  /// contraste AA de la app.
+  static const List<MapEntry<String, Color>> accentPresets = [
+    MapEntry('Esmeralda', primary),
+    MapEntry('Azul', Color(0xFF1565C0)),
+    MapEntry('Morado', Color(0xFF6A1B9A)),
+    MapEntry('Naranja', Color(0xFFE65100)),
+    MapEntry('Rosa', Color(0xFFC2185B)),
+    MapEntry('Turquesa', Color(0xFF00796B)),
+    MapEntry('Índigo', Color(0xFF283593)),
+  ];
 }

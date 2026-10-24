@@ -8,10 +8,16 @@
 // sujeto a la misma cuota diaria que el asistente conversacional — es el
 // mismo costo de Gemini, así que comparte el contador (ver QuotaService).
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import '../../core/errors/ai_exceptions.dart';
+import '../../data/datasources/global_ai_quota_firestore_datasource.dart';
+import '../../data/repositories/global_ai_quota_repository_impl.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/recipe.dart';
 import '../../domain/entities/recipe_ingredient.dart';
+import '../../domain/repositories/i_global_ai_quota_repository.dart';
 import '../../domain/repositories/i_recipe_repository.dart';
 import '../../domain/services/i_quota_service.dart';
 import '../utils/quota_service.dart';
@@ -24,7 +30,19 @@ class RecipeProvider extends ChangeNotifier {
   final IQuotaService? _injectedQuotaService;
   late final IQuotaService _quota = _injectedQuotaService ?? QuotaService.instance;
 
-  RecipeProvider(this._repository, [this._injectedQuotaService]);
+  // Cuota compartida entre TODOS los dispositivos del piloto (ver
+  // IGlobalAiQuotaRepository) — se consulta ADEMÁS de `_quota` (que es
+  // solo por dispositivo), nunca en su lugar.
+  final IGlobalAiQuotaRepository? _injectedGlobalQuota;
+  late final IGlobalAiQuotaRepository _globalQuota =
+      _injectedGlobalQuota ??
+      GlobalAiQuotaRepositoryImpl(GlobalAiQuotaFirestoreDataSource());
+
+  RecipeProvider(
+    this._repository, [
+    this._injectedQuotaService,
+    this._injectedGlobalQuota,
+  ]);
 
   List<Recipe> _recipes = [];
   bool _isLoading = false;
@@ -120,6 +138,17 @@ class RecipeProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+    // Cuota compartida por el piloto (ver IGlobalAiQuotaRepository):
+    // se revisa además de la cuota por dispositivo, porque esta última no
+    // evita que varios testers juntos agoten el límite real de Google.
+    final globalRemaining = await _globalQuota.getRemaining();
+    if (globalRemaining <= 0) {
+      _aiError =
+          'El piloto ya usó todas las consultas de IA de hoy entre todos '
+          'los que la están probando. Vuelve mañana.';
+      notifyListeners();
+      return null;
+    }
 
     _isGeneratingAiRecipe = true;
     _aiError = null;
@@ -128,7 +157,11 @@ class RecipeProvider extends ChangeNotifier {
     try {
       final recipe = await _repository.generateAiRecipe(inventory);
       await _quota.recordSuccessfulQuery();
+      unawaited(_globalQuota.recordSuccessfulQuery());
       return recipe;
+    } on AiQuotaExceededException catch (e) {
+      _aiError = e.message;
+      return null;
     } catch (e) {
       _aiError = 'No se pudo crear la receta. Intenta de nuevo.';
       debugPrint('RecipeProvider.generateAiRecipe error: $e');

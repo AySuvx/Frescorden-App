@@ -21,6 +21,7 @@ class WasteVsConsumedBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final summary = context.watch<AnalyticsProvider>().summary;
     final data = summary.categoryBreakdown;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -29,14 +30,18 @@ class WasteVsConsumedBarChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Consumido a tiempo vs. desperdiciado',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Por categoría',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
             if (data.isEmpty)
@@ -79,6 +84,7 @@ class _BarChartBody extends StatelessWidget {
     final maxY = (maxCount < 4 ? 4 : maxCount) * 1.2;
 
     return BarChart(
+      duration: const Duration(milliseconds: 600),
       BarChartData(
         maxY: maxY,
         alignment: BarChartAlignment.spaceAround,
@@ -143,15 +149,33 @@ class _BarChartBody extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: data[i].consumedOnTime.toDouble(),
-                  color: WasteVsConsumedBarChart._consumedColor,
-                  width: 8,
-                  borderRadius: BorderRadius.circular(2),
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      WasteVsConsumedBarChart._consumedColor,
+                      WasteVsConsumedBarChart._consumedColor.withValues(alpha: 0.6),
+                    ],
+                  ),
+                  width: 9,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(5),
+                  ),
                 ),
                 BarChartRodData(
                   toY: data[i].expired.toDouble(),
-                  color: WasteVsConsumedBarChart._expiredColor,
-                  width: 8,
-                  borderRadius: BorderRadius.circular(2),
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      WasteVsConsumedBarChart._expiredColor,
+                      WasteVsConsumedBarChart._expiredColor.withValues(alpha: 0.6),
+                    ],
+                  ),
+                  width: 9,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(5),
+                  ),
                 ),
               ],
             ),

@@ -31,6 +31,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   final _joinCodeController = TextEditingController();
   bool _isJoining = false;
   bool _isRegeneratingCode = false;
+  bool _isRenaming = false;
 
   @override
   void dispose() {
@@ -66,6 +67,49 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
       _showSnack(_messageFor(e, 'No se pudo generar un código nuevo. Intenta de nuevo.'));
     } finally {
       if (mounted) setState(() => _isRegeneratingCode = false);
+    }
+  }
+
+  /// Diálogo para renombrar el hogar activo — el campo se precarga con el
+  /// nombre actual, no en blanco, para que renombrar sea editar y no
+  /// reescribir desde cero.
+  Future<void> _renameHousehold(String currentName) async {
+    final controller = TextEditingController(text: currentName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nombrar hogar'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(hintText: 'Ej: Casa de los Gómez'),
+          onSubmitted: (value) => Navigator.pop(ctx, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newName == null || !mounted) return;
+    if (newName.trim() == currentName.trim()) return;
+
+    setState(() => _isRenaming = true);
+    try {
+      await context.read<HouseholdProvider>().renameHousehold(newName);
+      _showSnack('Nombre actualizado.');
+    } catch (e) {
+      _showSnack(_messageFor(e, 'No se pudo cambiar el nombre.'));
+    } finally {
+      if (mounted) setState(() => _isRenaming = false);
     }
   }
 
@@ -126,6 +170,11 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     }
   }
 
+  /// Antes de unirse de verdad, resuelve el código a su hogar y le
+  /// pregunta al usuario si es el correcto — unirse "a ciegas" (sin ver a
+  /// dónde) era confuso: el código es fácil de transcribir mal (6
+  /// caracteres) y antes no había forma de notar el error hasta después de
+  /// ya estar dentro del hogar equivocado.
   Future<void> _joinHousehold() async {
     final code = _joinCodeController.text.trim().toUpperCase();
     if (code.length != 6) {
@@ -136,7 +185,33 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _isJoining = true);
     try {
-      await context.read<HouseholdProvider>().joinHousehold(code);
+      final provider = context.read<HouseholdProvider>();
+      final preview = await provider.previewHousehold(code);
+      if (!mounted) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('¿Es este tu hogar?'),
+          content: Text(
+            '"${preview.name}" — ${preview.members.length} '
+            '${preview.members.length == 1 ? 'miembro' : 'miembros'}.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Sí, unirme'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+
+      await provider.joinHousehold(code);
       _joinCodeController.clear();
       _showSnack('Te uniste al hogar correctamente.');
     } catch (e) {
@@ -226,6 +301,20 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            _isRenaming
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    tooltip: 'Renombrar hogar',
+                    onPressed: () => _renameHousehold(household.name),
+                  ),
           ],
         ),
         const SizedBox(height: 4),

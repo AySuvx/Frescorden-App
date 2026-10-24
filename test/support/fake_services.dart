@@ -16,11 +16,17 @@ class FakeNotificationService implements INotificationService {
   final List<Product> expirationAlerts = [];
   final List<Product> bulkStorageAlerts = [];
   final List<Product> lowStockAlerts = [];
+  final List<({Product product, int daysLeft})> expirationSoonAlerts = [];
   final List<String> canceledProductIds = [];
 
   @override
   Future<void> scheduleExpirationAlert(Product product) async {
     expirationAlerts.add(product);
+  }
+
+  @override
+  Future<void> showExpirationSoonAlert(Product product, int daysLeft) async {
+    expirationSoonAlerts.add((product: product, daysLeft: daysLeft));
   }
 
   @override

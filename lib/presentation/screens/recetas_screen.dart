@@ -13,8 +13,10 @@ import '../../domain/entities/product.dart';
 import '../../domain/entities/product_freshness.dart';
 import '../../domain/entities/recipe.dart';
 import '../../routes.dart';
+import '../providers/auth_provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/recipe_provider.dart';
+import '../widgets/common/ai_coming_soon_card.dart';
 import '../widgets/common/custom_card.dart';
 import '../widgets/common/glass_card.dart';
 import '../widgets/common/pressable_scale.dart';
@@ -205,6 +207,23 @@ class _RecetasScreenState extends State<RecetasScreen> {
     List<Product> inventory,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final canUseAi = context.watch<AuthProvider>().canUseLiveAi;
+    if (!canUseAi) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.sm,
+        ),
+        child: AiComingSoonCard(
+          title: '¿No encuentras algo que te sirva?',
+          description:
+              'Pronto vas a poder crear una receta colombiana a tu medida '
+              'con IA, usando lo que ya tienes en el inventario.',
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -260,6 +279,7 @@ class _RecetasScreenState extends State<RecetasScreen> {
     RecipeProvider recipeProvider,
     List<Product> inventory,
   ) {
+    final canUseAi = context.watch<AuthProvider>().canUseLiveAi;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -280,16 +300,25 @@ class _RecetasScreenState extends State<RecetasScreen> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.md),
-              PrimaryButton(
-                label: 'Crear Receta Colombiana con IA',
-                icon: Image.asset(
-                  'assets/iconos/fresco_receta_ia.png',
-                  width: 20,
-                  height: 20,
+              if (canUseAi)
+                PrimaryButton(
+                  label: 'Crear Receta Colombiana con IA',
+                  icon: Image.asset(
+                    'assets/iconos/fresco_receta_ia.png',
+                    width: 20,
+                    height: 20,
+                  ),
+                  isLoading: recipeProvider.isGeneratingAiRecipe,
+                  onPressed: () =>
+                      _crearRecetaConIa(recipeProvider, inventory),
+                )
+              else
+                const AiComingSoonCard(
+                  title: 'Crear Receta Colombiana con IA',
+                  description:
+                      'Pronto vas a poder crear una receta a tu medida con '
+                      'lo que tengas disponible.',
                 ),
-                isLoading: recipeProvider.isGeneratingAiRecipe,
-                onPressed: () => _crearRecetaConIa(recipeProvider, inventory),
-              ),
             ],
           ),
         ),

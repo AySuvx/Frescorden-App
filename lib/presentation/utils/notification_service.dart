@@ -3,6 +3,8 @@
 // punto del ciclo de vida (guardar, editar, eliminar) sin guardar el ID
 // aparte.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -10,6 +12,8 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/entities/product.dart';
 import '../../domain/services/i_notification_service.dart';
+import '../../domain/utils/expiration_alert_policy.dart';
+import 'notification_permission_gate.dart';
 
 class NotificationService implements INotificationService {
   NotificationService._();
@@ -27,33 +31,106 @@ class NotificationService implements INotificationService {
     const settings = InitializationSettings(android: androidSettings);
     await _plugin.initialize(settings);
     _initialized = true;
+    unawaited(_requestPermission());
   }
 
-  // Tres IDs por producto (vencimiento / almacenamiento / stock bajo),
+  late final _permissionGate = NotificationPermissionGate(
+    isEnabled: () async => await _android?.areNotificationsEnabled() ?? true,
+    request: () async =>
+        await _android?.requestNotificationsPermission() ?? true,
+  );
+
+  AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  Future<void> _requestPermission() async {
+    try {
+      await _permissionGate.ensure();
+    } catch (e) {
+      debugPrint('NotificationService._requestPermission error: $e');
+    }
+  }
+
+  // Tres IDs base por producto (vencimiento / almacenamiento / stock bajo),
   // derivados de su id de Firestore — estables entre sesiones sin
   // necesidad de persistirlos.
-  int _expirationId(String productId) => productId.hashCode & 0x7FFFFFFF;
+  //
+  // Vencimiento ahora es una SERIE (un aviso por día, de leadDays a 0 — ver
+  // scheduleExpirationAlert), no una sola notificación: cada día de la
+  // cuenta regresiva necesita su propio ID, o programar el de "2 días"
+  // pisaría al de "3 días" en vez de coexistir.
+  int _expirationId(String productId, {int dayOffset = 0}) =>
+      (productId.hashCode ^ (dayOffset * 0x1000003)) & 0x7FFFFFFF;
   int _storageId(String productId) =>
       (productId.hashCode ^ 0x5A5A5A5A) & 0x7FFFFFFF;
   int _lowStockId(String productId) =>
       (productId.hashCode ^ 0x3C3C3C3C) & 0x7FFFFFFF;
 
-  /// Alerta 3 días antes de `expirationDate`. No hace nada si el producto
-  /// no tiene fecha de vencimiento o si esos 3 días ya pasaron.
+  /// Serie de avisos de vencimiento: uno por cada día entre
+  /// `ExpirationAlertPolicy.leadDays` y 0 (ej. "vence en 3 días", "en 2
+  /// días", "mañana", "hoy") — antes era un único aviso fijo a los 3 días,
+  /// y el producto podía vencerse en silencio sin recordatorio los días
+  /// siguientes. No hace nada si el producto no tiene fecha de vencimiento.
+  ///
+  /// Siempre cancela la serie anterior primero: al editar la fecha de
+  /// vencimiento, el conjunto de días que aplica puede cambiar (ej. de
+  /// "3,2,1,0" a solo "1,0" si la nueva fecha está más cerca), así que no
+  /// basta con sobreescribir — los IDs que ya no aplican quedarían
+  /// programados con la fecha vieja si no se cancelan explícitamente.
   @override
   Future<void> scheduleExpirationAlert(Product product) async {
+    await _cancelExpirationSeries(product.id);
     final expiryDate = product.expirationDate;
     if (expiryDate == null) return;
-    final notifyAt = expiryDate.subtract(const Duration(days: 3));
-    if (!notifyAt.isAfter(DateTime.now())) return;
 
     await initialize();
+    for (var daysLeft = ExpirationAlertPolicy.leadDays; daysLeft >= 0; daysLeft--) {
+      final notifyAt = expiryDate.subtract(Duration(days: daysLeft));
+      if (!notifyAt.isAfter(DateTime.now())) continue;
+
+      try {
+        await _plugin.zonedSchedule(
+          _expirationId(product.id, dayOffset: daysLeft),
+          'Producto por vencer',
+          'El producto "${product.name}" vence '
+              '${ExpirationAlertPolicy.describe(daysLeft)}.',
+          tz.TZDateTime.from(notifyAt, tz.local),
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'vencimiento_channel',
+              'Notificaciones de Vencimiento',
+              channelDescription:
+                  'Avisos de productos cercanos a su fecha de vencimiento',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        );
+      } catch (e) {
+        debugPrint('NotificationService.scheduleExpirationAlert error: $e');
+      }
+    }
+  }
+
+  Future<void> _cancelExpirationSeries(String productId) async {
+    await initialize();
+    for (var d = 0; d <= ExpirationAlertPolicy.leadDays; d++) {
+      await _plugin.cancel(_expirationId(productId, dayOffset: d));
+    }
+  }
+
+  @override
+  Future<void> showExpirationSoonAlert(Product product, int daysLeft) async {
+    await initialize();
     try {
-      await _plugin.zonedSchedule(
-        _expirationId(product.id),
+      await _plugin.show(
+        _expirationId(product.id, dayOffset: daysLeft),
         'Producto por vencer',
-        'El producto "${product.name}" vencerá en 3 días.',
-        tz.TZDateTime.from(notifyAt, tz.local),
+        'El producto "${product.name}" vence '
+            '${ExpirationAlertPolicy.describe(daysLeft)}.',
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'vencimiento_channel',
@@ -64,10 +141,9 @@ class NotificationService implements INotificationService {
             priority: Priority.high,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
     } catch (e) {
-      debugPrint('NotificationService.scheduleExpirationAlert error: $e');
+      debugPrint('NotificationService.showExpirationSoonAlert error: $e');
     }
   }
 
@@ -149,7 +225,7 @@ class NotificationService implements INotificationService {
   @override
   Future<void> cancelForProduct(String productId) async {
     await initialize();
-    await _plugin.cancel(_expirationId(productId));
+    await _cancelExpirationSeries(productId);
     await _plugin.cancel(_storageId(productId));
     await _plugin.cancel(_lowStockId(productId));
   }

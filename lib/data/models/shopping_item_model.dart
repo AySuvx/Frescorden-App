@@ -11,6 +11,18 @@ class ShoppingItemModel {
       unit: json['unidad'] as String? ?? '',
       category: json['categoria'] as String? ?? 'otros',
       estimatedPrice: (json['precioEstimado'] as num?)?.toInt(),
+      matchByCategory: json['matchByCategory'] as bool? ?? false,
     );
+  }
+
+  static Map<String, dynamic> toJson(ShoppingItem item) {
+    return {
+      'nombre': item.name,
+      'cantidad': item.quantity,
+      'unidad': item.unit,
+      'categoria': item.category,
+      'precioEstimado': item.estimatedPrice,
+      'matchByCategory': item.matchByCategory,
+    };
   }
 }

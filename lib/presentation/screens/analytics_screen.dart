@@ -20,8 +20,10 @@ import '../providers/analytics_provider.dart';
 import '../utils/food_category_ui.dart';
 import '../widgets/analytics/waste_vs_consumed_bar_chart.dart';
 import '../widgets/analytics/waste_category_pie_chart.dart';
+import '../widgets/analytics/savings_trend_chart.dart';
 import '../utils/currency_format.dart';
 import '../widgets/common/skeleton_loader.dart';
+import '../widgets/common/animated_counter.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -62,12 +64,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      _buildTotalSavedCard(context, summary.totalMoneySavedAllTimeCop),
+                      const SizedBox(height: 4),
                       _buildKpiCard(
                         icon: Icons.eco,
                         color: Colors.green,
                         label: 'Aprovechamiento del último mes',
                         value:
                             '${summary.wasteReductionPercentage.toStringAsFixed(0)}%',
+                        numericValue: summary.wasteReductionPercentage,
+                        numericSuffix: '%',
                         subtitle: 'Consumidos vs. desperdiciados',
                       ),
                       _buildKpiCard(
@@ -83,6 +89,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         label: 'Rotación promedio',
                         value:
                             '${summary.averageRotationDays.toStringAsFixed(1)} días',
+                        numericValue: summary.averageRotationDays,
+                        numericSuffix: ' días',
                         subtitle: 'Tiempo promedio en tu inventario',
                       ),
                       _buildKpiCard(
@@ -114,6 +122,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(height: 12),
                       const WasteVsConsumedBarChart(),
                       const WasteCategoryPieChart(),
+                      const SavingsTrendChart(),
                       const SizedBox(height: 8),
                       const Text(
                         'Desglose Histórico',
@@ -275,13 +284,72 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return '${local.day}/${local.month}';
   }
 
+  /// La cifra más satisfactoria de la pantalla: ahorro acumulado desde
+  /// siempre, no solo del último mes — por eso va primero y con
+  /// tratamiento visual distinto (degradé), en vez de ser una tarjeta KPI
+  /// más entre las demás.
+  Widget _buildTotalSavedCard(BuildContext context, int totalSavedCop) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary,
+            Color.lerp(colorScheme.primary, colorScheme.tertiary, 0.45)!,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.savings_outlined, color: colorScheme.onPrimary, size: 36),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ahorro acumulado desde que usas Fresc(o)rden',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onPrimary.withValues(alpha: 0.9),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  totalSavedCop.asCop,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildKpiCard({
     required IconData icon,
     required Color color,
     required String label,
     required String value,
     required String subtitle,
+    // Si se da, el valor se anima contando desde 0 (ver AnimatedCounter) en
+    // vez de mostrarse estático — solo aplica a KPIs genuinamente
+    // numéricos (no a "value", que puede ser texto como el nombre de una
+    // categoría).
+    num? numericValue,
+    String numericSuffix = '',
   }) {
+    const valueStyle = TextStyle(fontSize: 22, fontWeight: FontWeight.bold);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -307,13 +375,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  numericValue == null
+                      ? Text(value, style: valueStyle)
+                      : AnimatedCounter(
+                          value: numericValue,
+                          suffix: numericSuffix,
+                          style: valueStyle,
+                        ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,

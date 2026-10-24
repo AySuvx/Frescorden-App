@@ -9,6 +9,7 @@ import '../../entities/product.dart';
 import '../../repositories/i_product_repository.dart';
 import '../../requests/save_product_request.dart';
 import '../../services/i_notification_service.dart';
+import '../../utils/expiration_alert_policy.dart';
 
 class AddProductUseCase {
   final IProductRepository _repository;
@@ -78,6 +79,15 @@ class AddProductUseCase {
     }
 
     await _notificationService.scheduleExpirationAlert(result);
+    if (!wasAccumulated) {
+      final daysLeft = ExpirationAlertPolicy.daysLeftInsideWindow(
+        result.expirationDate,
+        DateTime.now(),
+      );
+      if (daysLeft != null) {
+        await _notificationService.showExpirationSoonAlert(result, daysLeft);
+      }
+    }
     await _notificationService.scheduleBulkStorageAlert(result);
     if (result.isLowStock) {
       await _notificationService.showLowStockAlert(result);

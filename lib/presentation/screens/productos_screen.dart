@@ -302,20 +302,26 @@ class _ProductosScreenState extends State<ProductosScreen> {
         // leading/title/trailing al inicio, consistente sin importar cuántas
         // líneas tenga el subtítulo.
         titleAlignment: ListTileTitleAlignment.top,
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(AppSpacing.sm),
-          child:
-              (imagePath != null &&
-                      imagePath.isNotEmpty &&
-                      File(imagePath).existsSync())
-                  ? Image.file(
-                    File(imagePath),
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholderIcon(),
-                  )
-                  : _placeholderIcon(),
+        // Hero: la foto "vuela" hasta AddProductScreen al editar (ver
+        // tag gemelo ahí) — solo tiene a dónde volar cuando sí hay foto,
+        // así que el tag por id no choca entre productos sin imagen.
+        leading: Hero(
+          tag: 'product-photo-${producto['id']}',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+            child:
+                (imagePath != null &&
+                        imagePath.isNotEmpty &&
+                        File(imagePath).existsSync())
+                    ? Image.file(
+                      File(imagePath),
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _placeholderIcon(),
+                    )
+                    : _placeholderIcon(),
+          ),
         ),
         title: Row(
           children: [
@@ -358,20 +364,36 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // badge de stock bajo
-                if (_esStockBajo(producto)) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Icon(Icons.error_outline, size: 14, color: colorScheme.error),
-                  const SizedBox(width: 2),
-                  Text(
-                    'Stock bajo',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.error,
-                      fontWeight: FontWeight.w600,
+                // badge de stock bajo — también Flexible: con el ancho ya
+                // repartido con "Cantidad: ..." arriba, este grupo (ícono +
+                // texto) podía seguir exigiendo su ancho natural completo y
+                // desbordar por su cuenta.
+                if (_esStockBajo(producto))
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(width: AppSpacing.xs),
+                        Icon(
+                          Icons.error_outline,
+                          size: 14,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            'Stock bajo',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
               ],
             ),
             Padding(
@@ -409,6 +431,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ? null
                   : () {
                       HapticFeedback.lightImpact();
+                      // Si esta es la última unidad, descontar lo dejaría
+                      // en 0 "flotando" en la lista sin registrar qué pasó
+                      // con él — en vez de eso, se ofrece de una vez el
+                      // mismo diálogo de retirar (Consumido/Desperdiciado),
+                      // que sí queda en el historial y en Analíticas.
+                      if (_cantidadActual(producto) == 1) {
+                        _eliminarProductoConConfirmacion(producto);
+                        return;
+                      }
                       final id = producto['id'] as String?;
                       if (id != null) {
                         context.read<ProductProvider>().decrementQuantity(id);
@@ -588,10 +619,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 height: 28,
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                isConsumed
-                    ? 'Producto marcado como consumido'
-                    : 'Producto marcado como desperdiciado',
+              Expanded(
+                child: Text(
+                  isConsumed
+                      ? 'Producto marcado como consumido'
+                      : 'Producto marcado como desperdiciado',
+                ),
               ),
             ],
           ),
