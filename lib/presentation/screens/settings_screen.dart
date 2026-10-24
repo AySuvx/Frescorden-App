@@ -1,6 +1,7 @@
 // El estado de notificaciones se guarda y carga con SharedPreferences bajo
 // la clave 'notifications_enabled', leída en initState de forma asíncrona.
 
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,8 +11,13 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../config/theme/app_colors.dart';
 import '../../config/theme/theme_provider.dart';
+import '../../domain/utils/expiration_alert_policy.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notification_settings_provider.dart';
+import '../providers/product_provider.dart';
+import '../utils/notification_service.dart';
 import '../widgets/common/glass_dialog.dart';
 import '../../routes.dart';
 import 'login_screen.dart';
@@ -222,9 +228,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Aplica el cambio de antelación y reprograma la SERIE de avisos de
+  /// cada producto con vencimiento ya cargado en memoria — sin esto, el
+  /// valor nuevo solo surtiría efecto en el próximo producto agregado o
+  /// editado, dejando el inventario existente avisando con la antelación
+  /// vieja hasta que alguien lo tocara.
+  Future<void> _setLeadDays(int days) async {
+    await context.read<NotificationSettingsProvider>().setLeadDays(days);
+    if (!mounted) return;
+    final productos = context.read<ProductProvider>().products;
+    for (final producto in productos) {
+      if (producto.expirationDate != null) {
+        unawaited(NotificationService.instance.scheduleExpirationAlert(producto));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    final leadDays = context.watch<NotificationSettingsProvider>().leadDays;
 
     return Scaffold(
       appBar: AppBar(
@@ -266,6 +289,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context.read<ThemeProvider>().setThemeMode(selection.first);
             },
           ),
+          const SizedBox(height: 16),
+          const Text('Color de acento', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (final preset in AppColors.accentPresets)
+                _AccentColorDot(
+                  name: preset.key,
+                  color: preset.value,
+                  selected: themeProvider.seedColor.toARGB32() ==
+                      preset.value.toARGB32(),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.read<ThemeProvider>().setSeedColor(preset.value);
+                  },
+                ),
+            ],
+          ),
           const Divider(),
 
           SwitchListTile(
@@ -275,35 +318,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: _setNotificationsEnabled,
           ),
           if (_showBackgroundAlertsCard)
-            Card(
-              color: Colors.orange[50],
-              margin: const EdgeInsets.only(top: 8),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.battery_alert, color: Colors.deepOrange),
-                    title: const Text('Optimizar alertas en segundo plano'),
-                    subtitle: const Text(
-                      'Tu fabricante puede bloquear las notificaciones si no '
-                      'activas Autoinicio y desactivas el ahorro de batería.',
-                    ),
-                  ),
-                  OverflowBar(
-                    alignment: MainAxisAlignment.end,
+            Builder(
+              builder: (context) {
+                final colorScheme = Theme.of(context).colorScheme;
+                return Card(
+                  color: colorScheme.errorContainer,
+                  margin: const EdgeInsets.only(top: 8),
+                  child: Column(
                     children: [
-                      TextButton(
-                        onPressed: _dismissBackgroundAlertsCard,
-                        child: const Text('Entendido, ocultar'),
+                      ListTile(
+                        leading: Icon(
+                          Icons.battery_alert,
+                          color: colorScheme.onErrorContainer,
+                        ),
+                        title: Text(
+                          'Optimizar alertas en segundo plano',
+                          style: TextStyle(color: colorScheme.onErrorContainer),
+                        ),
+                        subtitle: Text(
+                          'Tu fabricante puede bloquear las notificaciones si '
+                          'no activas Autoinicio y desactivas el ahorro de '
+                          'batería.',
+                          style: TextStyle(
+                            color: colorScheme.onErrorContainer.withValues(
+                              alpha: 0.85,
+                            ),
+                          ),
+                        ),
                       ),
-                      TextButton(
-                        onPressed: _showBackgroundAlertsDialog,
-                        child: const Text('Configurar'),
+                      OverflowBar(
+                        alignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: _dismissBackgroundAlertsCard,
+                            style: TextButton.styleFrom(
+                              foregroundColor: colorScheme.onErrorContainer,
+                            ),
+                            child: const Text('Entendido, ocultar'),
+                          ),
+                          TextButton(
+                            onPressed: _showBackgroundAlertsDialog,
+                            style: TextButton.styleFrom(
+                              foregroundColor: colorScheme.onErrorContainer,
+                            ),
+                            child: const Text('Configurar'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
+          const SizedBox(height: 4),
+          ListTile(
+            title: const Text('Avisarme con antelación'),
+            subtitle: Text(
+              leadDays == 1
+                  ? '1 día antes de que venza'
+                  : '$leadDays días antes de que venza',
+            ),
+          ),
+          Slider(
+            value: leadDays.toDouble(),
+            min: ExpirationAlertPolicy.minLeadDays.toDouble(),
+            max: ExpirationAlertPolicy.maxLeadDays.toDouble(),
+            divisions:
+                ExpirationAlertPolicy.maxLeadDays -
+                ExpirationAlertPolicy.minLeadDays,
+            label: '$leadDays',
+            onChanged: (value) {
+              HapticFeedback.selectionClick();
+              _setLeadDays(value.round());
+            },
+          ),
           const Divider(),
 
           ListTile(
@@ -404,6 +492,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     }
+  }
+}
+
+/// Círculo de color seleccionable del selector de acento — un check
+/// superpuesto marca el elegido en vez de depender solo de un borde (más
+/// fácil de notar de un vistazo entre 7 colores similares en tamaño).
+class _AccentColorDot extends StatelessWidget {
+  final String name;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _AccentColorDot({
+    required this.name,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: name,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: selected
+                ? Border.all(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    width: 2,
+                  )
+                : null,
+          ),
+          child: selected
+              ? const Icon(Icons.check, color: Colors.white, size: 20)
+              : null,
+        ),
+      ),
+    );
   }
 }
 

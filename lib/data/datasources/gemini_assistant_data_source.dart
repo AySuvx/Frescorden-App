@@ -1,11 +1,21 @@
 // google_generative_ai está deprecado (Google no lo actualiza más) y su
 // reemplazo oficial es firebase_ai, que además reutiliza el proyecto
 // Firebase ya configurado en la app (sin API key propia del cliente).
-// Requiere habilitar "Gemini API" en la consola de Firebase del proyecto.
+//
+// Backend: Vertex AI (FirebaseAI.agentPlatform() — nombre vigente del
+// backend Vertex en firebase_ai 4.x; vertexAI() quedó deprecado), no
+// Gemini Developer API
+// (FirebaseAI.googleAI()) — mismo modelo y mismo código de llamada, pero
+// Vertex factura contra el proyecto de Google Cloud (cubierto por el
+// crédito de prueba gratuita de $300 USD) y usa cuota compartida dinámica
+// en vez del tope fijo de 20/día del nivel gratuito de Developer API.
+// Requiere Blaze (ya activo) y la API de Vertex AI habilitada en el
+// proyecto de Google Cloud.
 import 'dart:convert';
 
 import 'package:firebase_ai/firebase_ai.dart';
 
+import '../../core/errors/ai_exceptions.dart';
 import '../../domain/entities/product.dart';
 
 const _systemInstruction = '''
@@ -61,7 +71,7 @@ class GeminiAssistantDataSource {
   final GenerativeModel _model;
   ChatSession? _chat;
 
-  late final GenerativeModel _recipeModel = FirebaseAI.googleAI().generativeModel(
+  late final GenerativeModel _recipeModel = FirebaseAI.agentPlatform().generativeModel(
     model: _modelName,
     systemInstruction: Content.system(_recipeSystemInstruction),
     generationConfig: GenerationConfig(
@@ -93,7 +103,7 @@ class GeminiAssistantDataSource {
   );
 
   GeminiAssistantDataSource()
-      : _model = FirebaseAI.googleAI().generativeModel(
+      : _model = FirebaseAI.agentPlatform().generativeModel(
           model: _modelName,
           systemInstruction: Content.system(_systemInstruction),
         );
@@ -110,7 +120,12 @@ class GeminiAssistantDataSource {
         'prioritariamente estos ingredientes disponibles en el hogar:\n'
         '${_inventoryContext(inventory)}';
 
-    final response = await _recipeModel.generateContent([Content.text(prompt)]);
+    final GenerateContentResponse response;
+    try {
+      response = await _recipeModel.generateContent([Content.text(prompt)]);
+    } on QuotaExceeded {
+      throw const AiQuotaExceededException();
+    }
     final text = response.text;
     if (text == null || text.isEmpty) {
       throw StateError('Gemini no devolvió una receta.');
@@ -164,8 +179,16 @@ class GeminiAssistantDataSource {
     // eso le ocultaba a AssistantProvider si la consulta falló, y con la
     // cuota diaria necesita saberlo para NO descontarla en un fallo de
     // red). El mensaje amigable ahora se arma en AssistantProvider.
+    // Excepción: QuotaExceeded sí se traduce acá — es la única causa de
+    // falla que Presentation necesita distinguir para no mostrarla como
+    // un error genérico (ver AiQuotaExceededException).
     _chat ??= _model.startChat();
-    final response = await _chat!.sendMessage(Content.text(fullPrompt));
+    final GenerateContentResponse response;
+    try {
+      response = await _chat!.sendMessage(Content.text(fullPrompt));
+    } on QuotaExceeded {
+      throw const AiQuotaExceededException();
+    }
     return response.text ?? 'No obtuve una respuesta. Intenta de nuevo.';
   }
 

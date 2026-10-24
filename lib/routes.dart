@@ -12,6 +12,7 @@ class AppRoutes {
   static const login = '/login';
   static const inicio = '/inicio';
   static const categoryPicker = '/category-picker';
+  static const presetFoodPicker = '/category-picker/preset-food';
   static const addProduct = '/add-product';
   static const productos = '/productos';
   static const household = '/household';
@@ -25,4 +26,6 @@ class AppRoutes {
   static const contact = '/contact';
   static const about = '/about';
   static const adminDashboard = '/admin-dashboard';
+  static const homeTutorial = '/home-tutorial';
+  static const usabilitySurvey = '/usability-survey';
 }

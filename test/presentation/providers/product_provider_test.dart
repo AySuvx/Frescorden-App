@@ -18,7 +18,7 @@ import 'package:frescorden/domain/entities/food_category.dart';
 import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Product _product(
   String id,

@@ -22,7 +22,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/admin_stats.dart';
 import '../../domain/entities/product_history_entry.dart';
+import '../../domain/utils/usability_survey_stats.dart';
 import '../models/product_history_model.dart';
+import '../models/usability_survey_model.dart';
 
 class FirestoreAdminDataSource {
   final FirebaseFirestore _db;
@@ -41,11 +43,15 @@ class FirestoreAdminDataSource {
         await _db.collectionGroup('product_history').get();
     final assistantSnap =
         await _db.collectionGroup('assistant_usage').get();
+    final surveysSnap = await _db.collection('usability_surveys').get();
 
     final (wastePercentage, consumed, discarded) =
         _globalWasteReduction(historySnap, cutoff30);
     final (assistantQueries, assistantHouseholds) =
         _assistantAdoption(assistantSnap, cutoff30);
+    final usability = UsabilitySurveyStats.compute(
+      surveysSnap.docs.map(UsabilitySurveyModel.fromFirestore).toList(),
+    );
 
     return AdminStats(
       totalUsers: usersSnap.docs.length,
@@ -60,6 +66,14 @@ class FirestoreAdminDataSource {
       globalDiscardedLast30Days: discarded,
       assistantQueriesLast30Days: assistantQueries,
       householdsUsingAssistantLast30Days: assistantHouseholds,
+      usabilitySurveyResponses: surveysSnap.docs.length,
+      averageSusScore: usability?.averageSus,
+      netPromoterScore: usability?.nps,
+      susScoreHistogram: usability?.susScoreHistogram ?? const [0, 0, 0, 0, 0],
+      npsPromoters: usability?.promoters ?? 0,
+      npsPassives: usability?.passives ?? 0,
+      npsDetractors: usability?.detractors ?? 0,
+      susItemAverages: usability?.susItemAverages ?? const [],
     );
   }
 
@@ -139,4 +153,5 @@ class FirestoreAdminDataSource {
     }
     return (queries, households.length);
   }
+
 }

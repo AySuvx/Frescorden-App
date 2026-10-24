@@ -1,12 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Panel Administrativo Global: UID único con acceso a métricas
-    // agregadas de toda la app (ver lib/config/app_config.dart kAdminUid —
-    // las reglas no pueden importar ese valor, se repite acá literal).
+    // Panel Administrativo Global: UID principal + correos adicionales con
+    // acceso a métricas agregadas de toda la app (ver
+    // lib/config/app_config.dart kAdminUid/kAdminEmails — las reglas no
+    // pueden importar esos valores, se repiten acá literales).
     function isAdmin() {
       return request.auth != null
-        && request.auth.uid == 'YMpWzkKQFiMvCqJdYDYX9fZe5Ow2';
+        && (request.auth.uid == 'YMpWzkKQFiMvCqJdYDYX9fZe5Ow2'
+            || request.auth.token.email == 'familiaotalora98@gmail.com');
     }
 
     // Permitir acceso a los documentos de la colección "usuarios"
@@ -164,6 +166,35 @@ service cloud.firestore {
         && request.auth.uid in get(
              /databases/$(database)/documents/households/$(request.resource.data.householdId)
            ).data.members;
+      allow delete: if false;
+    }
+
+    // Cuota diaria de Gemini compartida por TODO el proyecto (piloto en
+    // plan Spark, tope real de Google de 20/día — ver
+    // IGlobalAiQuotaRepository). Un documento por fecha UTC, un único
+    // campo `count` que solo puede crearse en 1 o subir de a 1 por
+    // escritura — nunca pisarse con un valor arbitrario ni bajar.
+    match /global_ai_quota/{dateId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == 1;
+      allow update: if request.auth != null
+        && request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == resource.data.count + 1;
+      allow delete: if false;
+    }
+
+    // Encuesta de usabilidad del piloto (SUS + NPS, ver
+    // UsabilitySurveyResponse). Un documento por usuario (el uid es el ID
+    // del documento): cada quien solo puede leer/escribir el suyo propio
+    // — ni su respuesta individual es visible para otros usuarios
+    // normales. El admin SÍ puede listar la colección completa para
+    // calcular el promedio del Panel Administrativo.
+    match /usability_surveys/{uid} {
+      allow get, create, update: if request.auth != null
+        && request.auth.uid == uid;
+      allow list: if isAdmin();
       allow delete: if false;
     }
   }

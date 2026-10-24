@@ -3,6 +3,11 @@
 // JSON estructurado en vez de parsear texto libre. La diferencia acá es
 // que el prompt incluye una imagen (InlineDataPart) además de texto —
 // ver documentación oficial de firebase_ai para InlineDataPart/Content.multi.
+//
+// Backend Vertex AI vía FirebaseAI.agentPlatform() (no Gemini Developer
+// API) — ver nota en
+// GeminiAssistantDataSource sobre por qué (crédito de prueba gratuita +
+// cuota compartida en vez del tope fijo de 20/día).
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -17,8 +22,17 @@ inventario de alimentos del hogar. Te muestran la foto de un producto
 genérico y corto, SIN marca comercial (ej. "Leche entera", no "Leche
 Alquería Deslactosada 1100ml"); la categoría de alimento que mejor le
 corresponde; y la unidad más natural para medirlo en un inventario
-doméstico. Si la imagen no muestra un alimento reconocible, usa "Producto
-no identificado" como nombre y la categoría "otros".
+doméstico.
+
+Para productos empacados (bolsas, botellas, cajas, latas): el empaque casi
+siempre tiene el nombre del alimento impreso — LEE ESE TEXTO para
+identificar el producto (ej. una botella con la palabra "Agua" es agua, una
+bolsa con "Arroz" es arroz), en vez de intentar adivinarlo solo por la
+forma o el color del empaque. Ignora la marca y el eslogan publicitario;
+usa solo la palabra que nombra el alimento en sí.
+
+Si la imagen no muestra un alimento reconocible, usa "Producto no
+identificado" como nombre y la categoría "otros".
 ''';
 
 const _modelName = 'gemini-3.5-flash';
@@ -30,7 +44,7 @@ const _modelName = 'gemini-3.5-flash';
 const _validUnits = ['unidad', 'kg', 'g', 'L', 'ml', 'lbs', 'oz'];
 
 class GeminiProductRecognitionDataSource {
-  late final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
+  late final GenerativeModel _model = FirebaseAI.agentPlatform().generativeModel(
     model: _modelName,
     systemInstruction: Content.system(_visionSystemInstruction),
     generationConfig: GenerationConfig(

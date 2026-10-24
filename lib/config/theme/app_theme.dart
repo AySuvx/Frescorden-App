@@ -23,16 +23,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
 
-/// Transición global de navegación: desvanecimiento +
-/// deslizamiento sutil con `Curves.fastOutSlowIn`, en vez del "slide desde
-/// la derecha" por defecto de Android. Se aplica una sola vez acá (vía
-/// `PageTransitionsTheme`) y cubre automáticamente cualquier
-/// `MaterialPageRoute` de la app — no hace falta tocar cada
-/// `Navigator.push`. No se usa el paquete `animations` (SharedAxis/Fade
-/// ThroughTransition): esta curva + fade simple ya da el efecto pedido sin
-/// sumar una dependencia nueva.
-class _FadeSlidePageTransitionsBuilder extends PageTransitionsBuilder {
-  const _FadeSlidePageTransitionsBuilder();
+/// Transición global de navegación: desvanecimiento + leve escala (0.96→1),
+/// el lenguaje de movimiento característico de apps "premium" como
+/// Linear/Notion (en vez del slide horizontal, que se lee más a Android de
+/// fábrica). Se aplica una sola vez acá (vía `PageTransitionsTheme`) y
+/// cubre automáticamente cualquier `MaterialPageRoute` de la app — no hace
+/// falta tocar cada `Navigator.push`. No se usa el paquete `animations`
+/// (SharedAxis/FadeThroughTransition): esta curva + fade + escala ya da el
+/// efecto pedido sin sumar una dependencia nueva.
+class _FadeScalePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadeScalePageTransitionsBuilder();
 
   @override
   Widget buildTransitions<T>(
@@ -44,15 +44,12 @@ class _FadeSlidePageTransitionsBuilder extends PageTransitionsBuilder {
   ) {
     final curved = CurvedAnimation(
       parent: animation,
-      curve: Curves.fastOutSlowIn,
+      curve: Curves.easeOutCubic,
     );
     return FadeTransition(
       opacity: curved,
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0.06, 0),
-          end: Offset.zero,
-        ).animate(curved),
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.96, end: 1.0).animate(curved),
         child: child,
       ),
     );
@@ -62,12 +59,14 @@ class _FadeSlidePageTransitionsBuilder extends PageTransitionsBuilder {
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get lightTheme => _build(Brightness.light);
-  static ThemeData get darkTheme => _build(Brightness.dark);
+  static ThemeData lightTheme({Color? seedColor}) =>
+      _build(Brightness.light, seedColor: seedColor);
+  static ThemeData darkTheme({Color? seedColor}) =>
+      _build(Brightness.dark, seedColor: seedColor);
 
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData _build(Brightness brightness, {Color? seedColor}) {
     final isDark = brightness == Brightness.dark;
-    final colorScheme = _buildColorScheme(brightness);
+    final colorScheme = _buildColorScheme(brightness, seedColor: seedColor);
     final cardColor = isDark ? AppColors.cardDark : AppColors.cardLight;
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
@@ -162,11 +161,11 @@ class AppTheme {
 
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: _FadeSlidePageTransitionsBuilder(),
-          TargetPlatform.iOS: _FadeSlidePageTransitionsBuilder(),
-          TargetPlatform.macOS: _FadeSlidePageTransitionsBuilder(),
-          TargetPlatform.windows: _FadeSlidePageTransitionsBuilder(),
-          TargetPlatform.linux: _FadeSlidePageTransitionsBuilder(),
+          TargetPlatform.android: _FadeScalePageTransitionsBuilder(),
+          TargetPlatform.iOS: _FadeScalePageTransitionsBuilder(),
+          TargetPlatform.macOS: _FadeScalePageTransitionsBuilder(),
+          TargetPlatform.windows: _FadeScalePageTransitionsBuilder(),
+          TargetPlatform.linux: _FadeScalePageTransitionsBuilder(),
         },
       ),
 
@@ -236,7 +235,7 @@ class AppTheme {
         .apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
   }
 
-  static ColorScheme _buildColorScheme(Brightness brightness) {
+  static ColorScheme _buildColorScheme(Brightness brightness, {Color? seedColor}) {
     const contrastLevel = 0.5; // Material3 "medium contrast" — WCAG AA
 
     final errorSeed = ColorScheme.fromSeed(
@@ -251,7 +250,7 @@ class AppTheme {
     );
 
     return ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+      seedColor: seedColor ?? AppColors.primary,
       brightness: brightness,
       contrastLevel: contrastLevel,
       surface:

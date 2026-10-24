@@ -50,10 +50,25 @@ abstract interface class IHouseholdRepository {
     String? email,
   });
 
+  /// Resuelve [code] a su hogar SIN unirse — para mostrar nombre y
+  /// cantidad de miembros antes de que el usuario confirme que es el hogar
+  /// correcto (ver HouseholdScreen). Misma validación que
+  /// [joinHouseholdByCode] (código vigente, no expirado); lanza
+  /// [HouseholdException] en los mismos casos.
+  Future<Household> previewHouseholdByCode(String code);
+
   /// Genera y guarda un código de invitación nuevo (con expiración de 24h)
   /// para el hogar [householdId]. Cualquier miembro puede renovarlo.
   /// Devuelve el código nuevo.
   Future<String> generateNewInviteCode(String householdId);
+
+  /// Cambia el nombre del hogar [householdId] a [name]. Cualquier miembro
+  /// puede renombrarlo (mismo criterio de autorización que
+  /// [generateNewInviteCode]: no se restringe solo al administrador).
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  });
 
   /// Migración desde el modelo anterior (inventario por usuario individual)
   /// hacia el modelo de hogares compartidos: si [uid] todavía no tiene

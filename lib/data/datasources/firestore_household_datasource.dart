@@ -130,15 +130,16 @@ class FirestoreHouseholdDataSource {
     return model;
   }
 
-  /// Busca un hogar por [code] (vía '/inviteCodes'), verifica que el
-  /// código siga siendo el vigente del hogar (pudo haber sido rotado) y
-  /// que no haya expirado, añade [uid] a `members` (si no lo era ya) y
-  /// actualiza su `activeHouseholdId`.
-  Future<HouseholdModel> joinByCode({
-    required String code,
-    required String uid,
-    String? email,
-  }) async {
+  /// Resuelve [code] a su hogar vigente (vía '/inviteCodes'), validando que
+  /// el lookup exista, que el hogar siga existiendo, que [code] sea el
+  /// código VIGENTE del hogar (pudo haber sido rotado — no se borran los
+  /// documentos viejos de '/inviteCodes') y que no haya expirado. Comparte
+  /// esta validación `joinByCode` (que además escribe la membresía) y
+  /// `previewByCode` (solo lectura, para mostrar a quién te vas a unir
+  /// ANTES de confirmar — ver HouseholdScreen).
+  Future<DocumentSnapshot<Map<String, dynamic>>> _resolveValidCode(
+    String code,
+  ) async {
     final inviteDoc = await _inviteCodesCol.doc(code).get();
     final householdId = inviteDoc.data()?['householdId'] as String?;
     if (!inviteDoc.exists || householdId == null) {
@@ -151,10 +152,6 @@ class FirestoreHouseholdDataSource {
     }
     final household = HouseholdModel.fromFirestore(householdSnap);
 
-    // El lookup pudo quedar apuntando a un código ya rotado (no se borran
-    // los documentos viejos de '/inviteCodes' — ver nota de diseño): se
-    // valida contra el código VIGENTE del hogar, no solo contra la
-    // existencia del lookup.
     if (household.inviteCode != code) {
       throw const HouseholdException('El código de invitación ya no es válido.');
     }
@@ -163,6 +160,28 @@ class FirestoreHouseholdDataSource {
         'El código de invitación ya expiró. Pide uno nuevo.',
       );
     }
+    return householdSnap;
+  }
+
+  /// Resuelve [code] sin unirse — para mostrar el nombre y la cantidad de
+  /// miembros del hogar ANTES de que el usuario confirme que es el
+  /// correcto (ver HouseholdScreen._previewAndJoin).
+  Future<HouseholdModel> previewByCode(String code) async {
+    final snap = await _resolveValidCode(code);
+    return HouseholdModel.fromFirestore(snap);
+  }
+
+  /// Busca un hogar por [code] (vía '/inviteCodes'), verifica que el
+  /// código siga siendo el vigente del hogar (pudo haber sido rotado) y
+  /// que no haya expirado, añade [uid] a `members` (si no lo era ya) y
+  /// actualiza su `activeHouseholdId`.
+  Future<HouseholdModel> joinByCode({
+    required String code,
+    required String uid,
+    String? email,
+  }) async {
+    final householdSnap = await _resolveValidCode(code);
+    final household = HouseholdModel.fromFirestore(householdSnap);
 
     if (!household.isMember(uid)) {
       await householdSnap.reference.update({
@@ -170,7 +189,7 @@ class FirestoreHouseholdDataSource {
         if (email != null) 'memberEmails.$uid': email,
       });
     }
-    await _setActiveHouseholdId(uid, householdId);
+    await _setActiveHouseholdId(uid, household.id);
 
     // Se relee el documento para devolver el estado real ya persistido
     // (incluye el uid recién agregado a members).
@@ -191,6 +210,16 @@ class FirestoreHouseholdDataSource {
     return code;
   }
 
+  /// Cambia el nombre del hogar [householdId]. Cubierta por la misma regla
+  /// que [removeMember] (cualquier miembro puede actualizar el documento
+  /// del hogar).
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  }) {
+    return _householdsCol.doc(householdId).update({'name': name});
+  }
+
   // ─── Migración: hogar personal + copia de inventario legacy ────────────
   //
   // Antes del módulo de Household, cada usuario tenía su propio inventario
@@ -201,7 +230,20 @@ class FirestoreHouseholdDataSource {
   // hacia el hogar nuevo. Los documentos originales NO se borran — quedan
   // como respaldo hasta que se confirme que la migración funcionó bien.
 
+  /// Si [uid] ya tiene un hogar personal (campo `personalHouseholdId`,
+  /// nunca se pisa — ver UserModel), simplemente lo reactiva como
+  /// `activeHouseholdId`. Solo si NUNCA tuvo uno (usuario genuinamente
+  /// nuevo) crea uno desde cero y copia el inventario legacy.
+  ///
+  /// Corrige un bug real del piloto: antes, "Salir del Hogar" siempre
+  /// terminaba acá y creaba un hogar "Mi hogar" NUEVO y vacío — el
+  /// inventario personal original (con productos reales) quedaba
+  /// huérfano, en un hogar al que la app ya no sabía volver, aunque el
+  /// usuario siguiera siendo su único miembro.
   Future<void> bootstrapPersonalHousehold(String uid, {String? email}) async {
+    final reactivated = await _reactivateExistingPersonalHousehold(uid);
+    if (reactivated) return;
+
     // El código de invitación se genera fuera de la transacción: Firestore
     // no permite queries (where) dentro de una transacción, solo lecturas
     // de documentos puntuales.
@@ -229,11 +271,10 @@ class FirestoreHouseholdDataSource {
         createdAt: now,
       );
       tx.set(householdRef, model.toJson());
-      tx.set(
-        _userDoc(uid),
-        UserModel(uid: uid, activeHouseholdId: householdRef.id).toJson(),
-        SetOptions(merge: true),
-      );
+      tx.set(_userDoc(uid), {
+        'activeHouseholdId': householdRef.id,
+        'personalHouseholdId': householdRef.id,
+      }, SetOptions(merge: true));
       return true;
     });
 
@@ -262,5 +303,28 @@ class FirestoreHouseholdDataSource {
       }
       await batch.commit();
     }
+  }
+
+  /// `true` si [uid] ya tenía un `personalHouseholdId` registrado y ese
+  /// hogar todavía existe — en ese caso lo reactiva y no hace falta crear
+  /// nada. `false` si nunca tuvo uno, o si el que tenía fue borrado (caso
+  /// borde: se cae al flujo de creación normal, igual que un usuario nuevo).
+  Future<bool> _reactivateExistingPersonalHousehold(String uid) async {
+    return _db.runTransaction<bool>((tx) async {
+      final userSnap = await tx.get(_userDoc(uid));
+      final data = userSnap.data();
+      if (data?['activeHouseholdId'] != null) return false;
+
+      final personalId = data?['personalHouseholdId'] as String?;
+      if (personalId == null) return false;
+
+      final personalSnap = await tx.get(_householdsCol.doc(personalId));
+      if (!personalSnap.exists) return false;
+
+      tx.set(_userDoc(uid), {
+        'activeHouseholdId': personalId,
+      }, SetOptions(merge: true));
+      return true;
+    });
   }
 }

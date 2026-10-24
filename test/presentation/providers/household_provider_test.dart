@@ -20,7 +20,7 @@ import 'package:frescorden/domain/entities/household.dart';
 import 'package:frescorden/domain/repositories/i_household_repository.dart';
 import 'package:frescorden/presentation/providers/household_provider.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 Household _household({
   required String createdBy,
@@ -386,6 +386,78 @@ void main() {
 
         await expectLater(
           () => provider.generateNewInviteCode(),
+          throwsException,
+        );
+        expect(provider.error, isNotNull);
+      },
+    );
+  });
+
+  group('Historia de Usuario: Como miembro de un hogar, quiero poder '
+      'nombrarlo como quiera', () {
+    late FakeHouseholdRepository repo;
+
+    setUp(() => repo = FakeHouseholdRepository());
+    tearDown(() => repo.dispose());
+
+    test(
+      'Escenario: sin hogar activo, renombrar lanza HouseholdException',
+      () async {
+        final provider = HouseholdProvider(repo, const Stream<AppUser?>.empty());
+        addTearDown(provider.dispose);
+
+        await expectLater(
+          () => provider.renameHousehold('Casa Nueva'),
+          throwsA(isA<HouseholdException>()),
+        );
+        expect(repo.renamedHouseholdNames, isEmpty);
+      },
+    );
+
+    test(
+      'Escenario: un nombre vacío (o solo espacios) lanza HouseholdException '
+      'sin llegar al repositorio',
+      () async {
+        final hogar = _household(createdBy: 'uid-1', members: ['uid-1']);
+        final provider = await _providerWithHousehold(repo, hogar, 'uid-1');
+        addTearDown(provider.dispose);
+
+        await expectLater(
+          () => provider.renameHousehold('   '),
+          throwsA(isA<HouseholdException>()),
+        );
+        expect(repo.renamedHouseholdNames, isEmpty);
+      },
+    );
+
+    test(
+      'Escenario: cualquier miembro (no solo el administrador) puede '
+      'renombrar el hogar activo, y el nombre se recorta',
+      () async {
+        final hogar = _household(
+          createdBy: 'admin-uid',
+          members: ['admin-uid', 'miembro-uid'],
+        );
+        final provider = await _providerWithHousehold(repo, hogar, 'miembro-uid');
+        addTearDown(provider.dispose);
+
+        await provider.renameHousehold('  Casa de los Gómez  ');
+
+        expect(repo.renamedHouseholdNames, ['Casa de los Gómez']);
+      },
+    );
+
+    test(
+      'Escenario: si el repositorio falla al renombrar, se expone el error '
+      'y se relanza',
+      () async {
+        final hogar = _household(createdBy: 'uid-1', members: ['uid-1']);
+        final provider = await _providerWithHousehold(repo, hogar, 'uid-1');
+        addTearDown(provider.dispose);
+        repo.updateHouseholdNameError = Exception('fallo de red');
+
+        await expectLater(
+          () => provider.renameHousehold('Casa Nueva'),
           throwsException,
         );
         expect(provider.error, isNotNull);

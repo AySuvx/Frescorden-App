@@ -7,6 +7,7 @@
 
 import 'category_waste_stats.dart';
 import 'food_category.dart';
+import 'monthly_analytics.dart';
 import 'product_history_entry.dart';
 import 'product_ranking_entry.dart';
 
@@ -49,6 +50,18 @@ class AnalyticsSummary {
   /// desperdiciadas, de la más reciente a la más antigua.
   final List<ProductHistoryEntry> discardedBreakdown;
 
+  /// Suma de `moneySavedCop` desde SIEMPRE (todo el historial, no solo el
+  /// último mes) — "cuánto llevas ahorrado usando la app", la cifra que
+  /// más valor transmite porque crece con el tiempo en vez de reiniciarse
+  /// cada mes.
+  final int totalMoneySavedAllTimeCop;
+
+  /// Últimos meses (más reciente al final), uno por cada mes con al menos
+  /// una entrada de historial — hasta 6. Base del gráfico de tendencia
+  /// ("¿estoy mejorando o empeorando?"), algo que un solo corte de 30 días
+  /// no puede responder.
+  final List<MonthlyAnalytics> monthlyHistory;
+
   const AnalyticsSummary({
     required this.wasteReductionPercentage,
     required this.moneySavedCop,
@@ -59,6 +72,8 @@ class AnalyticsSummary {
     required this.topConsumedProduct,
     required this.topDiscardedProduct,
     required this.discardedBreakdown,
+    this.totalMoneySavedAllTimeCop = 0,
+    this.monthlyHistory = const [],
   });
 
   factory AnalyticsSummary.empty() => const AnalyticsSummary(

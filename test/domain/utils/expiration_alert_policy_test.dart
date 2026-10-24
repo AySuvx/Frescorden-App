@@ -62,4 +62,53 @@ void main() {
       expect(ExpirationAlertPolicy.describe(3), 'en 3 días');
     });
   });
+
+  group('Historia de Usuario: Como usuario, quiero elegir con cuántos días '
+      'de antelación me avisa la app', () {
+    // leadDays es estático y mutable (ver NotificationSettingsProvider):
+    // se restaura después de cada prueba para no filtrar estado hacia las
+    // pruebas de daysLeftInsideWindow de arriba (que asumen el valor 3).
+    tearDown(() {
+      ExpirationAlertPolicy.setLeadDays(ExpirationAlertPolicy.defaultLeadDays);
+    });
+
+    test('Escenario: un valor dentro del rango se aplica tal cual', () {
+      ExpirationAlertPolicy.setLeadDays(5);
+
+      expect(ExpirationAlertPolicy.leadDays, 5);
+    });
+
+    test('Escenario: un valor por debajo del mínimo se recorta al mínimo', () {
+      ExpirationAlertPolicy.setLeadDays(0);
+
+      expect(ExpirationAlertPolicy.leadDays, ExpirationAlertPolicy.minLeadDays);
+    });
+
+    test('Escenario: un valor por encima del máximo se recorta al máximo', () {
+      ExpirationAlertPolicy.setLeadDays(30);
+
+      expect(ExpirationAlertPolicy.leadDays, ExpirationAlertPolicy.maxLeadDays);
+    });
+
+    test(
+      'Escenario: daysLeftInsideWindow usa el leadDays configurado, no un '
+      '3 fijo',
+      () {
+        ExpirationAlertPolicy.setLeadDays(1);
+        // Con leadDays=1, un vencimiento a 2 días todavía no entra en la
+        // ventana (antes, con el 3 fijo, sí habría entrado).
+        final expiryEn2Dias = DateTime(2026, 9, 25);
+        expect(
+          ExpirationAlertPolicy.daysLeftInsideWindow(expiryEn2Dias, now),
+          isNull,
+        );
+
+        final expiryManana = DateTime(2026, 9, 24);
+        expect(
+          ExpirationAlertPolicy.daysLeftInsideWindow(expiryManana, now),
+          1,
+        );
+      },
+    );
+  });
 }

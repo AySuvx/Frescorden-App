@@ -7,15 +7,17 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:frescorden/core/errors/ai_exceptions.dart';
 import 'package:frescorden/domain/entities/chat_message.dart';
 import 'package:frescorden/presentation/providers/assistant_provider.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
 
-import 'support/fake_repositories.dart';
+import '../../support/fake_repositories.dart';
 
 void main() {
   late FakeAssistantRepository repo;
   late FakeQuotaService quota;
+  late FakeGlobalAiQuotaRepository globalQuota;
   late FakeAssistantAnalyticsService analytics;
   late FakeAssistantUsageRepository usageRepo;
   late ProductProvider productProvider;
@@ -23,6 +25,7 @@ void main() {
   setUp(() {
     repo = FakeAssistantRepository();
     quota = FakeQuotaService();
+    globalQuota = FakeGlobalAiQuotaRepository();
     analytics = FakeAssistantAnalyticsService();
     usageRepo = FakeAssistantUsageRepository();
     productProvider = ProductProvider(FakeProductRepository());
@@ -34,6 +37,7 @@ void main() {
     usageRepo,
     quota,
     analytics,
+    globalQuota,
   );
 
   group('Historia de Usuario: Como usuario, quiero conversar con el '
@@ -114,6 +118,28 @@ void main() {
         expect(
           provider.messages.last.text,
           'Ocurrió un error al responder. Intenta de nuevo.',
+        );
+        expect(quota.recordedQueries, 0);
+        expect(analytics.loggedQueries, 0);
+      },
+    );
+
+    test(
+      'Escenario: si se agotó la cuota gratuita de Gemini, el mensaje del '
+      'asistente lo dice (no el error genérico) y tampoco descuenta la '
+      'cuota local',
+      () async {
+        repo.sendMessageError = const AiQuotaExceededException();
+        final provider = buildProvider();
+        await Future<void>.delayed(Duration.zero);
+
+        await provider.sendMessage('¿Qué cocino hoy?');
+
+        expect(provider.error, isNotNull);
+        expect(
+          provider.messages.last.text,
+          'El asistente de IA alcanzó su límite de uso por ahora. '
+          'Vuelve a intentarlo en un rato.',
         );
         expect(quota.recordedQueries, 0);
         expect(analytics.loggedQueries, 0);

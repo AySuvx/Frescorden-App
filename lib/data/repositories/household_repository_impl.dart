@@ -45,8 +45,21 @@ class HouseholdRepositoryImpl implements IHouseholdRepository {
   }
 
   @override
+  Future<Household> previewHouseholdByCode(String code) {
+    return _dataSource.previewByCode(code);
+  }
+
+  @override
   Future<String> generateNewInviteCode(String householdId) {
     return _dataSource.generateNewInviteCode(householdId);
+  }
+
+  @override
+  Future<void> updateHouseholdName({
+    required String householdId,
+    required String name,
+  }) {
+    return _dataSource.updateHouseholdName(householdId: householdId, name: name);
   }
 
   @override
