@@ -147,31 +147,6 @@ class NotificationService implements INotificationService {
     }
   }
 
-  @override
-  Future<void> showExpirationSoonAlert(Product product, int daysLeft) async {
-    await initialize();
-    try {
-      await _plugin.show(
-        _expirationId(product.id),
-        'Producto por vencer',
-        'El producto "${product.name}" vence '
-            '${ExpirationAlertPolicy.describe(daysLeft)}.',
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'vencimiento_channel',
-            'Notificaciones de Vencimiento',
-            channelDescription:
-                'Avisos de productos cercanos a su fecha de vencimiento',
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-        ),
-      );
-    } catch (e) {
-      debugPrint('NotificationService.showExpirationSoonAlert error: $e');
-    }
-  }
-
   /// Alerta a los `storageCriticalDays` (5) de `entryDate`, solo para
   /// productos a granel. Se usa `entryDate` (obligatoria, siempre tiene
   /// valor) en vez de `createdAt` (nullable, aún no resuelto justo al
