@@ -230,3 +230,4 @@ class NotificationService implements INotificationService {
     await _plugin.cancel(_lowStockId(productId));
   }
 }
+
