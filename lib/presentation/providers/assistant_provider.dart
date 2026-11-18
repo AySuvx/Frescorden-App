@@ -30,11 +30,9 @@ class AssistantProvider extends ChangeNotifier {
   late final IAssistantAnalyticsService _analytics =
       _injectedAnalyticsService ?? AnalyticsService.instance;
 
-  // Cuota compartida entre TODOS los dispositivos del piloto (ver
-  // IGlobalAiQuotaRepository) — se consulta ADEMÁS de `_quota` (que es
-  // solo por dispositivo), nunca en su lugar. Inyectada desde main.dart:
-  // este provider no construye su propia implementación (eso requeriría
-  // importar la capa de datos, prohibido por la arquitectura del proyecto).
+  // Cuota COMPARTIDA del piloto entre todos los dispositivos (ver
+  // IGlobalAiQuotaRepository), aparte de `_quota` (que es por dispositivo).
+  // Inyectada desde main.dart para no importar la capa de datos acá.
   final IGlobalAiQuotaRepository _globalQuota;
 
   AssistantProvider(

@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../utils/webview_navigation_guard.dart';
 import '../../config/theme/app_spacing.dart';
 import '../../domain/entities/budget_tier.dart';
 import '../../domain/entities/food_category.dart';
@@ -704,18 +705,7 @@ class _ShoppingWebViewState extends State<_ShoppingWebView> {
     final allowedHost = Uri.parse(widget.url).host;
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onNavigationRequest: (request) {
-            final host = Uri.parse(request.url).host;
-            final sameSite = host == allowedHost ||
-                host.endsWith('.$allowedHost');
-            return sameSite
-                ? NavigationDecision.navigate
-                : NavigationDecision.prevent;
-          },
-        ),
-      )
+      ..setNavigationDelegate(sameSiteNavigationDelegate(() => allowedHost))
       ..loadRequest(Uri.parse(widget.url));
   }
 

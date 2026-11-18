@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../utils/webview_navigation_guard.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -30,18 +31,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     _allowedHost = Uri.parse(widget.url).host;
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onNavigationRequest: (request) {
-            final host = Uri.parse(request.url).host;
-            final sameSite = host == _allowedHost ||
-                host.endsWith('.$_allowedHost');
-            return sameSite
-                ? NavigationDecision.navigate
-                : NavigationDecision.prevent;
-          },
-        ),
-      )
+      ..setNavigationDelegate(sameSiteNavigationDelegate(() => _allowedHost))
       ..loadRequest(Uri.parse(widget.url));
   }
 

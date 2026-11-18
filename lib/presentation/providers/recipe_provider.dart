@@ -23,11 +23,8 @@ import '../utils/quota_service.dart';
 class RecipeProvider extends ChangeNotifier {
   final IRecipeRepository _repository;
 
-  // Cuota compartida entre TODOS los dispositivos del piloto (ver
-  // IGlobalAiQuotaRepository) — se consulta ADEMÁS de `_quota` (que es
-  // solo por dispositivo), nunca en su lugar. Inyectada desde main.dart:
-  // este provider no construye su propia implementación (eso requeriría
-  // importar la capa de datos, prohibido por la arquitectura del proyecto).
+  // Cuota compartida del piloto, aparte de `_quota` (por dispositivo) —
+  // ver IGlobalAiQuotaRepository. Inyectada desde main.dart.
   final IGlobalAiQuotaRepository _globalQuota;
 
   // Igual criterio que HouseholdProvider: resuelto solo al primer uso real
