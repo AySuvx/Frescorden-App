@@ -34,10 +34,10 @@ void main() {
   AssistantProvider buildProvider() => AssistantProvider(
     repo,
     productProvider,
+    globalQuota,
     usageRepo,
     quota,
     analytics,
-    globalQuota,
   );
 
   group('Historia de Usuario: Como usuario, quiero conversar con el '

@@ -701,8 +701,21 @@ class _ShoppingWebViewState extends State<_ShoppingWebView> {
   @override
   void initState() {
     super.initState();
+    final allowedHost = Uri.parse(widget.url).host;
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) {
+            final host = Uri.parse(request.url).host;
+            final sameSite = host == allowedHost ||
+                host.endsWith('.$allowedHost');
+            return sameSite
+                ? NavigationDecision.navigate
+                : NavigationDecision.prevent;
+          },
+        ),
+      )
       ..loadRequest(Uri.parse(widget.url));
   }
 

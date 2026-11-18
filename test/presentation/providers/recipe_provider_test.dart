@@ -60,7 +60,7 @@ void main() {
         _recipe('r2', 'Sancocho', ['Pollo', 'Papa', 'Yuca', 'Mazorca']), // 25%
         _recipe('r3', 'Ensalada', ['Lechuga', 'Tomate']), // 0%
       ]);
-      provider = RecipeProvider(repo);
+      provider = RecipeProvider(repo, FakeGlobalAiQuotaRepository());
       await provider.loadRecipes();
     });
 
@@ -125,7 +125,8 @@ void main() {
       () async {
         // Dado un RecipeProvider recién creado, ANTES de loadRecipes()
         final repoVacio = FakeRecipeRepository([]);
-        final providerSinCargar = RecipeProvider(repoVacio);
+        final providerSinCargar =
+            RecipeProvider(repoVacio, FakeGlobalAiQuotaRepository());
 
         // Cuando se consulta bestMatchPercentage sin inventario alguno
         final resultado = providerSinCargar.bestMatchPercentage([]);
@@ -158,7 +159,7 @@ void main() {
       'vacío y expone el error',
       () async {
         final repo = FakeRecipeRepository([])..getRecipesError = Exception('sin red');
-        final provider = RecipeProvider(repo);
+        final provider = RecipeProvider(repo, FakeGlobalAiQuotaRepository());
 
         await provider.loadRecipes();
 
@@ -177,7 +178,8 @@ void main() {
       () async {
         final repo = FakeRecipeRepository([]);
         final quota = FakeQuotaService()..remaining = 0;
-        final provider = RecipeProvider(repo, quota);
+        final provider =
+            RecipeProvider(repo, FakeGlobalAiQuotaRepository(), quota);
 
         final receta = await provider.generateAiRecipe([]);
 
@@ -198,7 +200,7 @@ void main() {
         final repo = FakeRecipeRepository([])..aiRecipeToReturn = receta;
         final quota = FakeQuotaService();
         final globalQuota = FakeGlobalAiQuotaRepository();
-        final provider = RecipeProvider(repo, quota, globalQuota);
+        final provider = RecipeProvider(repo, globalQuota, quota);
 
         final resultado = await provider.generateAiRecipe([]);
 
@@ -216,7 +218,7 @@ void main() {
         final repo = FakeRecipeRepository([])..aiRecipeError = Exception('Gemini caído');
         final quota = FakeQuotaService();
         final globalQuota = FakeGlobalAiQuotaRepository();
-        final provider = RecipeProvider(repo, quota, globalQuota);
+        final provider = RecipeProvider(repo, globalQuota, quota);
 
         final resultado = await provider.generateAiRecipe([]);
 
@@ -237,7 +239,7 @@ void main() {
           ..aiRecipeError = const AiQuotaExceededException();
         final quota = FakeQuotaService();
         final globalQuota = FakeGlobalAiQuotaRepository();
-        final provider = RecipeProvider(repo, quota, globalQuota);
+        final provider = RecipeProvider(repo, globalQuota, quota);
 
         final resultado = await provider.generateAiRecipe([]);
 
@@ -260,7 +262,7 @@ void main() {
         final repo = FakeRecipeRepository([])..aiRecipeFuture = completer.future;
         final quota = FakeQuotaService();
         final globalQuota = FakeGlobalAiQuotaRepository();
-        final provider = RecipeProvider(repo, quota, globalQuota);
+        final provider = RecipeProvider(repo, globalQuota, quota);
 
         // La primera llamada queda "en curso": ya pasó el await de la
         // cuota (que marca _isGeneratingAiRecipe = true) pero sigue

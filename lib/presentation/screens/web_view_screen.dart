@@ -22,12 +22,26 @@ class WebViewScreen extends StatefulWidget {
 
 class _WebViewScreenState extends State<WebViewScreen> {
   late final WebViewController _controller;
+  late String _allowedHost;
 
   @override
   void initState() {
     super.initState();
+    _allowedHost = Uri.parse(widget.url).host;
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) {
+            final host = Uri.parse(request.url).host;
+            final sameSite = host == _allowedHost ||
+                host.endsWith('.$_allowedHost');
+            return sameSite
+                ? NavigationDecision.navigate
+                : NavigationDecision.prevent;
+          },
+        ),
+      )
       ..loadRequest(Uri.parse(widget.url));
   }
 
@@ -45,8 +59,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   _controller.reload();
                   break;
                 case 'goHome':
-                  _controller.loadRequest(
-                      Uri.parse('https://www.google.com'));
+                  const homeUrl = 'https://www.google.com';
+                  _allowedHost = Uri.parse(homeUrl).host;
+                  _controller.loadRequest(Uri.parse(homeUrl));
                   break;
                 case 'close':
                   Navigator.pop(context);

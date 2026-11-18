@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:frescorden/core/errors/auth_exceptions.dart';
-import 'package:frescorden/data/datasources/firestore_product_history_datasource.dart';
+import 'package:frescorden/domain/repositories/i_product_history_reader.dart';
 import 'package:frescorden/presentation/providers/auth_provider.dart';
 import 'package:frescorden/presentation/providers/product_provider.dart';
 import 'package:frescorden/presentation/providers/recipe_provider.dart';
@@ -20,6 +20,10 @@ import 'package:frescorden/presentation/providers/user_banner_provider.dart';
 import 'package:frescorden/presentation/screens/login_screen.dart';
 
 import '../../support/fake_repositories.dart';
+
+import 'package:mocktail/mocktail.dart';
+
+class _MockHistoryReader extends Mock implements IProductHistoryReader {}
 
 // El MultiProvider envuelve el MaterialApp (no solo `home`): las rutas que
 // LoginScreen empuja con Navigator.pushReplacement (InicioScreen) son
@@ -35,11 +39,11 @@ Widget _wrap(AuthProvider authProvider, {ProductProvider? productProvider}) {
       // InicioScreen (destino tras login exitoso) las necesita en su
       // initState/dashboard — ver inicio_screen.dart.
       ChangeNotifierProvider<RecipeProvider>(
-        create: (_) => RecipeProvider(FakeRecipeRepository([])),
+        create: (_) =>
+            RecipeProvider(FakeRecipeRepository([]), FakeGlobalAiQuotaRepository()),
       ),
       ChangeNotifierProvider<RestockPredictionProvider>(
-        create: (_) =>
-            RestockPredictionProvider(FirestoreProductHistoryDataSource()),
+        create: (_) => RestockPredictionProvider(_MockHistoryReader()),
       ),
       ChangeNotifierProvider<UserBannerProvider>(
         create: (_) => UserBannerProvider(),

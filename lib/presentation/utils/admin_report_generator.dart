@@ -80,11 +80,29 @@ class AdminReportGenerator {
               stats.averageSusScore?.toStringAsFixed(1) ?? 'Sin datos',
             ),
             _row(
+              'Desviación estándar del SUS',
+              stats.susStdDev?.toStringAsFixed(1) ?? 'Sin datos',
+            ),
+            _row(
               'Net Promoter Score (-100 a 100)',
               stats.netPromoterScore?.toStringAsFixed(0) ?? 'Sin datos',
             ),
           ]),
           if (stats.usabilitySurveyResponses > 0) ...[
+            _chartSection(
+              'Dispersión de los puntajes SUS individuales '
+              '(ordenados de menor a mayor, media = '
+              '${stats.averageSusScore?.toStringAsFixed(1) ?? "-"}, '
+              'DE = ${stats.susStdDev?.toStringAsFixed(1) ?? "-"})',
+              labels: [
+                for (var i = 1; i <= stats.susScores.length; i++) '$i',
+              ],
+              values: [...stats.susScores]..sort(),
+              colors: List.filled(
+                stats.susScores.length,
+                PdfColors.teal300,
+              ),
+            ),
             _chartSection(
               'Distribución de puntajes SUS',
               labels: const ['0-20', '20-40', '40-60', '60-80', '80-100'],

@@ -112,5 +112,48 @@ void main() {
         expect(result!.susItemAverages, List.filled(10, 3.0));
       },
     );
+
+    test(
+      'Escenario: con una sola respuesta no hay varianza que calcular',
+      () {
+        final response = _response(
+          susAnswers: List.filled(10, 3),
+          npsScore: 8,
+        );
+
+        final result = UsabilitySurveyStats.compute([response]);
+
+        expect(result!.stdDevSus, 0.0);
+      },
+    );
+
+    test(
+      'Escenario: la desviación estándar del SUS mide qué tan dispersas '
+      'están las respuestas entre sí, no solo el promedio',
+      () {
+        // Puntajes SUS 0, 50 y 100 (ver escenarios de arriba para cómo se
+        // llega a cada extremo; neutral=3 en todos los ítems da 50).
+        final responses = [
+          _response(
+            susAnswers: [1, 5, 1, 5, 1, 5, 1, 5, 1, 5], // SUS 0
+            npsScore: 0,
+          ),
+          _response(
+            susAnswers: List.filled(10, 3), // SUS 50
+            npsScore: 5,
+          ),
+          _response(
+            susAnswers: [5, 1, 5, 1, 5, 1, 5, 1, 5, 1], // SUS 100
+            npsScore: 10,
+          ),
+        ];
+
+        final result = UsabilitySurveyStats.compute(responses);
+
+        // Media 50; varianza muestral ((50²+0+50²)/(3-1)) = 2500 -> DE 50.
+        expect(result!.averageSus, 50.0);
+        expect(result.stdDevSus, 50.0);
+      },
+    );
   });
 }

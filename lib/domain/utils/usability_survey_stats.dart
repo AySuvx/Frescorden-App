@@ -3,6 +3,8 @@
 // se pueda probar sin depender de Firestore (solo necesita las entidades
 // de dominio UsabilitySurveyResponse, no QuerySnapshot).
 
+import 'dart:math' as math;
+
 import '../entities/usability_survey_response.dart';
 
 class UsabilitySurveyStats {
@@ -28,6 +30,16 @@ class UsabilitySurveyStats {
   /// el mismo orden del instrumento.
   final List<double> susItemAverages;
 
+  /// Desviación estándar muestral (denominador n-1) de los puntajes SUS
+  /// (0-100) — mide cuánto varían las respuestas entre sí, no solo el
+  /// promedio. `0` si hay una sola respuesta (sin varianza que calcular).
+  final double stdDevSus;
+
+  /// Puntaje SUS (0-100) de cada respuesta individual, para graficar su
+  /// dispersión real (ver SusScoreDotPlot) en vez de solo reportar el
+  /// promedio y la desviación como dos números sueltos.
+  final List<double> susScores;
+
   const UsabilitySurveyStats({
     required this.averageSus,
     required this.nps,
@@ -36,6 +48,8 @@ class UsabilitySurveyStats {
     required this.passives,
     required this.detractors,
     required this.susItemAverages,
+    required this.stdDevSus,
+    required this.susScores,
   });
 
   /// `null` si [responses] está vacío — no hay nada que agregar todavía.
@@ -74,6 +88,15 @@ class UsabilitySurveyStats {
       return sum / responses.length;
     });
 
+    final stdDevSus = susScores.length < 2
+        ? 0.0
+        : math.sqrt(
+            susScores
+                    .map((s) => (s - averageSus) * (s - averageSus))
+                    .reduce((a, b) => a + b) /
+                (susScores.length - 1),
+          );
+
     return UsabilitySurveyStats(
       averageSus: averageSus,
       nps: nps,
@@ -82,6 +105,8 @@ class UsabilitySurveyStats {
       passives: passives,
       detractors: detractors,
       susItemAverages: itemAverages,
+      stdDevSus: stdDevSus,
+      susScores: susScores,
     );
   }
 }
