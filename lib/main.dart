@@ -24,7 +24,10 @@ import 'data/datasources/shopping_local_datasource.dart';
 import 'data/repositories/shopping_repository_impl.dart';
 import 'data/datasources/firestore_product_history_datasource.dart';
 import 'data/repositories/product_history_repository_impl.dart';
+import 'data/repositories/product_history_reader_impl.dart';
 import 'data/repositories/analytics_repository_impl.dart';
+import 'data/datasources/global_ai_quota_firestore_datasource.dart';
+import 'data/repositories/global_ai_quota_repository_impl.dart';
 import 'data/datasources/firestore_household_datasource.dart';
 import 'data/repositories/household_repository_impl.dart';
 import 'data/datasources/gemini_assistant_data_source.dart';
@@ -47,6 +50,7 @@ import 'domain/repositories/i_activity_log_repository.dart';
 import 'domain/repositories/i_assistant_usage_repository.dart';
 import 'domain/repositories/i_product_recognition_repository.dart';
 import 'domain/repositories/i_preset_food_repository.dart';
+import 'domain/repositories/i_global_ai_quota_repository.dart';
 import 'domain/usecases/get_analytics_usecase.dart';
 import 'domain/usecases/get_admin_stats_usecase.dart';
 
@@ -199,6 +203,15 @@ class FrescordenApp extends StatelessWidget {
           create: (_) => PresetFoodRepositoryImpl(PresetFoodLocalDataSource()),
         ),
 
+        // Cuota diaria de Gemini compartida por todo el proyecto (ver
+        // IGlobalAiQuotaRepository) — un único Provider para que
+        // RecipeProvider y AssistantProvider consulten la MISMA cuota
+        // (son el mismo costo real de Gemini, comparten el contador).
+        Provider<IGlobalAiQuotaRepository>(
+          create: (_) =>
+              GlobalAiQuotaRepositoryImpl(GlobalAiQuotaFirestoreDataSource()),
+        ),
+
         // ProductProvider con inyección de dependencias.
         // recibe también IProductHistoryRepository para registrar cada
         // eliminación en el historial, e IActivityLogRepository para el
@@ -233,11 +246,12 @@ class FrescordenApp extends StatelessWidget {
         // AssistantProvider de más abajo (esta no mantiene conversación).
         ChangeNotifierProvider<RecipeProvider>(
           create:
-              (_) => RecipeProvider(
+              (context) => RecipeProvider(
                 RecipeRepositoryImpl(
                   RecipeLocalDataSource(),
                   GeminiAssistantDataSource(),
                 ),
+                context.read<IGlobalAiQuotaRepository>(),
               ),
         ),
 
@@ -274,7 +288,7 @@ class FrescordenApp extends StatelessWidget {
         ChangeNotifierProxyProvider<HouseholdProvider, RestockPredictionProvider>(
           create:
               (_) => RestockPredictionProvider(
-                FirestoreProductHistoryDataSource(),
+                ProductHistoryReaderImpl(FirestoreProductHistoryDataSource()),
               ),
           update: (_, householdProvider, restockProvider) {
             return restockProvider!
@@ -288,6 +302,7 @@ class FrescordenApp extends StatelessWidget {
               (context) => AssistantProvider(
                 AssistantRepositoryImpl(GeminiAssistantDataSource()),
                 context.read<ProductProvider>(),
+                context.read<IGlobalAiQuotaRepository>(),
                 context.read<IAssistantUsageRepository>(),
               ),
         ),

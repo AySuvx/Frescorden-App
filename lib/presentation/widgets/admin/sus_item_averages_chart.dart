@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 import '../analytics/analytics_chart_helpers.dart';
+import 'admin_chart_card.dart';
 
 class SusItemAveragesChart extends StatelessWidget {
   final List<double> itemAverages;
@@ -16,43 +17,24 @@ class SusItemAveragesChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Promedio por ítem del SUS',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+    return AdminChartCard(
+      title: 'Promedio por ítem del SUS',
+      subtitle: 'Escala 1 (en desacuerdo) a 5 (de acuerdo) — ítem 1 a 10, '
+          'mismo orden del instrumento original',
+      child: itemAverages.isEmpty
+          ? const ChartEmptyState(
+              message: 'Nadie ha respondido la encuesta todavía.',
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < itemAverages.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ItemBar(index: i, average: itemAverages[i]),
+                  ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Escala 1 (en desacuerdo) a 5 (de acuerdo) — ítem 1 a 10, '
-              'mismo orden del instrumento original',
-              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            if (itemAverages.isEmpty)
-              const ChartEmptyState(
-                message: 'Nadie ha respondido la encuesta todavía.',
-              )
-            else
-              for (var i = 0; i < itemAverages.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ItemBar(index: i, average: itemAverages[i]),
-                ),
-          ],
-        ),
-      ),
     );
   }
 }

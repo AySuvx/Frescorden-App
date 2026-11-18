@@ -69,6 +69,8 @@ class FirestoreAdminDataSource {
       usabilitySurveyResponses: surveysSnap.docs.length,
       averageSusScore: usability?.averageSus,
       netPromoterScore: usability?.nps,
+      susStdDev: usability?.stdDevSus,
+      susScores: usability?.susScores ?? const [],
       susScoreHistogram: usability?.susScoreHistogram ?? const [0, 0, 0, 0, 0],
       npsPromoters: usability?.promoters ?? 0,
       npsPassives: usability?.passives ?? 0,

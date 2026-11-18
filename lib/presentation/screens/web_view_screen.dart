@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../utils/webview_navigation_guard.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -22,12 +23,15 @@ class WebViewScreen extends StatefulWidget {
 
 class _WebViewScreenState extends State<WebViewScreen> {
   late final WebViewController _controller;
+  late String _allowedHost;
 
   @override
   void initState() {
     super.initState();
+    _allowedHost = Uri.parse(widget.url).host;
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(sameSiteNavigationDelegate(() => _allowedHost))
       ..loadRequest(Uri.parse(widget.url));
   }
 
@@ -45,8 +49,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
                   _controller.reload();
                   break;
                 case 'goHome':
-                  _controller.loadRequest(
-                      Uri.parse('https://www.google.com'));
+                  const homeUrl = 'https://www.google.com';
+                  _allowedHost = Uri.parse(homeUrl).host;
+                  _controller.loadRequest(Uri.parse(homeUrl));
                   break;
                 case 'close':
                   Navigator.pop(context);

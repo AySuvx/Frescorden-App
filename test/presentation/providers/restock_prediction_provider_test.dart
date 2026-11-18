@@ -7,14 +7,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:frescorden/data/datasources/firestore_product_history_datasource.dart';
 import 'package:frescorden/domain/entities/food_category.dart';
 import 'package:frescorden/domain/entities/product.dart';
 import 'package:frescorden/domain/entities/product_history_entry.dart';
+import 'package:frescorden/domain/repositories/i_product_history_reader.dart';
 import 'package:frescorden/presentation/providers/restock_prediction_provider.dart';
 
-class MockHistoryDataSource extends Mock
-    implements FirestoreProductHistoryDataSource {}
+class MockHistoryDataSource extends Mock implements IProductHistoryReader {}
 
 final _now = DateTime.now();
 

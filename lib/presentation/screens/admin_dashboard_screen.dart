@@ -19,6 +19,7 @@ import '../utils/admin_report_generator.dart';
 import '../widgets/admin/nps_breakdown_chart.dart';
 import '../widgets/admin/sus_histogram_chart.dart';
 import '../widgets/admin/sus_item_averages_chart.dart';
+import '../widgets/admin/sus_score_dot_plot.dart';
 import '../widgets/common/animated_counter.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -245,7 +246,9 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             subtitle: stats.averageSusScore == null
                 ? 'Nadie ha respondido la encuesta todavía'
                 : '0-100 · arriba de 68 se considera por encima del '
-                    'promedio (escala académica estándar)',
+                    'promedio (escala académica estándar) · '
+                    'DE = ${stats.susStdDev?.toStringAsFixed(1) ?? "-"} '
+                    '(n = ${stats.usabilitySurveyResponses})',
           ),
           _buildStatCard(
             icon: Icons.thumb_up_alt_outlined,
@@ -258,6 +261,11 @@ class _AdminStatsViewState extends State<_AdminStatsView> {
             subtitle: stats.netPromoterScore == null
                 ? 'Nadie ha respondido la encuesta todavía'
                 : '-100 a 100 · % promotores menos % detractores',
+          ),
+          SusScoreDotPlot(
+            scores: stats.susScores,
+            mean: stats.averageSusScore ?? 0,
+            stdDev: stats.susStdDev ?? 0,
           ),
           SusHistogramChart(histogram: stats.susScoreHistogram),
           NpsBreakdownChart(

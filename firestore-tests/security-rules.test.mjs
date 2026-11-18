@@ -87,6 +87,7 @@ function dbForAdminEmail() {
   if (!firestoreCache.has(key)) {
     const ctx = testEnv.authenticatedContext('uid-correo-admin-secundario', {
       email: 'familiaotalora98@gmail.com',
+      email_verified: true,
     });
     firestoreCache.set(key, ctx.firestore());
   }
@@ -125,6 +126,14 @@ describe('Historia de seguridad: documento de usuario', () => {
   test('Escenario: un UID y correo cualquiera NO puede listar la colección de usuarios', async () => {
     const ctx = testEnv.authenticatedContext('uid-sin-relacion', {
       email: 'nadie-en-particular@example.com',
+    });
+    await assertFails(getDocs(query(collection(ctx.firestore(), 'usuarios'))));
+  });
+
+  test('Escenario: el correo admin secundario SIN verificar NO puede listar la colección de usuarios', async () => {
+    const ctx = testEnv.authenticatedContext('uid-correo-admin-sin-verificar', {
+      email: 'familiaotalora98@gmail.com',
+      email_verified: false,
     });
     await assertFails(getDocs(query(collection(ctx.firestore(), 'usuarios'))));
   });

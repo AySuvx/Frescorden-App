@@ -10,18 +10,18 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../../data/datasources/firestore_product_history_datasource.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/product_history_entry.dart';
 import '../../domain/entities/restock_prediction.dart';
+import '../../domain/repositories/i_product_history_reader.dart';
 import '../../domain/usecases/predict_restock_usecase.dart';
 
 class RestockPredictionProvider extends ChangeNotifier {
-  final FirestoreProductHistoryDataSource _dataSource;
+  final IProductHistoryReader _historyReader;
   final PredictRestockUseCase _predictRestock;
 
   RestockPredictionProvider(
-    this._dataSource, [
+    this._historyReader, [
     this._predictRestock = const PredictRestockUseCase(),
   ]);
 
@@ -49,7 +49,7 @@ class RestockPredictionProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _history = await _dataSource.getAll(householdId);
+      _history = await _historyReader.getAll(householdId);
     } catch (e) {
       debugPrint('RestockPredictionProvider._loadHistory error: $e');
     } finally {

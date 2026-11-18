@@ -54,6 +54,14 @@ class AdminStats {
   final double? averageSusScore;
   final double? netPromoterScore;
 
+  /// Desviación estándar muestral del puntaje SUS (0-100) — ver
+  /// UsabilitySurveyStats.stdDevSus. `null` si nadie ha respondido todavía.
+  final double? susStdDev;
+
+  /// Puntaje SUS de cada respuesta individual — ver
+  /// UsabilitySurveyStats.susScores. Lista vacía si nadie ha respondido.
+  final List<double> susScores;
+
   /// Distribución de puntajes SUS (0-100) en 5 franjas de 20 puntos —
   /// [0-20), [20-40), [40-60), [60-80), [80-100] — para el histograma del
   /// Panel Administrativo. Lista vacía si nadie ha respondido todavía.
@@ -87,6 +95,8 @@ class AdminStats {
     this.usabilitySurveyResponses = 0,
     this.averageSusScore,
     this.netPromoterScore,
+    this.susStdDev,
+    this.susScores = const [],
     this.susScoreHistogram = const [],
     this.npsPromoters = 0,
     this.npsPassives = 0,

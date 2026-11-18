@@ -8,7 +8,8 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null
         && (request.auth.uid == 'YMpWzkKQFiMvCqJdYDYX9fZe5Ow2'
-            || request.auth.token.email == 'familiaotalora98@gmail.com');
+            || (request.auth.token.email == 'familiaotalora98@gmail.com'
+                && request.auth.token.email_verified == true));
     }
 
     // Permitir acceso a los documentos de la colección "usuarios"

@@ -114,11 +114,20 @@ class FakeShoppingRepository implements IShoppingRepository {
 
   final Map<BudgetTier, List<ShoppingItem>> basketsByTier;
   Object? error;
+  List<ShoppingItem> extraItems = [];
 
   @override
   Future<List<ShoppingItem>> getBasket(BudgetTier tier) async {
     if (error != null) throw error!;
     return basketsByTier[tier] ?? [];
+  }
+
+  @override
+  Future<List<ShoppingItem>> loadExtraItems() async => extraItems;
+
+  @override
+  Future<void> saveExtraItems(List<ShoppingItem> items) async {
+    extraItems = items;
   }
 }
 
