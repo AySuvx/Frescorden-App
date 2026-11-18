@@ -12,8 +12,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import '../../core/errors/ai_exceptions.dart';
-import '../../data/datasources/global_ai_quota_firestore_datasource.dart';
-import '../../data/repositories/global_ai_quota_repository_impl.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/recipe.dart';
 import '../../domain/entities/recipe_ingredient.dart';
@@ -25,23 +23,19 @@ import '../utils/quota_service.dart';
 class RecipeProvider extends ChangeNotifier {
   final IRecipeRepository _repository;
 
+  // Cuota compartida del piloto, aparte de `_quota` (por dispositivo) —
+  // ver IGlobalAiQuotaRepository. Inyectada desde main.dart.
+  final IGlobalAiQuotaRepository _globalQuota;
+
   // Igual criterio que HouseholdProvider: resuelto solo al primer uso real
   // (late final), nunca en el constructor.
   final IQuotaService? _injectedQuotaService;
   late final IQuotaService _quota = _injectedQuotaService ?? QuotaService.instance;
 
-  // Cuota compartida entre TODOS los dispositivos del piloto (ver
-  // IGlobalAiQuotaRepository) — se consulta ADEMÁS de `_quota` (que es
-  // solo por dispositivo), nunca en su lugar.
-  final IGlobalAiQuotaRepository? _injectedGlobalQuota;
-  late final IGlobalAiQuotaRepository _globalQuota =
-      _injectedGlobalQuota ??
-      GlobalAiQuotaRepositoryImpl(GlobalAiQuotaFirestoreDataSource());
-
   RecipeProvider(
-    this._repository, [
+    this._repository,
+    this._globalQuota, [
     this._injectedQuotaService,
-    this._injectedGlobalQuota,
   ]);
 
   List<Recipe> _recipes = [];

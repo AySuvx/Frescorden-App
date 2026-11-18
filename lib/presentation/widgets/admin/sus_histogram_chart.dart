@@ -7,6 +7,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../analytics/analytics_chart_helpers.dart';
+import 'admin_chart_card.dart';
 
 class SusHistogramChart extends StatelessWidget {
   final List<int> histogram;
@@ -18,42 +19,19 @@ class SusHistogramChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final total = histogram.fold<int>(0, (a, b) => a + b);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Distribución de puntajes SUS',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+    return AdminChartCard(
+      title: 'Distribución de puntajes SUS',
+      subtitle: 'Cuántas respuestas cayeron en cada franja de 0 a 100',
+      child: total == 0
+          ? const ChartEmptyState(
+              message: 'Nadie ha respondido la encuesta todavía.',
+            )
+          : SizedBox(
+              height: 200,
+              child: _Histogram(histogram: histogram),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Cuántas respuestas cayeron en cada franja de 0 a 100',
-              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            if (total == 0)
-              const ChartEmptyState(
-                message: 'Nadie ha respondido la encuesta todavía.',
-              )
-            else
-              SizedBox(
-                height: 200,
-                child: _Histogram(histogram: histogram),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -112,7 +112,8 @@ void main() {
         final recipeRepo = FakeRecipeRepository([
           _recipe('r1', 'Arroz con Pollo', ['Arroz', 'Pollo']),
         ]);
-        final recipeProvider = RecipeProvider(recipeRepo);
+        final recipeProvider =
+            RecipeProvider(recipeRepo, FakeGlobalAiQuotaRepository());
         addTearDown(recipeProvider.dispose);
         productRepo.emit('hogar-1', [_product('Arroz'), _product('Pollo')]);
 
@@ -146,7 +147,8 @@ void main() {
         final recipeRepo = FakeRecipeRepository([
           _recipe('r1', 'Sancocho', ['Pollo', 'Papa', 'Yuca', 'Mazorca']),
         ]);
-        final recipeProvider = RecipeProvider(recipeRepo);
+        final recipeProvider =
+            RecipeProvider(recipeRepo, FakeGlobalAiQuotaRepository());
         addTearDown(recipeProvider.dispose);
         productRepo.emit('hogar-1', [_product('Pollo')]); // 1/4 = 25%
 
@@ -182,7 +184,8 @@ void main() {
         final recipeRepo = FakeRecipeRepository([
           _recipe('r1', 'Sancocho', ['Pollo', 'Papa', 'Yuca', 'Mazorca']),
         ]);
-        final recipeProvider = RecipeProvider(recipeRepo);
+        final recipeProvider =
+            RecipeProvider(recipeRepo, FakeGlobalAiQuotaRepository());
         addTearDown(recipeProvider.dispose);
         productRepo.emit('hogar-1', [_product('Pollo')]);
 
@@ -214,7 +217,8 @@ void main() {
 
         // Dado un catálogo vacío
         final recipeRepo = FakeRecipeRepository([]);
-        final recipeProvider = RecipeProvider(recipeRepo);
+        final recipeProvider =
+            RecipeProvider(recipeRepo, FakeGlobalAiQuotaRepository());
         addTearDown(recipeProvider.dispose);
 
         // Cuando se renderiza la pantalla

@@ -17,10 +17,8 @@
 // daría una falsa sensación de precisión; comparar presencia es honesto con
 // los datos disponibles.
 
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../data/models/shopping_item_model.dart';
 import '../../domain/entities/budget_tier.dart';
 import '../../domain/entities/nutrition_group.dart';
 import '../../domain/entities/product.dart';
@@ -36,7 +34,6 @@ class ShoppingProvider extends ChangeNotifier {
   static const _kTierKey = 'shopping_tier';
   static const _kBudgetKey = 'shopping_custom_budget';
   static const _kPersonCountKey = 'shopping_person_count';
-  static const _kExtraItemsKey = 'shopping_extra_items';
   static const _kDismissedKey = 'shopping_dismissed_names';
 
   /// Resuelve cuando el estado guardado (tier, presupuesto, personas,
@@ -46,8 +43,20 @@ class ShoppingProvider extends ChangeNotifier {
   /// que termine de cargar.
   late final Future<void> _ready;
 
+  // _loadPersistedState ahora pasa por el repositorio (ver loadExtraItems),
+  // un salto async más que antes de llegar a su notifyListeners — en un
+  // test sincrónico que dispose() apenas construye el provider, esa
+  // continuación puede resolver después del dispose.
+  bool _disposed = false;
+
   ShoppingProvider(this._repository) {
     _ready = _loadPersistedState();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   BudgetTier _selectedTier = BudgetTier.basica;
@@ -299,11 +308,9 @@ class ShoppingProvider extends ChangeNotifier {
     final storedBudget = prefs.getInt(_kBudgetKey);
     _customBudget = (storedBudget != null && storedBudget > 0) ? storedBudget : null;
     _personCount = prefs.getInt(_kPersonCountKey) ?? _defaultPersonCount;
-    _extraItems.addAll(
-      (prefs.getStringList(_kExtraItemsKey) ?? const [])
-          .map((raw) => ShoppingItemModel.fromJson(jsonDecode(raw) as Map<String, dynamic>)),
-    );
+    _extraItems.addAll(await _repository.loadExtraItems());
     _dismissedNames.addAll(prefs.getStringList(_kDismissedKey) ?? const []);
+    if (_disposed) return;
     notifyListeners();
   }
 
@@ -316,10 +323,7 @@ class ShoppingProvider extends ChangeNotifier {
       await prefs.setInt(_kBudgetKey, _customBudget!);
     }
     await prefs.setInt(_kPersonCountKey, _personCount);
-    await prefs.setStringList(
-      _kExtraItemsKey,
-      _extraItems.map((item) => jsonEncode(ShoppingItemModel.toJson(item))).toList(),
-    );
+    await _repository.saveExtraItems(_extraItems);
     await prefs.setStringList(_kDismissedKey, _dismissedNames.toList());
   }
 }

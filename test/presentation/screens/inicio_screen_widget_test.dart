@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:frescorden/config/app_config.dart';
 import 'package:frescorden/config/theme/theme_provider.dart';
-import 'package:frescorden/data/datasources/firestore_product_history_datasource.dart';
 import 'package:frescorden/domain/entities/app_user.dart';
 import 'package:frescorden/domain/entities/food_category.dart';
 import 'package:frescorden/domain/entities/product.dart';
@@ -17,6 +16,7 @@ import 'package:frescorden/domain/entities/recipe.dart';
 import 'package:frescorden/domain/entities/recipe_ingredient.dart';
 import 'package:frescorden/domain/entities/usability_survey_response.dart';
 import 'package:frescorden/domain/repositories/i_activity_log_repository.dart';
+import 'package:frescorden/domain/repositories/i_product_history_reader.dart';
 import 'package:frescorden/domain/usecases/get_admin_stats_usecase.dart';
 import 'package:frescorden/domain/usecases/get_analytics_usecase.dart';
 import 'package:frescorden/presentation/providers/admin_provider.dart';
@@ -48,8 +48,7 @@ import 'package:frescorden/presentation/screens/usability_survey_screen.dart';
 import '../../support/fake_repositories.dart';
 import '../../support/fake_services.dart';
 
-class MockHistoryDataSource extends Mock
-    implements FirestoreProductHistoryDataSource {}
+class MockHistoryDataSource extends Mock implements IProductHistoryReader {}
 
 void _mockPluginChannels() {
   AndroidFlutterLocalNotificationsPlugin.registerWith();
@@ -98,7 +97,8 @@ Widget _wrap({
       ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
       ChangeNotifierProvider<UserBannerProvider>.value(value: bannerProvider),
       ChangeNotifierProvider<RecipeProvider>.value(
-        value: recipeProvider ?? RecipeProvider(FakeRecipeRepository([])),
+        value: recipeProvider ??
+            RecipeProvider(FakeRecipeRepository([]), FakeGlobalAiQuotaRepository()),
       ),
       ChangeNotifierProvider<RestockPredictionProvider>.value(
         // Default: un mock que nunca toca Firebase (a diferencia de
@@ -612,7 +612,10 @@ void main() {
           imagePath: 'assets/verduras.png',
           steps: ['Mezclar todo'],
         );
-        final recipeProvider = RecipeProvider(FakeRecipeRepository([recipe]));
+        final recipeProvider = RecipeProvider(
+          FakeRecipeRepository([recipe]),
+          FakeGlobalAiQuotaRepository(),
+        );
 
         final authProvider = AuthProvider(
           FakeAuthRepository()
@@ -663,7 +666,10 @@ void main() {
           imagePath: 'assets/verduras.png',
           steps: ['Mezclar todo'],
         );
-        final recipeProvider = RecipeProvider(FakeRecipeRepository([recipe]));
+        final recipeProvider = RecipeProvider(
+          FakeRecipeRepository([recipe]),
+          FakeGlobalAiQuotaRepository(),
+        );
 
         final authProvider = AuthProvider(
           FakeAuthRepository()

@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../core/errors/ai_exceptions.dart';
-import '../../data/datasources/global_ai_quota_firestore_datasource.dart';
-import '../../data/repositories/global_ai_quota_repository_impl.dart';
 import '../../domain/entities/chat_message.dart';
 import '../../domain/repositories/i_assistant_repository.dart';
 import '../../domain/repositories/i_assistant_usage_repository.dart';
@@ -32,21 +30,18 @@ class AssistantProvider extends ChangeNotifier {
   late final IAssistantAnalyticsService _analytics =
       _injectedAnalyticsService ?? AnalyticsService.instance;
 
-  // Cuota compartida entre TODOS los dispositivos del piloto (ver
-  // IGlobalAiQuotaRepository) — se consulta ADEMÁS de `_quota` (que es
-  // solo por dispositivo), nunca en su lugar.
-  final IGlobalAiQuotaRepository? _injectedGlobalQuota;
-  late final IGlobalAiQuotaRepository _globalQuota =
-      _injectedGlobalQuota ??
-      GlobalAiQuotaRepositoryImpl(GlobalAiQuotaFirestoreDataSource());
+  // Cuota COMPARTIDA del piloto entre todos los dispositivos (ver
+  // IGlobalAiQuotaRepository), aparte de `_quota` (que es por dispositivo).
+  // Inyectada desde main.dart para no importar la capa de datos acá.
+  final IGlobalAiQuotaRepository _globalQuota;
 
   AssistantProvider(
     this._repository,
-    this._productProvider, [
+    this._productProvider,
+    this._globalQuota, [
     this._usageRepository,
     this._injectedQuotaService,
     this._injectedAnalyticsService,
-    this._injectedGlobalQuota,
   ]) {
     _loadQuota();
   }
@@ -56,7 +51,10 @@ class AssistantProvider extends ChangeNotifier {
   String? _error;
 
   int _remainingQueries = QuotaService.dailyLimit;
-  int _globalRemainingQueries = GlobalAiQuotaRepositoryImpl.cap;
+  // Valor optimista antes de que _loadQuota() (llamado en el constructor)
+  // resuelva el real — refleja GlobalAiQuotaRepositoryImpl.cap, duplicado
+  // acá como literal porque este provider ya no importa la capa de datos.
+  int _globalRemainingQueries = 300;
   Timer? _countdownTimer;
   Duration _timeUntilReset = Duration.zero;
 
