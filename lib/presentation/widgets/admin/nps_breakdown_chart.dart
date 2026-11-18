@@ -6,6 +6,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../analytics/analytics_chart_helpers.dart';
+import 'admin_chart_card.dart';
 
 class NpsBreakdownChart extends StatelessWidget {
   final int promoters;
@@ -25,55 +26,36 @@ class NpsBreakdownChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final total = promoters + passives + detractors;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Desglose del Net Promoter Score',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Detractores (0-6) · Pasivos (7-8) · Promotores (9-10)',
-              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            if (total == 0)
-              const ChartEmptyState(
-                message: 'Nadie ha respondido la encuesta todavía.',
-              )
-            else ...[
-              SizedBox(
-                height: 180,
-                child: _Bars(
-                  promoters: promoters,
-                  passives: passives,
-                  detractors: detractors,
+    return AdminChartCard(
+      title: 'Desglose del Net Promoter Score',
+      subtitle: 'Detractores (0-6) · Pasivos (7-8) · Promotores (9-10)',
+      child: total == 0
+          ? const ChartEmptyState(
+              message: 'Nadie ha respondido la encuesta todavía.',
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 180,
+                  child: _Bars(
+                    promoters: promoters,
+                    passives: passives,
+                    detractors: detractors,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const ChartLegend(
-                items: [
-                  (_detractorColor, 'Detractores'),
-                  (_passiveColor, 'Pasivos'),
-                  (_promoterColor, 'Promotores'),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
+                const SizedBox(height: 12),
+                const ChartLegend(
+                  items: [
+                    (_detractorColor, 'Detractores'),
+                    (_passiveColor, 'Pasivos'),
+                    (_promoterColor, 'Promotores'),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }

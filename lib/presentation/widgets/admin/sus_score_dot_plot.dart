@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import '../analytics/analytics_chart_helpers.dart';
+import 'admin_chart_card.dart';
 
 class SusScoreDotPlot extends StatelessWidget {
   final List<double> scores;
@@ -29,58 +30,40 @@ class SusScoreDotPlot extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Dispersión de los puntajes SUS individuales',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Cada punto es una respuesta del piloto. La línea marca la '
-              'media y la banda sombreada, ±1 desviación estándar.',
-              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 20),
-            if (scores.isEmpty)
-              const ChartEmptyState(
-                message: 'Nadie ha respondido la encuesta todavía.',
-              )
-            else ...[
-              _DotStrip(scores: scores, mean: mean, stdDev: stdDev),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Text('0', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
-                  const Spacer(),
-                  Text('50', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
-                  const Spacer(),
-                  Text('100', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Media = ${mean.toStringAsFixed(1)} · DE = '
-                '${stdDev.toStringAsFixed(1)} · n = ${scores.length}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
+    return AdminChartCard(
+      title: 'Dispersión de los puntajes SUS individuales',
+      subtitle: 'Cada punto es una respuesta del piloto. La línea marca la '
+          'media y la banda sombreada, ±1 desviación estándar.',
+      child: scores.isEmpty
+          ? const ChartEmptyState(
+              message: 'Nadie ha respondido la encuesta todavía.',
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _DotStrip(scores: scores, mean: mean, stdDev: stdDev),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text('0', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                    const Spacer(),
+                    Text('50', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                    const Spacer(),
+                    Text('100', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                  ],
                 ),
-              ),
-            ],
-          ],
-        ),
-      ),
+                const SizedBox(height: 12),
+                Text(
+                  'Media = ${mean.toStringAsFixed(1)} · DE = '
+                  '${stdDev.toStringAsFixed(1)} · n = ${scores.length}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
