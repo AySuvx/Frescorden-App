@@ -1,0 +1,88 @@
+{
+  "started": "2026-11-23T23:04:46.688Z",
+  "options": {
+    "fn": "recipe",
+    "n": 1,
+    "turns": 5,
+    "concurrency": "1",
+    "pause": 500,
+    "maxRequests": 300,
+    "location": "",
+    "model": "gemini-3.5-flash"
+  },
+  "photos": 11,
+  "runs": [
+    {
+      "fn": "recipe",
+      "concurrency": 1,
+      "requests": 1,
+      "ok": 1,
+      "errorRate": 0,
+      "errors": {},
+      "latencyMs": {
+        "n": 1,
+        "mean": 13312.3,
+        "sd": 0,
+        "min": 13312.3,
+        "p50": 13312.3,
+        "p95": 13312.3,
+        "p99": 13312.3,
+        "max": 13312.3
+      },
+      "tokens": {
+        "prompt": {
+          "n": 1,
+          "mean": 780,
+          "sd": 0,
+          "min": 780,
+          "p50": 780,
+          "p95": 780,
+          "p99": 780,
+          "max": 780
+        },
+        "promptImage": {
+          "n": 1,
+          "mean": 0,
+          "sd": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "output": {
+          "n": 1,
+          "mean": 633,
+          "sd": 0,
+          "min": 633,
+          "p50": 633,
+          "p95": 633,
+          "p99": 633,
+          "max": 633
+        },
+        "thoughts": {
+          "n": 1,
+          "mean": 2039,
+          "sd": 0,
+          "min": 2039,
+          "p50": 2039,
+          "p95": 2039,
+          "p99": 2039,
+          "max": 2039
+        },
+        "total": {
+          "n": 1,
+          "mean": 3452,
+          "sd": 0,
+          "min": 3452,
+          "p50": 3452,
+          "p95": 3452,
+          "p99": 3452,
+          "max": 3452
+        }
+      }
+    }
+  ],
+  "finished": "2026-11-23T23:05:00.517Z",
+  "requestsSent": 1
+}

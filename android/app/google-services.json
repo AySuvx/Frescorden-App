@@ -37,6 +37,13 @@
             {
               "client_id": "1512037775-dbgp6ar5sau70irm39ph9g8kmodlsnjf.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1512037775-56piega0fc4s8ibumnjgpgsi5tfjm4or.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.frescorden"
+              }
             }
           ]
         }

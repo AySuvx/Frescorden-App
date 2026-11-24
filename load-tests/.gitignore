@@ -1,0 +1,7 @@
+node_modules/
+accounts.json
+firebase-config.json
+photos/
+emulator-accounts.json
+results/emulator-*
+appcheck-token.txt

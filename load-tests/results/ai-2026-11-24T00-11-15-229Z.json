@@ -1,0 +1,160 @@
+{
+  "started": "2026-11-24T00:11:15.229Z",
+  "options": {
+    "fn": "recipe,vision",
+    "n": 20,
+    "turns": 5,
+    "concurrency": "1",
+    "pause": 500,
+    "maxRequests": 300,
+    "location": "",
+    "model": "gemini-3.5-flash"
+  },
+  "photos": 11,
+  "runs": [
+    {
+      "fn": "recipe",
+      "concurrency": 1,
+      "requests": 20,
+      "ok": 18,
+      "errorRate": 10,
+      "errors": {
+        "fetch-error: AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/frescorden/locations/global/publishers/google/models/gemini-3.5-flash:generateCo": 2
+      },
+      "latencyMs": {
+        "n": 18,
+        "mean": 8620.8,
+        "sd": 1969.2,
+        "min": 6988.9,
+        "p50": 8113.7,
+        "p95": 11914.9,
+        "p99": 14838.3,
+        "max": 15569.1
+      },
+      "tokens": {
+        "prompt": {
+          "n": 18,
+          "mean": 779.2,
+          "sd": 2.4,
+          "min": 774,
+          "p50": 779,
+          "p95": 782.3,
+          "p99": 783.7,
+          "max": 784
+        },
+        "promptImage": {
+          "n": 18,
+          "mean": 0,
+          "sd": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        },
+        "output": {
+          "n": 18,
+          "mean": 430.2,
+          "sd": 95.4,
+          "min": 289,
+          "p50": 409.5,
+          "p95": 589.9,
+          "p99": 648.4,
+          "max": 663
+        },
+        "thoughts": {
+          "n": 18,
+          "mean": 1716.4,
+          "sd": 338.2,
+          "min": 1212,
+          "p50": 1669.5,
+          "p95": 2389.5,
+          "p99": 2445.9,
+          "max": 2460
+        },
+        "total": {
+          "n": 18,
+          "mean": 2925.8,
+          "sd": 304.5,
+          "min": 2484,
+          "p50": 2891.5,
+          "p95": 3573.6,
+          "p99": 3644.3,
+          "max": 3662
+        }
+      }
+    },
+    {
+      "fn": "vision",
+      "concurrency": 1,
+      "requests": 20,
+      "ok": 20,
+      "errorRate": 0,
+      "errors": {},
+      "latencyMs": {
+        "n": 20,
+        "mean": 6381.9,
+        "sd": 3527.7,
+        "min": 2789.1,
+        "p50": 4674.1,
+        "p95": 12670.4,
+        "p99": 14399.4,
+        "max": 14831.7
+      },
+      "tokens": {
+        "prompt": {
+          "n": 20,
+          "mean": 1552,
+          "sd": 0,
+          "min": 1552,
+          "p50": 1552,
+          "p95": 1552,
+          "p99": 1552,
+          "max": 1552
+        },
+        "promptImage": {
+          "n": 20,
+          "mean": 1064,
+          "sd": 0,
+          "min": 1064,
+          "p50": 1064,
+          "p95": 1064,
+          "p99": 1064,
+          "max": 1064
+        },
+        "output": {
+          "n": 20,
+          "mean": 21.9,
+          "sd": 5.8,
+          "min": 14,
+          "p50": 19.5,
+          "p95": 32.1,
+          "p99": 32.8,
+          "max": 33
+        },
+        "thoughts": {
+          "n": 20,
+          "mean": 665,
+          "sd": 238.1,
+          "min": 316,
+          "p50": 617,
+          "p95": 1095.5,
+          "p99": 1208.7,
+          "max": 1237
+        },
+        "total": {
+          "n": 20,
+          "mean": 2238.9,
+          "sd": 240.6,
+          "min": 1888,
+          "p50": 2187.5,
+          "p95": 2679.5,
+          "p99": 2793.5,
+          "max": 2822
+        }
+      }
+    }
+  ],
+  "finished": "2026-11-24T00:16:19.414Z",
+  "requestsSent": 40
+}

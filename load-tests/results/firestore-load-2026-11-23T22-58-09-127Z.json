@@ -1,0 +1,122 @@
+{
+  "runId": "2026-11-23T22-58-09-127Z",
+  "started": "2026-11-23T22:58:09.132Z",
+  "finished": "2026-11-23T23:00:41.234Z",
+  "options": {
+    "mode": "load",
+    "vus": 28,
+    "duration": 120,
+    "steps": "5,10,20,40",
+    "stepDuration": 60,
+    "think": 1000,
+    "maxErrorRate": 5,
+    "maxP95": 2000
+  },
+  "accounts": 28,
+  "households": 14,
+  "phases": [
+    {
+      "vus": 28,
+      "seconds": 120,
+      "iterations": 909,
+      "report": {
+        "setup.signIn": {
+          "latencyMs": {
+            "n": 28,
+            "mean": 257.9,
+            "sd": 48.5,
+            "min": 201.1,
+            "p50": 244.8,
+            "p95": 296.1,
+            "p99": 430.8,
+            "max": 480
+          },
+          "ok": 28,
+          "errors": 0,
+          "errorRate": 0,
+          "errorCodes": {}
+        },
+        "inventory.read": {
+          "latencyMs": {
+            "n": 909,
+            "mean": 28.3,
+            "sd": 112.3,
+            "min": 0.1,
+            "p50": 6.5,
+            "p95": 34.7,
+            "p99": 755.8,
+            "max": 810.5
+          },
+          "ok": 909,
+          "errors": 0,
+          "errorRate": 0,
+          "errorCodes": {}
+        },
+        "product.add": {
+          "latencyMs": {
+            "n": 909,
+            "mean": 168,
+            "sd": 146,
+            "min": 109.7,
+            "p50": 145.8,
+            "p95": 275.8,
+            "p99": 396.8,
+            "max": 4061.6
+          },
+          "ok": 909,
+          "errors": 0,
+          "errorRate": 0,
+          "errorCodes": {}
+        },
+        "sync.otherMember": {
+          "latencyMs": {
+            "n": 906,
+            "mean": 184.8,
+            "sd": 147.7,
+            "min": 123,
+            "p50": 162,
+            "p95": 294.3,
+            "p99": 438.4,
+            "max": 4081
+          },
+          "ok": 906,
+          "errors": 0,
+          "errorRate": 0,
+          "errorCodes": {}
+        },
+        "product.update": {
+          "latencyMs": {
+            "n": 909,
+            "mean": 157.9,
+            "sd": 52.1,
+            "min": 113.8,
+            "p50": 144.8,
+            "p95": 240.9,
+            "p99": 413,
+            "max": 727.8
+          },
+          "ok": 909,
+          "errors": 0,
+          "errorRate": 0,
+          "errorCodes": {}
+        },
+        "product.resolve": {
+          "latencyMs": {
+            "n": 909,
+            "mean": 387.1,
+            "sd": 176.1,
+            "min": 268.1,
+            "p50": 353.4,
+            "p95": 546.1,
+            "p99": 851.1,
+            "max": 2962.6
+          },
+          "ok": 909,
+          "errors": 0,
+          "errorRate": 0,
+          "errorCodes": {}
+        }
+      }
+    }
+  ]
+}

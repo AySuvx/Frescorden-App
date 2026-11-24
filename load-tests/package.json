@@ -1,0 +1,18 @@
+{
+  "name": "load-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "accounts": "node accounts.mjs",
+    "firestore": "node firestore-load.mjs",
+    "ai": "node ai-load.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "firebase": "13.4.0"
+  },
+  "type": "module",
+  "private": true
+}

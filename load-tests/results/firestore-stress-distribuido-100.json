@@ -1,0 +1,140 @@
+{
+  "sources": [
+    "results/firestore-load-d100p3-2026-11-24T00-21-05-293Z.json",
+    "results/firestore-load-d100p1-2026-11-24T00-21-05-285Z.json",
+    "results/firestore-load-d100p4-2026-11-24T00-21-05-296Z.json",
+    "results/firestore-load-d100p2-2026-11-24T00-21-05-293Z.json"
+  ],
+  "vus": 100,
+  "iterations": 1656,
+  "generators": [
+    {
+      "eventLoopLagMs": {
+        "mean": 15.1,
+        "p95": 21.2,
+        "p99": 24.3,
+        "max": 51.5
+      },
+      "cpuCoreUsagePct": 14.1
+    },
+    {
+      "eventLoopLagMs": {
+        "mean": 15,
+        "p95": 21.4,
+        "p99": 24.6,
+        "max": 48.1
+      },
+      "cpuCoreUsagePct": 12.7
+    },
+    {
+      "eventLoopLagMs": {
+        "mean": 15,
+        "p95": 20.9,
+        "p99": 24.2,
+        "max": 50.1
+      },
+      "cpuCoreUsagePct": 13
+    },
+    {
+      "eventLoopLagMs": {
+        "mean": 15.2,
+        "p95": 21.3,
+        "p99": 24.5,
+        "max": 44
+      },
+      "cpuCoreUsagePct": 12.9
+    }
+  ],
+  "operations": {
+    "setup.signIn": {
+      "latencyMs": {
+        "n": 100,
+        "mean": 690.1,
+        "sd": 219.5,
+        "min": 375.9,
+        "p50": 685.1,
+        "p95": 1140.1,
+        "p99": 1209.7,
+        "max": 1215.4
+      },
+      "ok": 100,
+      "errors": 0,
+      "errorRate": 0
+    },
+    "inventory.read": {
+      "latencyMs": {
+        "n": 1656,
+        "mean": 26,
+        "sd": 76.1,
+        "min": 0.1,
+        "p50": 4.8,
+        "p95": 244.9,
+        "p99": 323.2,
+        "max": 750.7
+      },
+      "ok": 1656,
+      "errors": 0,
+      "errorRate": 0
+    },
+    "product.add": {
+      "latencyMs": {
+        "n": 1656,
+        "mean": 165.3,
+        "sd": 35.1,
+        "min": 131.7,
+        "p50": 156.2,
+        "p95": 234,
+        "p99": 300.6,
+        "max": 556.4
+      },
+      "ok": 1656,
+      "errors": 0,
+      "errorRate": 0
+    },
+    "sync.otherMember": {
+      "latencyMs": {
+        "n": 1589,
+        "mean": 181.4,
+        "sd": 40.3,
+        "min": 141,
+        "p50": 172,
+        "p95": 248,
+        "p99": 325.1,
+        "max": 852
+      },
+      "ok": 1589,
+      "errors": 0,
+      "errorRate": 0
+    },
+    "product.update": {
+      "latencyMs": {
+        "n": 1656,
+        "mean": 162.3,
+        "sd": 36.3,
+        "min": 129.8,
+        "p50": 153.8,
+        "p95": 222.8,
+        "p99": 299.6,
+        "max": 879.5
+      },
+      "ok": 1656,
+      "errors": 0,
+      "errorRate": 0
+    },
+    "product.resolve": {
+      "latencyMs": {
+        "n": 1655,
+        "mean": 376.2,
+        "sd": 70.5,
+        "min": 295.5,
+        "p50": 357,
+        "p95": 505.4,
+        "p99": 621.4,
+        "max": 1328.3
+      },
+      "ok": 1655,
+      "errors": 1,
+      "errorRate": 0.1
+    }
+  }
+}
